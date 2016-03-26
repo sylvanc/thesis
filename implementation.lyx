@@ -1,0 +1,5113 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass extreport
+\use_default_options true
+\begin_modules
+fixltx2e
+fix-cm
+theorems-ams-bytype
+\end_modules
+\maintain_unincluded_children false
+\language british
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date true
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 1
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\listings_params "basicstyle={\ttfamily\small}"
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Chapter
+Runtime Implementation
+\end_layout
+
+\begin_layout Standard
+The Pony runtime is composed of several core components.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Runtime-architecture"
+
+\end_inset
+
+ shows the structure of those components.
+ At the bottom is the memory allocator.
+ On top of this is built the Single-Producer Multiple-Consumer queue, the
+ Multiple-Producer Single-Consumer queue, and the heap.
+ The SPMC and MPSC queues are used to build the scheduler, the MPSC queue
+ is used to build the asynchronous I/O handler, and the MPSC queue and the
+ heap are used to build the actors themselves.
+ Tracing GC, sharing GC, and actor GC are built on top of the actors.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename graphics/graphics.001.png
+	width 50col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Runtime-architecture"
+
+\end_inset
+
+Runtime architecture
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Every component's design is influenced by the type system.
+ This influence is most obvious in, for example, the garbage collection
+ components, but the impact is felt at every level, including the memory
+ allocator.
+\end_layout
+
+\begin_layout Section
+Memory Allocator
+\end_layout
+
+\begin_layout Standard
+General purpose memory allocation is a complex problem.
+ Manual memory management allocators have seen significant research in malloc-li
+ke allocators that scale better as core counts increase, including tcmalloc,
+ jemalloc, llalloc, the Intel TBB allocator, and most recently scalloc.
+ This category of memory allocator face several related problems: finding
+ free memory large enough to fulfil the requested allocation size without
+ wasting excessive memory, coalescing freed memory to allow larger allocations
+ to reuse memory from multiple smaller freed memory blocks, and coordinating
+ allocation across threads.
+ Similar problems are faced with automatic memory management allocators,
+ with the additional complication that the garbage collector must interact
+ with the allocator, and that a compacting garbage collector may move objects
+ in memory.
+\end_layout
+
+\begin_layout Standard
+The Pony memory allocator is divided into two stages: an underlying pool
+ allocator and a heap implementation built on top of it.
+ We'll begin by examining the pool allocator.
+\end_layout
+
+\begin_layout Standard
+To reduce contention, the pool allocator operates as a thread-local allocator.
+ When we examine the scheduler, we'll see that this results in each core
+ having a pool allocator that is pinned to that core.
+ This pool allocator is responsible for pulling new pages from the kernel
+ when necessary, managing size-classed free lists, and making free lists
+ available to other thread-local pool allocators when possible.
+\end_layout
+
+\begin_layout Standard
+When a pool allocator is asked to allocate memory, it tries three sources,
+ in order:
+\end_layout
+
+\begin_layout Enumerate
+The thread-local size-classed free list for amount of memory requested,
+ rounded to the next higher size-class.
+\end_layout
+
+\begin_layout Enumerate
+The global size-classed list of free lists for that size-class, which is
+ used to prevent producer-consumer allocation starvation.
+\end_layout
+
+\begin_layout Enumerate
+The thread-local free block.
+\end_layout
+
+\begin_layout Enumerate
+The operating system, by allocating new pages.
+\end_layout
+
+\begin_layout Standard
+Size classes are used to simplify free list management.
+ The implementation currently uses power-of-two sized classes ranging from
+ 
+\begin_inset Formula $2^{5}$
+\end_inset
+
+ to 
+\begin_inset Formula $2^{20}$
+\end_inset
+
+ bytes, but these values are easily tuneable.
+ Allocations exceeding the largest size class begin with the thread-local
+ free block.
+\end_layout
+
+\begin_layout Subsection
+Thread-local Free List
+\end_layout
+
+\begin_layout Standard
+Each pool allocator keeps a linked list of free memory for each size-class.
+ The memory for the object is used as the linked list node.
+ Initially, these free lists are empty.
+ When the pool allocator is told to free memory within a size class, it
+ prepends that memory to the appropriate free list.
+ The memory is prepended to improve cache locality: if memory of that size
+ class is quickly allocated and used again, it is more likely that the memory
+ remains in cache.
+\end_layout
+
+\begin_layout Standard
+When memory is freed to a thread-local free list, the provenance of the
+ memory is not examined.
+ Any pool allocator can place memory allocated by any other pool allocator
+ on its thread-local free list for that size class.
+\end_layout
+
+\begin_layout Subsection
+Global List of Free Lists
+\end_layout
+
+\begin_layout Standard
+The system as a whole also keeps a single global list of free lists for
+ each size-class.
+ This is to avoid memory starvation in a producer-consumer scenario where
+ one scheduler thread is consistently allocating memory and another scheduler
+ thread is consistently freeing it.
+\end_layout
+
+\begin_layout Standard
+When a thread-local free list exceed a certain size, defaulting to 
+\begin_inset Formula $2^{20}$
+\end_inset
+
+ bytes, that free list is pushed to a global list of free lists.
+ The memory for the node at the head of the list is used to record the size
+ of the list being pushed to the global list of lists, and to store a pointer
+ to the next free list.
+ An atomic compare-and-swap loop is used to change the global list of free
+ lists pointer, so that any number of pool allocators can safely attempt
+ to push a free list to the global area simultaneously.
+\end_layout
+
+\begin_layout Standard
+Similarly, when a pool allocator's thread-local free list is empty, it examines
+ the global list of free lists.
+ Crucially, if that global list is empty, no atomic operation is required,
+ and the pool allocator tries its next source of free memory.
+ If the global list of free lists contains one or more lists, an atomic
+ compare-and-swap loop is used to remove one list from global list.
+ That list is then used as the thread-local free list, allowing memory to
+ be returned immediately.
+\end_layout
+
+\begin_layout Subsection
+Thread-local Free Block
+\end_layout
+
+\begin_layout Standard
+A pool allocator also keep a thread-local free block.
+ This is a list of free memory, insert-sorted by size, that is initially
+ empty.
+ If no size-classed memory is available, the first free block in this list
+ large enough to fulfil the allocation is used.
+ If a block is available, it is fragmented into the requested size and any
+ remaining memory, with any remaining memory being insert-sorted back into
+ the free block.
+\end_layout
+
+\begin_layout Standard
+This approach allows large allocations to be reused for future large allocations
+, or fragmented into future size-classed allocations.
+ It also allows freed large allocations to coexist with new pages pulled
+ from the operating system.
+\end_layout
+
+\begin_layout Subsection
+New Pages
+\end_layout
+
+\begin_layout Standard
+If the thread-local and global size-classed pools are empty, and the free
+ block is either empty or contains no memory block large enough to fulfil
+ the allocation request, the pool allocator uses an underlying system call
+ (mmap on UNIX-like operating systems, VirtualAlloc on Windows) to request
+ a number of pages mapped as a contiguous chunk of address space.
+ Some empirical testing with various work loads has lead to choosing a 128
+ megabyte chunk in a 64-bit address space and a 16 megabyte chunk in a 32-bit
+ address space as the default.
+ These values can be easily changed in the runtime.
+\end_layout
+
+\begin_layout Standard
+This address space is mapped using huge pages, where available, to minimise
+ the number of address translations, reducing pressure on the translation
+ lookaside buffer (TLB).
+ This also reduces the TLB lookup pressure on the L2 cache, leaving more
+ cache for application data.
+ However, this address space is not pre-faulted.
+ That is, no data is written to the mapped address space.
+ This prevents unused pages from being mapped to physical memory, and significan
+tly reduces allocation-time jitter, particularly on NUMA machines.
+\end_layout
+
+\begin_layout Standard
+The mapped address space is then fragmented into the requested allocation
+ size and any remaining size, with the remaining memory kept in the thread-local
+ free block for future allocations.
+\end_layout
+
+\begin_layout Subsection
+Fragmentation
+\end_layout
+
+\begin_layout Standard
+The pool allocator as currently implemented has no mechanism for coalescing
+ free memory.
+ As a result, small allocations can result in fragmentation, such that free
+ memory is available, but a request for a single large contiguous address
+ space fails.
+\end_layout
+
+\begin_layout Standard
+This deficiency is addressed in the per-actor heap, rather than in the pool
+ allocator, as explained in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Small-Allocation-Fragmentation"
+
+\end_inset
+
+.
+ This allows the pool allocator itself to avoid jitter caused by attempting
+ to coalesce free memory.
+\end_layout
+
+\begin_layout Subsection
+Performance
+\end_layout
+
+\begin_layout Standard
+Overall, allocation performance is similar to a bump allocator, while not
+ requiring a compaction phase.
+ We will discuss the choice not to use a compacting garbage collector in
+ section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Tracing-GC"
+
+\end_inset
+
+.
+ TODO: alloc/free performance test results
+\end_layout
+
+\begin_layout Subsection
+Type System Influence
+\end_layout
+
+\begin_layout Standard
+The type system has an indirect effect on the design of the pool allocator.
+ No per-allocation header is required at the pool allocator level, as the
+ program always knows the size of any memory being freed.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Heaps"
+
+\end_inset
+
+Heaps
+\end_layout
+
+\begin_layout Standard
+Memory allocated by the runtime is handled directly by the thread-local
+ pool allocator.
+ This includes all runtime data structures that are not visible to the program,
+ such as message queue nodes, scheduler queue nodes, and garbage collection
+ management data.
+\end_layout
+
+\begin_layout Standard
+However, memory allocated by the application is not.
+ Instead, it is handled by per-actor heaps.
+\end_layout
+
+\begin_layout Standard
+Each actor has its own heap, composed of lists of size-classed chunks, a
+ list of oversized chunks, and information used to determine if the heap
+ may be in need of garbage collection, as shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:A-heap"
+
+\end_inset
+
+.
+ A chunk is a small (24 bytes on a 32-bit architecture, 40 bytes on a 64-bit
+ architecture) descriptor that stores the owning actor for an allocation
+ (i.e.
+ the actor whose heap the chunk is associated with), a base memory address,
+ a size class or byte size, and garbage collection information, as shown
+ in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:A-chunk-descriptor"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+typedef struct heap_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  chunk_t* small_free[HEAP_SIZECLASSES];
+\end_layout
+
+\begin_layout Plain Layout
+
+  chunk_t* small_full[HEAP_SIZECLASSES];
+\end_layout
+
+\begin_layout Plain Layout
+
+  chunk_t* large;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t used;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t next_gc;
+\end_layout
+
+\begin_layout Plain Layout
+
+} heap_t; 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:A-heap"
+
+\end_inset
+
+A heap
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+typedef struct chunk_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  // immutable
+\end_layout
+
+\begin_layout Plain Layout
+
+  pony_actor_t* actor;
+\end_layout
+
+\begin_layout Plain Layout
+
+  char* m;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t size;
+\end_layout
+
+\begin_layout Plain Layout
+
+  // mutable
+\end_layout
+
+\begin_layout Plain Layout
+
+  uint32_t slots;
+\end_layout
+
+\begin_layout Plain Layout
+
+  uint32_t shallow;
+\end_layout
+
+\begin_layout Plain Layout
+
+  struct chunk_t* next;
+\end_layout
+
+\begin_layout Plain Layout
+
+} chunk_t; 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:A-chunk-descriptor"
+
+\end_inset
+
+A chunk descriptor
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Small Allocation
+\end_layout
+
+\begin_layout Standard
+A heap keeps two singly-linked lists of chunks for each small allocation
+ size class.
+ The first is a list of chunks with memory available for allocation, and
+ the second is a list of chunks with no available memory.
+ These are segregated to ensure that the heap never has to walk a linked
+ list when allocating memory.
+ Initially, both lists are empty for every size class.
+\end_layout
+
+\begin_layout Standard
+When the program requests memory less than the configured small allocation
+ size (defaulting to 
+\begin_inset Formula $2^{10}$
+\end_inset
+
+ bytes), the heap uses size classed memory to fulfil the allocation.
+ The requested memory size is turned into a size class using a bit shift
+ and a table lookup on a small (16-byte) static table, as in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Determining-a-size"
+
+\end_inset
+
+.
+ The resulting size class index is then used to determine the correct linked
+ list of chunks with free memory.
+ If that list is non-empty, the first element is guaranteed to have free
+ memory of the correct size.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+static const uint8_t sizeclass_table[] = {
+\end_layout
+
+\begin_layout Plain Layout
+
+  0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4
+\end_layout
+
+\begin_layout Plain Layout
+
+};
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+uint32_t heap_index(size_t size) {
+\end_layout
+
+\begin_layout Plain Layout
+
+  return sizeclass_table[(size - 1) >> HEAP_MINBITS];
+\end_layout
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Determining-a-size"
+
+\end_inset
+
+Determining a size class
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Small Chunk Bitmaps
+\end_layout
+
+\begin_layout Standard
+Each chunk keeps a bitmap of free memory addresses in the memory it manages.
+ The default configuration uses a single 32-bit integer to map a 
+\begin_inset Formula $2^{10}$
+\end_inset
+
+ byte memory area.
+ This bitmap uses set bits to indicate addresses in the memory area that
+ are both free and valid for the size class, and unset bits to indicate
+ addresses that are either in use or invalid for the size class.
+ For example, using the default configuration, a chunk managing a 32 byte
+ size class has an empty bitmap that consisted of all bits being set, whereas
+ a chunk managing a 64 byte size class has an empty bitmap consisting of
+ every other bit being set.
+\end_layout
+
+\begin_layout Standard
+To find a free and valid address, the runtime finds the first set bit in
+ the bitmap (a cheap instruction on a modern processor), unsets the bit
+ in the bitmap, and returns the base memory address offset by the bit position
+ multiplied by the minimum allocation size, as in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Finding-free-small"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+uint32_t bit = __pony_ffs(chunk->slots) - 1;
+\end_layout
+
+\begin_layout Plain Layout
+
+chunk->slots &= ~(1 << bit);
+\end_layout
+
+\begin_layout Plain Layout
+
+void* m = chunk->m + (bit << HEAP_MINBITS);
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Finding-free-small"
+
+\end_inset
+
+Finding free small allocation memory
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Allocating on an Existing Chunk
+\end_layout
+
+\begin_layout Standard
+When a small allocation is performed and there is a non-empty linked list
+ of chunks with free memory for that size class, the allocation can always
+ be fulfilled using memory available in the first element of that linked
+ list.
+ That is, there is guaranteed to be at least one bit set in the chunk's
+ bitmap.
+\end_layout
+
+\begin_layout Standard
+If allocation results in all memory in the chunk being exhausted (i.e.
+ there was only one bit set before allocation, and so no bits set after
+ allocation), the chunk is moved from the linked list of chunks with available
+ memory to the linked list of chunks with no available memory.
+ This is a cheap operation: it involves popping the head of a singly-linked
+ list and pushing it to the head of another singly-linked list.
+ This operation is critical.
+ Without it, small allocation would be an 
+\begin_inset Formula $O(n)$
+\end_inset
+
+ operation, with 
+\begin_inset Formula $n$
+\end_inset
+
+ being the amount of memory allocated in a size class.
+ By keeping segregated lists, small allocation is 
+\begin_inset Formula $O(1)$
+\end_inset
+
+, with at most one pointer dereference at the heap level.
+\end_layout
+
+\begin_layout Subsection
+Allocating on a New Chunk
+\end_layout
+
+\begin_layout Standard
+If there are no non-empty chunks for a given size class, the linked list
+ head will be 
+\begin_inset Formula $\mathtt{NULL}$
+\end_inset
+
+.
+ This indicates that a new chunk is required, without a pointer dereference.
+\end_layout
+
+\begin_layout Standard
+At this point, two pool allocations are required.
+ The first is for a chunk descriptor, and the second is for the memory area
+ to be managed by the new chunk.
+ These are allocated separately in order to maintain address alignment for
+ memory areas (a requirement for the page map, as detailed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Page-Map"
+
+\end_inset
+
+) while also avoiding wasting memory.
+ For example, a 
+\begin_inset Formula $2^{10}$
+\end_inset
+
+ byte memory area used for a 
+\begin_inset Formula $2^{8}$
+\end_inset
+
+ byte size class would have to use 
+\begin_inset Formula $2^{8}$
+\end_inset
+
+ bytes to store the chunk descriptor.
+\end_layout
+
+\begin_layout Standard
+An additional concern is to keep chunk descriptors in separate cache lines
+ from program data, and, where efficient, on separate operating system pages.
+ This is important to reduce cache pollution and page faults during garbage
+ collection, as detailed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Tracing-GC"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The new chunk is initialised as an empty chunk and registered with the page
+ map (c.f.
+ section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Page-Map"
+
+\end_inset
+
+).
+ The first valid bit is initialised as unset, so that the new chunk can
+ be placed on the list of chunks with available memory and the base memory
+ address for the chunk can be used to fulfil the allocation.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Small-Allocation-Fragmentation"
+
+\end_inset
+
+Small Allocation Fragmentation
+\end_layout
+
+\begin_layout Standard
+A major concern in memory allocators is avoiding fragmentation.
+ This problem has two manifestations: internal fragmentation and external
+ fragmentation.
+\end_layout
+
+\begin_layout Standard
+Internal fragmentation occurs when an allocator must return more memory
+ than is requested by the application in order to fulfil an allocation.
+ This can have two sources: headers related to the allocation itself (as
+ opposed to object headers in the programming language) and the need to
+ align memory.
+\end_layout
+
+\begin_layout Standard
+Because the type system is integrated with the runtime, the Pony allocator
+ does not require memory allocation headers, and so avoids the first problem
+ on a per-object basis.
+ However, a chunk descriptor is still required for each memory area.
+ This descriptor is allocated separately from the memory area to avoid internal
+ fragmentation, although it still imposes a worst case memory size overhead
+ of 3.125% (32-bit architecture) or 6.25% (64-bit architecture).
+ This overhead can be configured by using a memory area size larger than
+ 
+\begin_inset Formula $2^{10}$
+\end_inset
+
+ bytes.
+ The trade off is that an actor reserves memory for future small allocations
+ in these block sizes.
+ If the actor does not perform those future allocations, some fraction of
+ that space is wasted, although this is always less than the memory area
+ size multiplied by the number of size classes (i.e.
+ it is 
+\begin_inset Formula $O(1)$
+\end_inset
+
+ rather than 
+\begin_inset Formula $O(n)$
+\end_inset
+
+ on allocation count).
+ 
+\end_layout
+
+\begin_layout Standard
+Internal fragmentation due to memory alignment is sometimes a net performance
+ benefit, due to cache line alignment and machine word alignment (e.g.
+ 64-bit floating point or SSE data alignment).
+ The Pony runtime aligns all small allocations on the size of the allocation
+ to take best advantage of this.
+ This creates a worst case internal fragmentation cost approaching 50%.
+ For example, if all allocated objects in a program were 65 bytes, they
+ would all be fulfilled with 128 byte allocations.
+ Some allocators, tcmalloc 
+\emph on
+inter alia
+\emph default
+, use more finely grained size classes to reduce this form of internal fragmenta
+tion.
+ The trade off is that more data structure overhead is required to keep
+ track of the size classes themselves.
+ For a thread-specific allocator such as tcmalloc, this overhead is only
+ multiplied by the number of threads in a program (where a large number
+ is on the order of thousands), whereas for the Pony runtime, the overhead
+ would be multiplied by the number of actors in a program (where a large
+ number is on the order of tens of millions).
+\end_layout
+
+\begin_layout Standard
+External fragmentation occurs when free memory is interspersed with allocated
+ memory, resulting in a situation whereby sufficient memory is available
+ to fulfil an allocation request, but that memory is non-contiguous, and
+ the allocation fails.
+ In a garbage collected language, this can be addressed with a compacting
+ collector.
+ Pony does not use a compacting collector, as explained in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Tracing-GC"
+
+\end_inset
+
+.
+ Instead, external fragmentation is addressed in two ways: chunk bitmap
+ management and pool allocator reuse.
+\end_layout
+
+\begin_layout Standard
+By using a chunk bitmap, free memory of a given size class is reused when
+ a new allocation occurs, without the need to search through or coalesce
+ a free list.
+ This addresses the most common cause of external fragmentation: repeated
+ allocation and freeing of objects of a finite number of sizes in an interleaved
+ manner.
+ Essentially, space in a chunk is back-filled when new objects of that size
+ class are allocated.
+\end_layout
+
+\begin_layout Standard
+In addition, when all of the memory in a chunk is marked as free, that chunk
+ descriptor and the memory area it manages are returned to the pool allocator.
+ This allows a chunk to be reused for a different size class.
+ As a result, repeated small allocations of any size are always defragmented,
+ even if those allocations are temporally disparate or have an unpredictable
+ layout.
+ The worst case behaviour for a given size class is to free all but one
+ object per chunk, preventing the chunk itself from being returned to the
+ pool, without ever allocating additional memory in that size class.
+ However, even this worst case is strictly bounded: any additional allocation
+ in that size class will use memory available in the existing chunks.
+\end_layout
+
+\begin_layout Subsection
+Large Allocation
+\end_layout
+
+\begin_layout Standard
+When a program requests contiguous memory larger than the maximum size that
+ can be handled by a small allocation, the heap performs a large allocation.
+ This involves allocating a chunk descriptor and a single contiguous space
+ for the full allocation, both using the underlying pool allocator.
+ Unlike small allocations, there is no list of free large allocations, as
+ those are managed entirely by the pool allocator.
+\end_layout
+
+\begin_layout Standard
+A large allocation chunk descriptor may need to be registered with the page
+ allocator for more than one address, as detailed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Page-Map"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Large Allocation Fragmentation
+\end_layout
+
+\begin_layout Standard
+Since the contiguous memory areas required for large allocations are handled
+ by the pool allocator, and each chunk descriptor represents a single allocation
+, there is no chunk bitmap and no cross-size defragmentation performed by
+ the heap.
+ Instead, fragmentation is handled by the pool allocator.
+\end_layout
+
+\begin_layout Standard
+The pool allocator uses many more size classes than the heap, ranging up
+ to 
+\begin_inset Formula $2^{20}$
+\end_inset
+
+ bytes by default.
+ When large allocations up to this limit are freed, they use the pool allocators
+ mechanism of thread-local free lists and global lists of free lists to
+ manage the free memory.
+ This memory is not coalesced in the existing implementation.
+ A key area of future work is to add a coalescing mechanism for large allocation
+ fragmentation that does not overly adversely affect common cases that do
+ not require coalescing, such as repeatedly allocating and freeing buffers
+ used for I/O operations.
+ In particular, the page map (see section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Page-Map"
+
+\end_inset
+
+) can be extended to cheaply track free contiguous large allocations.
+ The challenge is to cheaply coalesce these even when they are allocated
+ and freed by different threads.
+\end_layout
+
+\begin_layout Standard
+Large allocations that exceed the size class limit of the underlying pool
+ allocator are added to the insert-sorted list of free blocks for the local
+ pool allocator.
+ For these very large allocations, the pool allocator performs no better
+ than existing allocators.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Page-Map"
+
+\end_inset
+
+Page Map
+\end_layout
+
+\begin_layout Standard
+In addition to the pool allocator and the heap, the runtime keeps a radix
+ tree (two-level on 32-bit architectures, three-level on 64-bit architectures).
+ This map associates memory addresses with chunk descriptors.
+\end_layout
+
+\begin_layout Standard
+The alignment of the memory areas managed by chunks is exploited to give
+ a simple mask-based lookup to find the chunk descriptor for any address.
+ This is used during garbage collection to find the chunk descriptor for
+ an object, as detailed in sections 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Tracing-GC"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Sharing-GC"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+A page map is used rather than embedding a chunk descriptor in allocated
+ memory as an allocation header.
+ Doing so significantly reduces the memory overhead for small allocations.
+ In addition, it allows the runtime to allocate and garbage collect objects
+ that conform to C/C++ layout conventions on a particular platform, which
+ is important for an efficient foreign function interface.
+\end_layout
+
+\begin_layout Standard
+The page map is a global rather than a thread local data structure.
+ Because it can be written to for any allocation, and is read from during
+ garbage collection, thread contention must be minimised.
+ In figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Reading-from-the"
+
+\end_inset
+
+, we see that page map reads require no thread coordination and no atomic
+ operations.
+ In figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Writing-to-the"
+
+\end_inset
+
+, we see that writing to the page map may result in a non-looping atomic
+ compare-and-swap.
+ This is used to extend the page map.
+ This results in worst case behaviour of three atomic instructions on write,
+ which happens only when the page map is entirely empty.
+ The common case involves no atomic instructions and no thread coordination.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+void* pagemap_get(const void* m) {
+\end_layout
+
+\begin_layout Plain Layout
+
+  void** v = root;
+\end_layout
+
+\begin_layout Plain Layout
+
+  for(int i = 0; i < PAGEMAP_LEVELS; i++) {
+\end_layout
+
+\begin_layout Plain Layout
+
+    if(v == NULL)
+\end_layout
+
+\begin_layout Plain Layout
+
+      return NULL;
+\end_layout
+
+\begin_layout Plain Layout
+
+    uintptr_t ix = ((uintptr_t)m >> level[i].shift)
+\end_layout
+
+\begin_layout Plain Layout
+
+      & level[i].mask;
+\end_layout
+
+\begin_layout Plain Layout
+
+    v = (void**)v[ix];
+\end_layout
+
+\begin_layout Plain Layout
+
+  }
+\end_layout
+
+\begin_layout Plain Layout
+
+  return v;
+\end_layout
+
+\begin_layout Plain Layout
+
+} 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Reading-from-the"
+
+\end_inset
+
+Reading from the page map
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+void pagemap_set(const void* m, void* v) {
+\end_layout
+
+\begin_layout Plain Layout
+
+  void*** pv = &root;
+\end_layout
+
+\begin_layout Plain Layout
+
+  void* p;
+\end_layout
+
+\begin_layout Plain Layout
+
+  for(int i = 0; i < PAGEMAP_LEVELS; i++) {
+\end_layout
+
+\begin_layout Plain Layout
+
+    if(*pv == NULL)
+\end_layout
+
+\begin_layout Plain Layout
+
+    {
+\end_layout
+
+\begin_layout Plain Layout
+
+      p = pool_alloc(level[i].size_index);
+\end_layout
+
+\begin_layout Plain Layout
+
+      memset(p, 0, level[i].size);
+\end_layout
+
+\begin_layout Plain Layout
+
+      void** prev = NULL;
+\end_layout
+
+\begin_layout Plain Layout
+
+      if(!_atomic_cas(pv, &prev, p))
+\end_layout
+
+\begin_layout Plain Layout
+
+      {
+\end_layout
+
+\begin_layout Plain Layout
+
+        pool_free(level[i].size_index, p);
+\end_layout
+
+\begin_layout Plain Layout
+
+        *pv = prev;
+\end_layout
+
+\begin_layout Plain Layout
+
+      }
+\end_layout
+
+\begin_layout Plain Layout
+
+    }
+\end_layout
+
+\begin_layout Plain Layout
+
+    uintptr_t ix = ((uintptr_t)m >> level[i].shift)
+\end_layout
+
+\begin_layout Plain Layout
+
+      & level[i].mask;
+\end_layout
+
+\begin_layout Plain Layout
+
+    pv = (void***)&((*pv)[ix]);
+\end_layout
+
+\begin_layout Plain Layout
+
+  }
+\end_layout
+
+\begin_layout Plain Layout
+
+  *pv = (void**)v;
+\end_layout
+
+\begin_layout Plain Layout
+
+} 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Writing-to-the"
+
+\end_inset
+
+Writing to the page map
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Type System Influence
+\end_layout
+
+\begin_layout Standard
+There are two key ways the type system influences the heap design.
+ The first is the use of a page map instead of embedding a chunk descriptor
+ in an object.
+ While this trade off could be made simply for performance reasons, it is
+ also made in order to enable the type system to cope with objects that
+ must conform to a C-like 
+\begin_inset Formula $\mathtt{struct}$
+\end_inset
+
+ layout in order to provide a highly efficient foreign function interface.
+\end_layout
+
+\begin_layout Standard
+The other influence of the type system is that the heaps exist at all.
+ Most allocators use a single stage allocator with a single logical heap
+ for a program.
+ In contrast, the Pony runtime provides for every actor to have a logically
+ independent heap, with no contention during allocation or garbage collection.
+\end_layout
+
+\begin_layout Section
+Message Queues
+\end_layout
+
+\begin_layout Standard
+Each actor has its own message queue, and all messages to an actor are delivered
+ through that single queue.
+ A message queue can therefore be a bottleneck in a program, particularly
+ if a program uses a pattern whereby many actors send messages to a single
+ receiving actor.
+\end_layout
+
+\begin_layout Standard
+In the Pony runtime, an actor's message queue is implemented as a multi-producer
+ single-consumer (MPSC) queue.
+ Any actor can push a message on to a queue, but only the owning actor can
+ pop a message off the queue.
+ The point of contention is the push, where many actors could simultaneously
+ push messages to the same queue.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+bool messageq_push(messageq_t* q, pony_msg_t* m) {
+\end_layout
+
+\begin_layout Plain Layout
+
+  m->next = NULL;
+\end_layout
+
+\begin_layout Plain Layout
+
+  pony_msg_t* prev = (pony_msg_t*)_atomic_exchange(&q->head, m);
+\end_layout
+
+\begin_layout Plain Layout
+
+  bool was_empty = ((uintptr_t)prev & 1) != 0;
+\end_layout
+
+\begin_layout Plain Layout
+
+  prev = (pony_msg_t*)((uintptr_t)prev & ~(uintptr_t)1);
+\end_layout
+
+\begin_layout Plain Layout
+
+  _atomic_store(&prev->next, m);
+\end_layout
+
+\begin_layout Plain Layout
+
+  return was_empty;
+\end_layout
+
+\begin_layout Plain Layout
+
+} 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Pushing-to-a"
+
+\end_inset
+
+Pushing to a message queue
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+pony_msg_t* messageq_pop(messageq_t* q) {
+\end_layout
+
+\begin_layout Plain Layout
+
+  pony_msg_t* tail = q->tail;
+\end_layout
+
+\begin_layout Plain Layout
+
+  pony_msg_t* next = _atomic_load(&tail->next);
+\end_layout
+
+\begin_layout Plain Layout
+
+  if(next != NULL) {
+\end_layout
+
+\begin_layout Plain Layout
+
+    q->tail = next;
+\end_layout
+
+\begin_layout Plain Layout
+
+    pool_free(tail->size, tail);
+\end_layout
+
+\begin_layout Plain Layout
+
+  }
+\end_layout
+
+\begin_layout Plain Layout
+
+  return next;
+\end_layout
+
+\begin_layout Plain Layout
+
+} 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Popping-from-a"
+
+\end_inset
+
+Popping from a message queue
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Pushing-to-a"
+
+\end_inset
+
+, we see that pushing a message on to a queue is accomplished with a single
+ atomic exchange operation (the atomic store is logically atomic, but on
+ most common architectures, e.g.
+ X86, X86-64, AArch32, AArch64, et al., all stores are inherently atomic).
+ Critically, there is no compare-and-swap loop or other waiting construct.
+ As a result, sending a message is lock-free and wait-free.
+ The use of the low bit for empty queue detection will be discussed in section
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Empty-Queue-Detection"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+In figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Popping-from-a"
+
+\end_inset
+
+, we see that popping a message from a queue is accomplished with zero atomic
+ operations (the atomic load is logically atomic, but like the store when
+ pushing, results in a normal load instruction on most common architectures),
+ and without any loop or wait.
+ This means that popping a message in order to begin a behaviour is lock-free,
+ wait-free, and non-atomic.
+ The memory management of queue nodes is discussed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Queue-Node-Memory"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+In addition to being a safe MPSC queue, an actor's queue must provide two
+ additional features: it must be unbounded, and it must atomically detect
+ when a message is pushed on to an empty queue.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Unbounded-Message-Queues"
+
+\end_inset
+
+Unbounded Message Queues
+\end_layout
+
+\begin_layout Standard
+Unbounded message queues are required to prevent both deadlock and incorrectly
+ reporting resource exhaustion.
+ If an actor's queue had any bound, even a large one, then some actor 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ that sent a message to an actor 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+, where 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ had a full queue, would have to handle the inability to send a message.
+ There are two strategies for this: 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ can either block until 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+'s queue is not full, or fail to send the message (a retry and time-out
+ mechanism is simply a combination of these two approaches).
+\end_layout
+
+\begin_layout Standard
+If 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ can block while attempting to push a message on to 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+'s queue, then the system can deadlock.
+ This occurs when 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ also has a full queue and 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ is attempting to send a message to 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+.
+ More complex message sending patterns can also lead to a deadlock.
+ The key observation is that 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ cannot pop a message from its own queue while it is waiting for 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+'s queue to no longer be full, as doing so would cause behaviours on 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ to be interleaved, resulting in inconsistent state.
+\end_layout
+
+\begin_layout Standard
+If 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ can fail to send a message when 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+'s queue is full, all asynchronous behaviour calls must be able to propagate
+ an error, and that error would have to be checked in the program.
+ The error would relate to resource exhaustion (a full queue) but unlike
+ other forms of resource exhaustion (e.g.
+ running out of memory, reaching file handle limits, etc.), the condition
+ is inherently temporary.
+ That is, 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ will eventually pop a message from its queue, and the program would need
+ to restart or retry actions in response.
+ Effectively, this would transform any behaviour that sent one or more messages
+ into a state machine depending on message sending progress.
+ To keep consistent state, all of an actor's behaviours would have to be
+ integrated into a single state machine that tracked this progress.
+ This is effectively interleaved behaviours, but with a complex mechanism
+ for the programmer to manually resolve inconsistent state.
+\end_layout
+
+\begin_layout Standard
+Unbounded message queues transforms a temporary resource exhaustion problem
+ into a less common permanent resource exhaustion problem, i.e.
+ an unrecoverable out of memory error when a queue grows so large that it
+ exhausts all available memory.
+ This results in a simpler error handling mechanism (the program terminates),
+ but more importantly in an error condition that represents an actual unrecovera
+ble program error, rather than a transient and recoverable condition.
+\end_layout
+
+\begin_layout Standard
+Allowing message sends to always succeed (modulo memory exhaustion) results
+ in a need for a generalised runtime back pressure mechanism.
+ This is discussed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Back-Pressure"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Empty-Queue-Detection"
+
+\end_inset
+
+Empty Queue Detection
+\end_layout
+
+\begin_layout Standard
+An important aspect of the scheduler is that an actor with no pending work
+ must not consume scheduler resources.
+ That is, it must not be present on any scheduler queue.
+ In order to accomplish this, a scheduler thread that is executing an actor
+ must be able to detect when that actor's queue is empty in order to not
+ reschedule it.
+ In addition, whenever a message is sent to an actor, it must be possible
+ to atomically detect that the queue was empty when the message was sent,
+ in order to allow the receiving actor to be scheduled on some scheduler
+ thread.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+bool messageq_markempty(messageq_t* q) {
+\end_layout
+
+\begin_layout Plain Layout
+
+  pony_msg_t* tail = q->tail;
+\end_layout
+
+\begin_layout Plain Layout
+
+  pony_msg_t* head = _atomic_load(&q->head);
+\end_layout
+
+\begin_layout Plain Layout
+
+  if(((uintptr_t)head & 1) != 0)
+\end_layout
+
+\begin_layout Plain Layout
+
+    return true;
+\end_layout
+
+\begin_layout Plain Layout
+
+  if(head != tail)
+\end_layout
+
+\begin_layout Plain Layout
+
+    return false;
+\end_layout
+
+\begin_layout Plain Layout
+
+  head = (pony_msg_t*)((uintptr_t)head | 1);
+\end_layout
+
+\begin_layout Plain Layout
+
+  return _atomic_cas(&q->head, &tail, head);
+\end_layout
+
+\begin_layout Plain Layout
+
+} 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Marking-a-message"
+
+\end_inset
+
+Marking a message queue as empty
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+When a scheduler thread executes an actor, it is possible that the actor
+ will attempt to pop a message from its queue, as in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Popping-from-a"
+
+\end_inset
+
+, and no message will be available.
+ When this happens, the actor will attempt to set the low bit on the stub
+ message (stub messages are discussed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Queue-Node-Memory"
+
+\end_inset
+
+) remaining in its queue, as shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Marking-a-message"
+
+\end_inset
+
+.
+ This requires a single atomic compare-and-swap, with no loop, i.e.
+ it is a lock-free and wait-free operation.
+ It will succeed only if the queue is truly empty.
+\end_layout
+
+\begin_layout Standard
+If the actor is able to mark its queue as empty, the scheduler thread will
+ not reschedule the actor.
+ At this point, the actor will not be referenced by any scheduler thread.
+\end_layout
+
+\begin_layout Standard
+Returning to figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Pushing-to-a"
+
+\end_inset
+
+, we can see that when some actor 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ sends a message to some actor 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ and 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+'s queue is empty at the moment when the message is sent, it will be atomically
+ detected.
+ When this happens, the sending actor 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ will reschedule 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+, as 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ now has pending work.
+ Critically, this empty queue detection and rescheduling will happen only
+ once, regardless of contention on 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+'s queue, and will not occur again until 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ marks its own queue as empty again.
+ As a result, any given actor will always be present on either zero or one
+ scheduler queue.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Queue-Node-Memory"
+
+\end_inset
+
+Queue Node Memory Management
+\end_layout
+
+\begin_layout Standard
+When a message is pushed to a queue, the sender implicitly uses the pool
+ allocator to allocate a new message queue node that will contain the arguments.
+ This is the message queue node that is pushed on to the receiver's queue,
+ as seen in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Pushing-to-a"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+However, when the receiver pops a message from its queue, the receiver reads
+ the next node from the tail, rather than the tail, as seen in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Popping-from-a"
+
+\end_inset
+
+.
+ If the pop is successful, the previous tail is freed, and the message node
+ containing the popped message remains on the queue.
+\end_layout
+
+\begin_layout Standard
+This has two key advantages.
+ The first is that the message queue node is not freed until after the behaviour
+ that handles the message has finished executing, which simplifies memory
+ management.
+ The second, more critical, advantage is that the message queue is never
+ empty.
+ It always contains at least one message queue node, which may or may not
+ point to another node that represents a pending message.
+ This allows the code that pushes a new message on the queue to separate
+ the atomic exchange on the queue head and the setting of the next pointer
+ without causing a race condition.
+\end_layout
+
+\begin_layout Standard
+When the push code executes the atomic store, it will always write the correct
+ next node, even if the head has in the meantime changed due to another
+ message being pushed on to the queue.
+ This can result in a message pop returning 
+\begin_inset Formula $\mathtt{NULL}$
+\end_inset
+
+ even though a new message has been partially pushed on to the queue (that
+ is, the queue head has been changed, but the tail does not yet point to
+ the new head).
+ However, this is not a race condition.
+ Under these circumstances, the actor will report that is has no pending
+ messages, but when it is asked to mark its queue as empty, it will fail
+ to do so, due to the head no longer being the same as the tail.
+ In fact, the actor will determine the queue is non-empty without an atomic
+ operation.
+ As a result, the actor will be rescheduled, and the newly pending message
+ will eventually be handled, as expected.
+\end_layout
+
+\begin_layout Section
+Actors
+\end_layout
+
+\begin_layout Standard
+In the runtime, an actor is represented as an object header (as described
+ in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Object-Layout"
+
+\end_inset
+
+), a message queue, a heap, information for tracking cross-actor garbage
+ collection (as discussed in sections 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Sharing-GC"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Actor-GC"
+
+\end_inset
+
+) and a set of operational flags, as seen in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Internal-actor-description"
+
+\end_inset
+
+.
+ For a concrete actor type, this structure is extended with the fields of
+ the actor.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+typedef struct pony_actor_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  pony_type_t* type;
+\end_layout
+
+\begin_layout Plain Layout
+
+  messageq_t q;
+\end_layout
+
+\begin_layout Plain Layout
+
+  uint8_t flags;
+\end_layout
+
+\begin_layout Plain Layout
+
+  __pony_spec_align__(heap_t heap, 64); // 52/104 bytes
+\end_layout
+
+\begin_layout Plain Layout
+
+  gc_t gc; // 44/80 bytes 
+\end_layout
+
+\begin_layout Plain Layout
+
+} pony_actor_t; 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Internal-actor-description"
+
+\end_inset
+
+Internal actor description
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The heap and garbage collection structure are aligned on a 64 byte boundary
+ to keep them on a separate cache line from the type, queue, and flags,
+ to reduce false sharing in the cache coherency protocol.
+ The actor description, including padding, is 156 bytes on a 32-bit architecture
+ and 240 bytes on a 64-bit architecture.
+\end_layout
+
+\begin_layout Standard
+It is important to note that an actor has no stack associated with it.
+ Instead, only scheduler threads have stacks.
+ This allows actors to consume significantly less memory, while avoiding
+ the execution speed penalties associated with segmented stacks.
+ In addition, the foreign-function interface (FFI) can use the same unsegmented
+ stack that the actor executing the FFI call is currently using, providing
+ a simple and efficient FFI mechanism, as discussed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Foreign-Function-Inteface"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Message Handling
+\end_layout
+
+\begin_layout Standard
+When an actor is scheduled for execution by a scheduler thread, the actor
+ will pop messages from its own queue and handle each one in turn.
+ These messages are divided between internal garbage collection messages,
+ as described in sections 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Sharing-GC"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Actor-GC"
+
+\end_inset
+
+, and messages explicitly generated by the program, which are termed application
+ messages.
+\end_layout
+
+\begin_layout Standard
+An application message is handled by executing a behaviour on an actor.
+ That behaviour is executed to completion by the scheduler thread.
+ Since the type system enforces isolation and immutability, this results
+ in every actor behaviour being logically atomic.
+ That is, each behaviour on an actor can reach only the actor's state and
+ the arguments to the behaviour, and the behaviour cannot witness any mutation
+ other than mutations it performs itself.
+\end_layout
+
+\begin_layout Subsection
+Message Batching
+\end_layout
+
+\begin_layout Standard
+Popping an actor from a scheduler queue requires an atomic compare-and-swap
+ loop, as discussed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Scheduler-Queues"
+
+\end_inset
+
+, whereas popping a message from a message queue requires no atomic operations
+ and is wait-free, as discussed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Popping-from-a"
+
+\end_inset
+
+.
+ As a result, it is beneficial to handle more than one message each time
+ an actor is scheduled for execution.
+\end_layout
+
+\begin_layout Standard
+In the current implementation, actors are asked by the scheduler thread
+ to handle up to a fixed number of application messages (defaulting to 100)
+ each time they are scheduled, amortising the cost of a scheduler queue
+ pop across many behaviours.
+ In addition, any number of interleaved internal, garbage collection related,
+ messages can be processed without counting against the batch limit.
+ In future work, the number of application messages an actor is asked to
+ handle will fluctuate dynamically based on back pressure, as discussed
+ in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Back-Pressure"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Actors are not asked to flush their queue entirely when they are scheduled
+ as this would lead to starvation.
+ For example, an actor could send itself one or more messages in a behaviour,
+ resulting in the actor never yielding execution, or a producer-consumer
+ pattern could result in a consumer receiving messages as or more quickly
+ than it could handle them, again resulting in starvation.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Blocking-and-Unblocking"
+
+\end_inset
+
+Blocking and Unblocking
+\end_layout
+
+\begin_layout Standard
+When an actor believes it has no pending messages, it sets a flag indicating
+ that it is blocked and sends a message to the cycle detector (described
+ in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:The-Cycle-Detector"
+
+\end_inset
+
+) indicating that it should be considered blocked.
+ It then attempts to mark its own message queue as empty, as discussed in
+ section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Empty-Queue-Detection"
+
+\end_inset
+
+.
+ Because the actor may be rescheduled on any scheduler thread as soon as
+ its queue is marked as empty, the actor must set the blocked flag and send
+ the message to the cycle detector first.
+ As a result, the state reported to the cycle detector may already be out
+ of date by the time it is sent.
+ The implications of this are discussed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Actor-GC"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+When an actor handles an application message and its own blocked flag is
+ set, it unsets the flag and sends a message to the cycle detector indicating
+ that is should be considered unblocked.
+ However, internal garbage collection messages do not result in the actor
+ unblocking.
+ Instead, if these are received while blocked, the actor sets a flag indicating
+ that its garbage collection status has changed.
+ This flag influences the way the actor responds to the cycle detector,
+ as discussed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Acknowledgement-Messages"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+If an actor has handled one or more application messages when scheduled,
+ as an optimisation it will not attempt to block or mark its message queue
+ as empty even if it believes its message queue to be empty.
+ Instead, it will reschedule as if it had pending work.
+ This is an optimisation that results in fewer block and unblock messages,
+ significantly reducing state churn and message load on the cycle detector.
+\end_layout
+
+\begin_layout Subsection
+Rescheduling
+\end_layout
+
+\begin_layout Standard
+If an actor handles any application messages or is unable to mark its queue
+ as empty (indicating there are new pending messages), it asks the scheduler
+ thread to reschedule it.
+ However, if the actor successfully marks its queue as empty, the actor
+ is not rescheduled.
+ This results in the actor not being in any scheduler queue, and so consuming
+ no resources (memory or CPU time), other than the memory required to hold
+ its own state, when it is not scheduled.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Tracing-GC"
+
+\end_inset
+
+Tracing GC
+\end_layout
+
+\begin_layout Standard
+The core of the Pony garbage collector is the per-actor tracing garbage
+ collection step.
+ This step traces and collects actor heaps independently, without requiring
+ coordination between actors.
+ The algorithm used is a mark-and-don't-sweep collector that has a time
+ complexity of 
+\begin_inset Formula $O(m+n)$
+\end_inset
+
+, where 
+\begin_inset Formula $n$
+\end_inset
+
+ is the number of objects reachable by the actor, and 
+\begin_inset Formula $m$
+\end_inset
+
+ is the number of chunks (as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Heaps"
+
+\end_inset
+
+) on the actor's heap.
+\end_layout
+
+\begin_layout Standard
+The algorithm begins by setting all the valid bits in every chunk descriptor
+ on the heap.
+ This effectively frees all memory allocated by the object, without releasing
+ chunk descriptors or the memory areas managed by those chunks.
+ The counter for the amount of memory in use by the actor is also reset
+ to zero.
+\end_layout
+
+\begin_layout Standard
+While this phase involves the chunk descriptors for all memory allocated
+ on the actor's heap, it does not actually touch the allocated memory.
+ This is important to avoid unnecessary cache pollution and page faults
+ that can result from reading unreachable memory.
+\end_layout
+
+\begin_layout Standard
+In the next phase, the garbage collection roots are marked as reachable,
+ and any root with a trace function is pushed on to a stack of objects that
+ have not yet been traced.
+ While additional roots are introduced by the sharing protocol in section
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Sharing-GC"
+
+\end_inset
+
+, the only root introduced here is the actor itself.
+\end_layout
+
+\begin_layout Standard
+The stack of as yet untraced objects is then processed.
+ When an object is traced, its memory address is looked up in the page map
+ (described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Page-Map"
+
+\end_inset
+
+).
+ This gives the address of the chunk descriptor that manages the memory
+ area the object has been allocated in.
+ The offset of the object's address from the base address of the memory
+ area gives the bit that should be unset to represent that this memory is
+ reachable.
+\end_layout
+
+\begin_layout Standard
+When the stack of objects and their trace functions is empty, every reachable
+ object in the actor's heap has been traced.
+ At this point, the chunk descriptors are examined again.
+ A chunk descriptor with no available memory is placed on the linked list
+ of full chunks for its size class, and a chunk descriptor that has some
+ available memory, but is not empty, is placed on the linked list of chunks
+ with available memory for its size class.
+ An empty chunk, i.e.
+ one with all valid bits set indicating the memory is free, is returned
+ to the pool allocator along with the memory area it manages.
+\end_layout
+
+\begin_layout Standard
+This approach maintains an invariant important for performance: if a heap
+ has a chunk with free memory for a given size class, then the first chunk
+ in the linked list for that size class will have free memory.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Deep-vs.-Shallow"
+
+\end_inset
+
+Deep vs.
+ Shallow Marking
+\end_layout
+
+\begin_layout Standard
+A distinction is made when clearing bits (to indicate that memory is in
+ use) between deep and shallow marking.
+ A deep mark is used when the object is reachable with a reference capability
+ that allows reading from the object.
+ This indicates not only that the object is reachable, but also that it
+ has already been placed on the reachable object stack with its trace function.
+ On the other hand, when an object is reachable as a 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+, and so its fields are not reachable, a shallow mark is used.
+ This indicates that the object is reachable, but it has not yet been placed
+ on the reachable object stack.
+ In this case, if the object is reachable via some other path with a readable
+ reference capability, the object's fields will be correctly traced.
+\end_layout
+
+\begin_layout Standard
+This calculation treats internal pointers (pointers inside a small allocation
+ as opposed to a pointer to the beginning of a small allocation) as shallow
+ marks, even if their fields are reachable.
+ By doing so, other internal pointers, or the enclosing external pointer,
+ will be correctly traced if they are reached after an internal pointer.
+ This allows pointers to embedded fields to be used without restriction
+ in the language.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Trace-Functions"
+
+\end_inset
+
+Trace Functions
+\end_layout
+
+\begin_layout Standard
+Each concrete type generated by the compiler has a trace function.
+ The trace function describes how to trace the fields of a reachable and
+ readable reference to an instance of the type.
+\end_layout
+
+\begin_layout Standard
+Fields are traced based on the field type visible from the object, without
+ taking into account any viewpoint adaptation in the type system.
+ In other words, the trace function for a type implicitly treats the instance
+ being traced as a 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+.
+ This allows the trace function to reach the maximal set of objects that
+ could be reached from the program, without requiring reference capabilities
+ to be encoded at runtime.
+ Doing so is safe, because garbage collection does not mutate objects: all
+ garbage collection related state is kept in parallel, actor-specific, data
+ structures, rather than in the objects themselves.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+primitive P
+\end_layout
+
+\begin_layout Plain Layout
+
+interface I
+\end_layout
+
+\begin_layout Plain Layout
+
+class C1
+\end_layout
+
+\begin_layout Plain Layout
+
+class C2
+\end_layout
+
+\begin_layout Plain Layout
+
+  let f1: P // No trace
+\end_layout
+
+\begin_layout Plain Layout
+
+  let f2: C2 // Static trace function
+\end_layout
+
+\begin_layout Plain Layout
+
+  let f3: I // Dynamic trace function
+\end_layout
+
+\begin_layout Plain Layout
+
+  let f4: C2 tag // Shallow mark
+\end_layout
+
+\begin_layout Plain Layout
+
+  let f5: I tag // Shallow mark or actor
+\end_layout
+
+\begin_layout Plain Layout
+
+  let f6: (P, C2, I) // De-structured
+\end_layout
+
+\begin_layout Plain Layout
+
+  let f7: (C1 | I tag) // Shallow mark or actor
+\end_layout
+
+\begin_layout Plain Layout
+
+  let f8: ((C1 ref, C2 tag) | (C2 tag, C1 ref))
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Trace-functions-and"
+
+\end_inset
+
+Trace functions and fields
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The action taken by a trace function for each field depends on the type
+ of the field.
+ Some examples are given in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Trace-functions-and"
+
+\end_inset
+
+.
+ For primitive types, no action is taken, as in 
+\begin_inset Formula $\mathtt{C1.f1}$
+\end_inset
+
+.
+ For types with a known 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ reference capability, such as 
+\begin_inset Formula $\mathtt{C1.f4}$
+\end_inset
+
+, the object is shallowly marked, and is not placed on the trace stack,
+ as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Deep-vs.-Shallow"
+
+\end_inset
+
+.
+ If the type could be an actor, either because it is an interface or trait
+ type or because a concrete actor type is present in an algebraic data type,
+ such as 
+\begin_inset Formula $\mathtt{C1.f5}$
+\end_inset
+
+, then the object's header is examined at runtime to determine if it is
+ actually an actor.
+ If so, it is handles via the actor garbage collector, as described in section
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Actor-GC"
+
+\end_inset
+
+, instead of being marked.
+\end_layout
+
+\begin_layout Standard
+If the field has a known concrete type, that is, a struct or class, and
+ does not have a 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ reference capability, such as 
+\begin_inset Formula $\mathtt{C1.f2}$
+\end_inset
+
+, the object is marked and placed on the trace stack with its statically
+ known trace function.
+ If the field has an unknown concrete type, either because it is a trait
+ or interface or because it is an algebraic data type, but it can be determined
+ statically that the object will not have a 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ reference capability, such as 
+\begin_inset Formula $\mathtt{C1.f3}$
+\end_inset
+
+, the object is marked and placed on the trace stack with a dynamically
+ determined trace function that is looked up in the object's header.
+\end_layout
+
+\begin_layout Standard
+A field that is statically known to be a tuple, such as 
+\begin_inset Formula $\mathtt{C1.f6}$
+\end_inset
+
+, is de-structured and each field is traced independently.
+ The tuple itself does not have to be marked, as statically known tuple
+ fields are embedded in the parent instance rather than being reached via
+ a pointer indirection.
+\end_layout
+
+\begin_layout Standard
+The complex case comes when it is not possible to determine statically whether
+ or not a field has a 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ reference capability.
+ This case requires the object to be examined at runtime.
+ The issue is not just that tracing a 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ reference as if it was readable would lead to unreachable objects not being
+ collected (which would be sub-optimal but still correct), but that tracing
+ a 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ reference as if it was readable in some actor 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ could result in 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ reading the fields of an object (for tracing purposes) while some other
+ actor 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ modifies those fields.
+\end_layout
+
+\begin_layout Standard
+Handling this case requires the code generator to use the type system to
+ determine which types a field could be visible as to the program.
+ For example, 
+\begin_inset Formula $\mathtt{C2.f7}$
+\end_inset
+
+ is treated as an 
+\begin_inset Formula $\mathtt{I\,tag}$
+\end_inset
+
+, i.e.
+ the same as 
+\begin_inset Formula $\mathtt{C2.f5}$
+\end_inset
+
+, because 
+\begin_inset Formula $\mathtt{C1}$
+\end_inset
+
+ is a subtype of 
+\begin_inset Formula $\mathtt{I}$
+\end_inset
+
+, so that it is not possible for the program to pattern match on 
+\begin_inset Formula $\mathtt{C2.f7}$
+\end_inset
+
+ as a 
+\begin_inset Formula $\mathtt{C1\,ref}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+When tuples are contained in algebraic data types, the code generator must
+ determine the set of possible ways each element of each tuple could be
+ viewed.
+ For example, in 
+\begin_inset Formula $\mathtt{C2.f8}$
+\end_inset
+
+, each element must be dynamically examined, as each may or may not have
+ a 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ reference capability at runtime.
+\end_layout
+
+\begin_layout Standard
+Generating trace functions that can make these distinctions at runtime is
+ important because reference capabilities, being based on viewpoints, cannot
+ be encoded in objects.
+ That is, any given object may be viewed with a collection of reference
+ capabilities, depending on the path used to reach the object.
+ As a result, if reference capabilities had to be encoded at runtime, every
+ object reference would have to include both a pointer and a capability,
+ which would impose both a memory overhead and an execution speed overhead.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Garbage-Collecting-During"
+
+\end_inset
+
+Garbage Collecting During Behaviours
+\end_layout
+
+\begin_layout Standard
+The current implementation performs per-actor garbage collection on an actor
+ in between behaviours.
+ As a result, garbage collection does not occur during actor execution.
+ This approach reduces performance jitter within a behaviour.
+ In addition, it means that object references on the stack do not have to
+ be tracked as garbage collection roots, so that no stack map need be compiled
+ into the program.
+\end_layout
+
+\begin_layout Standard
+However, this approach has a significant downside: behaviours that allocate
+ large amounts of short-lived memory (i.e.
+ memory that is not further referenced within the behaviour) will not collect
+ that short-lived memory until the behaviour finishes executing.
+\end_layout
+
+\begin_layout Standard
+In future work, the code generator will be extended to optionally generate
+ a stack map.
+ This will allow object references on the stack to function as garbage collectio
+n roots.
+ To do so, the stack map will have to encode the same ability to distinguish
+ possible types at runtime as trace functions encode on fields, as described
+ in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Trace-Functions"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The stack map on its own is sufficient to allow garbage collection during
+ behaviour execution, without the addition of read or write barriers, or
+ of safe-points.
+ This is possible because each actor heap is independently collectable (no
+ safe-points required), and because concurrent garbage collection is handled
+ through the message-based protocol described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Sharing-GC"
+
+\end_inset
+
+ rather than with a stop-the-world phase.
+\end_layout
+
+\begin_layout Standard
+In addition, the design decision to not use a copying collector means that
+ stack references would not have to be changed to point to moved objects.
+ This is also true of heap pointers, but is more significant for stack pointers.
+ Changing a stack pointers requires the single static assignment (SSA) intermedi
+ate representation (IR) of the program used by LLVM to generate machine
+ code to account for relocations, which can impede certain compiler optimisation
+s.
+\end_layout
+
+\begin_layout Subsection
+Type System Influence
+\end_layout
+
+\begin_layout Standard
+The tracing collector is heavily dependent on the type system.
+ The use of a data-race free type system enables independent heap tracing.
+ It also allows normal program execution to proceed without read or write
+ barriers.
+\end_layout
+
+\begin_layout Standard
+In addition, the existence of object references that do not allow reading
+ from the object (i.e.
+ the 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ reference capability) requires the use of both shallow and deep marking,
+ as well as the generation of trace functions which can distinguish, either
+ statically or dynamically, between readable and unreadable object references.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Sharing-GC"
+
+\end_inset
+
+Sharing GC
+\end_layout
+
+\begin_layout Standard
+The per-actor tracing garbage collector, described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Tracing-GC"
+
+\end_inset
+
+, is unsafe: it would garbage collect memory allocated by some actor 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ that is no longer reachable by 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+, but is reachable by some other actor 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ .
+ To avoid this situation, the message-based protocol described in chapter
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Object-Collection"
+
+\end_inset
+
+ is used to protect such objects from premature collection.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+typedef struct gc_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  uint32_t mark;
+\end_layout
+
+\begin_layout Plain Layout
+
+  uint32_t rc_mark;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t rc;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t finalisers;
+\end_layout
+
+\begin_layout Plain Layout
+
+  objectmap_t local;
+\end_layout
+
+\begin_layout Plain Layout
+
+  actormap_t foreign;
+\end_layout
+
+\begin_layout Plain Layout
+
+  deltamap_t* delta;
+\end_layout
+
+\begin_layout Plain Layout
+
+} gc_t; 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Tracking-local-and"
+
+\end_inset
+
+Tracking local and foreign reference counts
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+typedef struct object_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  void* address;
+\end_layout
+
+\begin_layout Plain Layout
+
+  pony_final_fn final;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t rc;
+\end_layout
+
+\begin_layout Plain Layout
+
+  uint32_t mark;
+\end_layout
+
+\begin_layout Plain Layout
+
+  bool reachable;
+\end_layout
+
+\begin_layout Plain Layout
+
+  bool immutable;
+\end_layout
+
+\begin_layout Plain Layout
+
+} object_t; 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Object-GC-information"
+
+\end_inset
+
+Object GC information
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+typedef struct actorref_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  pony_actor_t* actor;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t rc;
+\end_layout
+
+\begin_layout Plain Layout
+
+  uint32_t mark;
+\end_layout
+
+\begin_layout Plain Layout
+
+  objectmap_t map;
+\end_layout
+
+\begin_layout Plain Layout
+
+} actorref_t; 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Actor-GC-information"
+
+\end_inset
+
+Actor GC information
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The implementation of the protocol requires keeping a data structure to
+ track local and foreign reference counts, as shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Tracking-local-and"
+
+\end_inset
+
+.
+ Specifically, the 
+\begin_inset Formula $\mathtt{local}$
+\end_inset
+
+ map associates locally owned pointers with a reference count, as shown
+ in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Object-GC-information"
+
+\end_inset
+
+.
+ The map data structure used is a quadratic probing hash map where the key
+ is embedded in the same data structure as the value.
+ In this case, the key is the 
+\begin_inset Formula $\mathtt{address}$
+\end_inset
+
+ field.
+ 
+\end_layout
+
+\begin_layout Standard
+In addition, the 
+\begin_inset Formula $\mathtt{foreign}$
+\end_inset
+
+ map associates other actors with objects they own that this actor has a
+ foreign reference count for, as shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Actor-GC-information"
+
+\end_inset
+
+.
+ Here, the 
+\begin_inset Formula $\mathtt{map}$
+\end_inset
+
+ field is another 
+\begin_inset Formula $\mathtt{objectmap\_t}$
+\end_inset
+
+ that maintains the needed per-object foreign reference counts.
+\end_layout
+
+\begin_layout Standard
+This information is kept outside of the object itself because it is not
+ intrinsic to the object: it is information about an object from the perspective
+ of some actor.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Mark,-Send,-and"
+
+\end_inset
+
+Mark, Send, and Receive Phases
+\end_layout
+
+\begin_layout Standard
+There are three distinct phases when the 
+\begin_inset Formula $\mathtt{gc\_t}$
+\end_inset
+
+ for an actor is used.
+ The first is during mark phase of the tracing garbage collection described
+ in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Tracing-GC"
+
+\end_inset
+
+.
+ The second is when a message is sent, and the third is when a message is
+ received.
+\end_layout
+
+\begin_layout Standard
+In the second and third phases, the tracing algorithm from section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Tracing-GC"
+
+\end_inset
+
+ is used, but the roots are the arguments to the behaviour rather than the
+ fields of the actor.
+ That is, when a message is sent or received, the arguments to the message
+ are traced to determine what garbage collection information must be updated.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Generational-Marks"
+
+\end_inset
+
+Generational Marks
+\end_layout
+
+\begin_layout Standard
+The 
+\begin_inset Formula $\mathtt{mark}$
+\end_inset
+
+ field in the data structures in figures 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Tracking-local-and"
+
+\end_inset
+
+, 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Object-GC-information"
+
+\end_inset
+
+, and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Actor-GC-information"
+
+\end_inset
+
+ is used to track whether an object has been marked in the current garbage
+ collection phase.
+ Its purpose is to allow cyclic structures to be correctly traced, with
+ each object being examined only once.
+\end_layout
+
+\begin_layout Standard
+Because the number of objects tracked in an actor's 
+\begin_inset Formula $\mathtt{gc\_t}$
+\end_inset
+
+ structure could be significantly larger than the number of objects being
+ sent or received in a message, a generational mark is kept for each object
+ rather than a simple mark bit.
+ The 
+\begin_inset Formula $\mathtt{mark}$
+\end_inset
+
+ field of 
+\begin_inset Formula $\mathtt{gc\_t}$
+\end_inset
+
+ indicates the current generation, with this number being incremented after
+ the completion of any mark, send, or receive phase.
+ 
+\end_layout
+
+\begin_layout Standard
+When an actor or object is visited in a garbage collection phase, its 
+\begin_inset Formula $\mathtt{mark}$
+\end_inset
+
+ is set to the current generation.
+ Thus, an actor or object entry with a 
+\begin_inset Formula $\mathtt{mark}$
+\end_inset
+
+ field that differs from the 
+\begin_inset Formula $\mathtt{mark}$
+\end_inset
+
+ field in the 
+\begin_inset Formula $\mathtt{gc\_t}$
+\end_inset
+
+ has not yet been visited.
+\end_layout
+
+\begin_layout Standard
+The purpose of this is to avoid the need to sweep the actors and objects
+ being tracked.
+ Instead, the generational mark is incremented, which implicitly invalidates
+ the mark for every tracked actor or object.
+ This not only reduces the time complexity of a phase, it also avoids the
+ cache pollution that would result from sweeping these data structures.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Determining-Ownership"
+
+\end_inset
+
+Determining Ownership
+\end_layout
+
+\begin_layout Standard
+When an object is encountered in any garbage collection phase, the first
+ step is to determine the owner of the object.
+ To do so, the object's address is looked up in the page map, as described
+ in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Page-Map"
+
+\end_inset
+
+.
+ This returns the chunk descriptor for the memory area the object is allocated
+ in.
+ The chunk descriptor, in turn, contains a pointer to the owning actor.
+\end_layout
+
+\begin_layout Standard
+Because the chunk descriptor contains both the mark bits for the managed
+ memory area and the owning actor, the chunk descriptor lookup performed
+ in the tracing garbage collector described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Tracing-GC"
+
+\end_inset
+
+ also serves to distinguish between local and foreign object ownership.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Sending-and-Receiving"
+
+\end_inset
+
+Sending and Receiving Local Objects
+\end_layout
+
+\begin_layout Standard
+When a locally owned object is sent in a message, the sending actor must
+ protect that object from garbage collection, as described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Object-Collection"
+
+\end_inset
+
+.
+ To do so, the object's address is looked up in the 
+\begin_inset Formula $\mathtt{local}$
+\end_inset
+
+ map.
+ If the object is not present in the map, it is added with an 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ of one and the object's 
+\begin_inset Formula $\mathtt{mark}$
+\end_inset
+
+ is set to the current mark.
+ If the object is present in the map and the object's 
+\begin_inset Formula $\mathtt{mark}$
+\end_inset
+
+ is not current, the object's 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ is incremented by one, and its 
+\begin_inset Formula $\mathtt{mark}$
+\end_inset
+
+ is set to the current mark.
+\end_layout
+
+\begin_layout Standard
+The result of this is that an object's local 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ is incremented by one each time it is sent in a message, where being sent
+ in a message means that the object is a message argument or is reachable
+ from some message argument.
+\end_layout
+
+\begin_layout Standard
+Similarly, when a locally owned object is received in a message, the object's
+ address is looked up in the 
+\begin_inset Formula $\mathtt{local}$
+\end_inset
+
+ map and, if the object's 
+\begin_inset Formula $\mathtt{mark}$
+\end_inset
+
+ is not current, its 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ is decremented by one.
+ Because of the invariants described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Object-Collection"
+
+\end_inset
+
+, the object will always be present in the 
+\begin_inset Formula $\mathtt{local}$
+\end_inset
+
+ map and will always have an 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ greater than zero.
+\end_layout
+
+\begin_layout Standard
+If an object's local reference count drops to zero, it is not removed from
+ the 
+\begin_inset Formula $\mathtt{local}$
+\end_inset
+
+ map at this point.
+ That bookkeeping is done when the local map is traced during garbage collection
+, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Tracing-the-Local"
+
+\end_inset
+
+.
+ This is done to avoid adding and removing an object's 
+\begin_inset Formula $\mathtt{local}$
+\end_inset
+
+ map entry multiple times in between garbage collection phases.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Sending-and-Receiving-1"
+
+\end_inset
+
+Sending and Receiving Foreign Objects
+\end_layout
+
+\begin_layout Standard
+For foreign objects, the simpler case is when they are received.
+ When this happens, the object's owning actor address is looked up in the
+ 
+\begin_inset Formula $\mathtt{foreign}$
+\end_inset
+
+ map, and is added if it is not present.
+ Then a second lookup, in the resulting 
+\begin_inset Formula $\mathtt{map}$
+\end_inset
+
+ for that actor, is performed using the object's address, again adding the
+ object if it is not present.
+ At this point, if the object's 
+\begin_inset Formula $\mathtt{mark}$
+\end_inset
+
+ is not current, the object's foreign 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ is incremented by one and its 
+\begin_inset Formula $\mathtt{mark}$
+\end_inset
+
+ is set to the current mark.
+\end_layout
+
+\begin_layout Standard
+As a result, while a local object's 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ is incremented when it is sent, a foreign object's 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ is incremented when it is received.
+\end_layout
+
+\begin_layout Standard
+The more complex case occurs when a foreign object is sent in a message.
+ In this case, the owning actor and then the object are looked up, just
+ as when a foreign object is received.
+ If the object's 
+\begin_inset Formula $\mathtt{mark}$
+\end_inset
+
+ is not current, its 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ is decremented by one.
+ The complexity occurs when owning actors foreign 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ for the object is one.
+ In this case, the foreign 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ cannot be decremented without breaking the invariant that an actor that
+ can reach a foreign object, either through its fields or on the stack,
+ must hold a foreign 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ for that object of at least one.
+\end_layout
+
+\begin_layout Standard
+When this occurs, the sending actor increases its foreign 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ for the object by an arbitrary amount (256 in the default configuration).
+ To maintain all of the reference count invariants described in chapter
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Object-Collection"
+
+\end_inset
+
+, a message must be sent to the owning actor informing it of the increased
+ reference count.
+ To do so, the object is added to the set of objects for which an acquire
+ message will be sent when the current garbage collection phase finishes,
+ as detailed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Acquire-and-Release"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Sending-and-Receiving-2"
+
+\end_inset
+
+Sending and Receiving Immutable Objects
+\end_layout
+
+\begin_layout Standard
+The process of tracing message arguments leads to an 
+\begin_inset Formula $O(n)$
+\end_inset
+
+ step both when sending and receiving the message, where 
+\begin_inset Formula $n$
+\end_inset
+
+ is the number of objects reachable from those arguments.
+ For large data structures, this can be a significant cost.
+\end_layout
+
+\begin_layout Standard
+The purpose of tracing the message arguments is to protect the contents
+ from premature garbage collection by adjusting the distributed weighted
+ reference counts.
+ The end result is that the owner of an object with a positive local 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ will not collect that object.
+\end_layout
+
+\begin_layout Standard
+The type system can be used to provide an important optimisation.
+ When some immutable object 
+\begin_inset Formula $\omega$
+\end_inset
+
+ is sent in a message, either as an argument or reachable from an argument,
+ any objects reachable from 
+\begin_inset Formula $\omega$
+\end_inset
+
+ do not have to be protected from premature garbage collection.
+ This is possible because the owner of 
+\begin_inset Formula $\omega$
+\end_inset
+
+ can safely trace the fields of 
+\begin_inset Formula $\omega$
+\end_inset
+
+ when tracing the local map, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Tracing-the-Local"
+
+\end_inset
+
+.
+ The fields of 
+\begin_inset Formula $\omega$
+\end_inset
+
+ can be traced by the owner precisely because 
+\begin_inset Formula $\omega$
+\end_inset
+
+ is immutable: it is safe for the owner to read the fields because no other
+ actor will write to those fields.
+\end_layout
+
+\begin_layout Standard
+As a result, sending and receiving an immutable object in a message requires
+ 
+\begin_inset Formula $O(1)$
+\end_inset
+
+ tracing instead of 
+\begin_inset Formula $O(n)$
+\end_inset
+
+.
+ To achieve this, the object garbage collection in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Object-GC-information"
+
+\end_inset
+
+ includes a flag that indicates that the owner knows the object was immutable
+ when it was sent in a message.
+ When that flag is set, the owner traces the fields of the object.
+\end_layout
+
+\begin_layout Standard
+Maintaining this flag is trivial if the owner initially sends the immutable
+ object.
+ However, it is possible for some actor 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ that owns some object 
+\begin_inset Formula $\omega$
+\end_inset
+
+ to send it as an isolated object, and then for some other actor 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ to later send 
+\begin_inset Formula $\omega$
+\end_inset
+
+ as an immutable object.
+ In this case, 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ will have protected the fields of 
+\begin_inset Formula $\omega$
+\end_inset
+
+ against premature garbage collection by tracing them when the message was
+ sent, but 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ may have written to those fields before sending 
+\begin_inset Formula $\omega$
+\end_inset
+
+ as an immutable object.
+\end_layout
+
+\begin_layout Standard
+To address this, the 
+\begin_inset Formula $\mathtt{immutable}$
+\end_inset
+
+ flag in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Object-GC-information"
+
+\end_inset
+
+ is also maintained in the foreign map.
+ When 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ initially receives 
+\begin_inset Formula $\omega$
+\end_inset
+
+, the flag will not be set, since 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ has sent 
+\begin_inset Formula $\omega$
+\end_inset
+
+ as an isolated object.
+ When 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ later sends 
+\begin_inset Formula $\omega$
+\end_inset
+
+ as an immutable object, this discrepancy will be detected.
+ At this point, 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ will mark 
+\begin_inset Formula $\omega$
+\end_inset
+
+ as immutable in its foreign map, but it will also send an acquire message
+ for 
+\begin_inset Formula $\omega$
+\end_inset
+
+ to 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ with the immutable flag set, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Acquire-and-Release"
+
+\end_inset
+
+, and it will trace the fields of 
+\begin_inset Formula $\omega$
+\end_inset
+
+ for the current message.
+\end_layout
+
+\begin_layout Standard
+This will result in 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ receiving an acquire message that tells 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ to mark 
+\begin_inset Formula $\omega$
+\end_inset
+
+ as immutable in its local map before it receives any reference count decrement
+ for 
+\begin_inset Formula $\omega$
+\end_inset
+
+ from 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+.
+ As a result, 
+\begin_inset Formula $\omega$
+\end_inset
+
+ and its fields remain protected from premature garbage collection, and
+ some actor 
+\begin_inset Formula $\alpha_{3}$
+\end_inset
+
+ that receives 
+\begin_inset Formula $\omega$
+\end_inset
+
+ as immutable object from 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ can safely mark 
+\begin_inset Formula $\omega$
+\end_inset
+
+ as immutable in its foreign map, and not trace the fields of 
+\begin_inset Formula $\omega$
+\end_inset
+
+ either when receiving 
+\begin_inset Formula $\omega$
+\end_inset
+
+ or during future garbage collection phases.
+\end_layout
+
+\begin_layout Standard
+A similar situation arises if 
+\begin_inset Formula $\alpha_{3}$
+\end_inset
+
+ receives 
+\begin_inset Formula $\omega$
+\end_inset
+
+ in a message, then reads some field 
+\begin_inset Formula $\omega_{1}$
+\end_inset
+
+ from 
+\begin_inset Formula $\omega$
+\end_inset
+
+.
+ It is then possible for 
+\begin_inset Formula $\alpha_{3}$
+\end_inset
+
+ to drop its reference to 
+\begin_inset Formula $\omega$
+\end_inset
+
+ while continuing to hold a reference to 
+\begin_inset Formula $\omega_{1}$
+\end_inset
+
+.
+ To protect 
+\begin_inset Formula $\omega_{1}$
+\end_inset
+
+ from premature collection, 
+\begin_inset Formula $\alpha_{3}$
+\end_inset
+
+ treats 
+\begin_inset Formula $\omega_{1}$
+\end_inset
+
+ as described above: an acquire message for 
+\begin_inset Formula $\omega_{1}$
+\end_inset
+
+ is sent to the owner of 
+\begin_inset Formula $\omega_{1}$
+\end_inset
+
+ (which may or may not be 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+).
+ This acquire message will be sent before the release message for 
+\begin_inset Formula $\omega$
+\end_inset
+
+, as detailed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Acquire-and-Release"
+
+\end_inset
+
+, which will correctly protect 
+\begin_inset Formula $\omega_{1}$
+\end_inset
+
+ while allowing 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ to possibly collect 
+\begin_inset Formula $\omega$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Tracing-the-Local"
+
+\end_inset
+
+Tracing the Local Map
+\end_layout
+
+\begin_layout Standard
+The local map is used by an actor to mark memory on its heap that it cannot
+ reach as in-use because it may be reachable from some other actor.
+ To do so, the map is iterated over, and every object with an 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ greater than zero is marked.
+ If the object is also marked as immutable, it is placed placed on the trace
+ stack with its trace function, so that its fields are traced as well, as
+ described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Sending-and-Receiving-2"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+During this iteration, an object is removed from the local map if its local
+ 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ is zero.
+ If the object has a finaliser, then it is only removed from the local map
+ if it is also unreachable from the owning actor, at which point its finaliser
+ is run as well.
+ This is described in detail in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Finalisation"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Tracing-the-Foreign"
+
+\end_inset
+
+Tracing the Foreign Map
+\end_layout
+
+\begin_layout Standard
+The foreign map is used by an actor to track the weighted reference count
+ it holds for objects it does not own.
+ After an actor's reachable objects and local map are traced, the weighted
+ reference count held for any objects in the actors foreign map that have
+ not been marked can be released.
+ The object garbage collection information for an unreachable foreign object
+ is removed from the foreign map and sent to the owning actor as a release
+ message, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Acquire-and-Release"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The organisation of the foreign map into a map of actors, each of which
+ has a map of objects, allows these release messages to be easily aggregated.
+ All of the unreachable foreign objects owned by some actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ are combined in a single message to 
+\begin_inset Formula $\alpha$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Acquire-and-Release"
+
+\end_inset
+
+Acquire and Release Messages
+\end_layout
+
+\begin_layout Standard
+An owning actor adjusts the local 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ for an object both implicitly when sending or receiving the object in a
+ message, and explicitly when other actors generate acquire and release
+ messages.
+\end_layout
+
+\begin_layout Standard
+Acquire messages are generated when a some actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ sends some foreign object 
+\begin_inset Formula $\omega_{1}$
+\end_inset
+
+ for which it has a foreign 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ of one or less, or when 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ traces its reachable objects and discovers an immutable object 
+\begin_inset Formula $\omega_{1}$
+\end_inset
+
+ that is not in 
+\begin_inset Formula $\alpha$
+\end_inset
+
+'s foreign map because it was previously reachable only via some other immutable
+ object 
+\begin_inset Formula $\omega_{2}$
+\end_inset
+
+ that is in 
+\begin_inset Formula $\alpha$
+\end_inset
+
+'s foreign map.
+ In both these cases, 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ is free to increase its weighted reference count for 
+\begin_inset Formula $\omega_{1}$
+\end_inset
+
+ by an arbitrary amount and inform the the owner of 
+\begin_inset Formula $\omega_{1}$
+\end_inset
+
+ that it has done so.
+\end_layout
+
+\begin_layout Standard
+This is accomplished by building an alternate foreign map during a garbage
+ collection phase that consists of the objects that need to be acquired.
+ The structure used is the same as the foreign map.
+ When the phase completes, each actor in the acquire map is sent the accumulated
+ actor garbage collection information, as described in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Actor-GC-information"
+
+\end_inset
+
+, as an acquire message.
+ When that acquire message is received by the owning actor, the 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ for each object is added to its local 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Release messages are generated when an actor finishes a garbage collection
+ pass.
+ In specific, unmarked objects in the foreign map are removed and sent to
+ their owning actor.
+ Like acquire messages, these are aggregated, so that each owning actor
+ is sent at most a single release message as the result of a garbage collection
+ pass.
+ When that release message is received by the owning actor, the 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ for each object is subtracted from its local 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Actor-GC"
+
+\end_inset
+
+Actor GC
+\end_layout
+
+\begin_layout Standard
+The garbage collection mechanism described in sections 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Tracing-GC"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Sharing-GC"
+
+\end_inset
+
+ collects objects allocated on actor heaps, even when those objects are
+ shared across actors.
+ The same mechanism is extended in the runtime to garbage collect actors
+ themselves.
+\end_layout
+
+\begin_layout Standard
+Each actor keep track of a local 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ for itself in the structure described in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Tracking-local-and"
+
+\end_inset
+
+.
+ This local actor 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ works in the same fashion as a local 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ for an object.
+ Similarly, actors keep a foreign 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ for every other actor they can reach, in the structure described in figure
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Actor-GC-information"
+
+\end_inset
+
+.
+ These weighted reference counts are managed in the same way as for objects.
+\end_layout
+
+\begin_layout Standard
+As a result, an actor can be garbage collected when it is both blocked,
+ as discussed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Blocking-and-Unblocking"
+
+\end_inset
+
+, and its local 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ is zero.
+ This condition is sufficient, but not necessary: an isolated graph of blocked
+ actors may be collectable even if each actor's local 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ is not zero.
+ This is described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:The-Cycle-Detector"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Implicit-Actor-Reachability"
+
+\end_inset
+
+Implicit Actor Reachability
+\end_layout
+
+\begin_layout Standard
+An actor is implicitly reachable from an object if it owns that object.
+ This prevents an actor from being collected, and its heap destroyed, if
+ any object on its heap is reachable.
+ To account for this, during each garbage collection phase, if a foreign
+ object is marked, the owner of that foreign object is also marked.
+\end_layout
+
+\begin_layout Standard
+This means that it is possible to mark an actor that does not appear in
+ the foreign map.
+ This happens when an immutable object that is not in the foreign map is
+ encountered, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Sending-and-Receiving-2"
+
+\end_inset
+
+.
+ When this occurs, the same mechanism is used: the actor is inserted into
+ the foreign map and an acquire message is generated for that actor.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Topology-Deltas"
+
+\end_inset
+
+Topology Deltas
+\end_layout
+
+\begin_layout Standard
+In addition to the local and foreign maps, each actor keeps an additional
+ data structure that describes the change in the actor's view of its own
+ topology since the last time that actor blocked.
+ This is a simple map of actor address to a reference count, as shown in
+ figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Topology-Deltas"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+typedef struct delta_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  pony_actor_t* actor;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t rc;
+\end_layout
+
+\begin_layout Plain Layout
+
+} delta_t; 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Topology-delta-information"
+
+\end_inset
+
+Topology delta information
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+When some actor 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ changes its local 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ for some actor 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+, the new 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ is stored both in the foreign map and in the topology delta.
+ When 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ blocks, its topology delta is sent to the cycle detector, and it begins
+ again with an empty topology delta.
+\end_layout
+
+\begin_layout Standard
+As a result, an actor that blocks sends the cycle detector only the minimal
+ information that the cycle detector needs to recreate the actor's view
+ of its own topology.
+ This eliminates an 
+\begin_inset Formula $O(n)$
+\end_inset
+
+ step to gather local topology when an actor blocks, where 
+\begin_inset Formula $n$
+\end_inset
+
+ is the number of other actors that actor has in its foreign map.
+ This is replaced with an 
+\begin_inset Formula $O(1)$
+\end_inset
+
+ step for each local topology change, no cost when sending a block message,
+ and an 
+\begin_inset Formula $O(m)$
+\end_inset
+
+ step when the cycle detector receives a block message, where 
+\begin_inset Formula $m$
+\end_inset
+
+ is the number of actors for which a topology change occurred.
+ Importantly, 
+\begin_inset Formula $m<n$
+\end_inset
+
+, possibly significantly less, and the step is performed in the cycle detector
+ rather than in a program actor.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:The-Cycle-Detector"
+
+\end_inset
+
+The Cycle Detector
+\end_layout
+
+\begin_layout Standard
+Unlike shared object collection, it is possible to have an isolated cyclic
+ graph of actors where all of the actors in the graph are blocked, and their
+ local 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ is held entirely by other blocked actors in the graph, but the actors are
+ not collectable because their local 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ is not zero.
+ This can occur with actors because the actors themselves are responsible
+ for the weighted reference counts, whereas with objects, no such cycles
+ can occur, as the shape of the heap does not determine object reference
+ counts.
+\end_layout
+
+\begin_layout Standard
+The cycle detector is implemented as an actor in the runtime.
+ It is instantiated when a program begins, and its address is kept as global
+ data with ambient authority.
+ That is, all actors can implicitly send messages to the cycle detector.
+ However, the cycle detector does not itself take part in garbage collection.
+ The memory it uses is manually managed, and its references to actors that
+ have reported their topology do not influence local or foreign reference
+ counts.
+\end_layout
+
+\begin_layout Standard
+The cycle detector builds a view of the actor topology based on block and
+ unblock messages it receives from actors.
+ This view is by definition out of date, as described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Actor-Collection"
+
+\end_inset
+
+.
+ To correct for this, the cycle detector incrementally checks for isolated
+ graphs of blocked actors and uses the confirmation-acknowledgement protocol
+ described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Actor-Collection"
+
+\end_inset
+
+ to determine when its view of the topology is the true topology.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+struct view_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  pony_actor_t* actor;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t rc;
+\end_layout
+
+\begin_layout Plain Layout
+
+  uint32_t view_rc;
+\end_layout
+
+\begin_layout Plain Layout
+
+  bool blocked;
+\end_layout
+
+\begin_layout Plain Layout
+
+  bool deferred;
+\end_layout
+
+\begin_layout Plain Layout
+
+  uint8_t color;
+\end_layout
+
+\begin_layout Plain Layout
+
+  viewrefmap_t map;
+\end_layout
+
+\begin_layout Plain Layout
+
+  deltamap_t* delta;
+\end_layout
+
+\begin_layout Plain Layout
+
+  perceived_t* perceived;
+\end_layout
+
+\begin_layout Plain Layout
+
+}; 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:A-view-of"
+
+\end_inset
+
+A view of an actor's topology
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+typedef struct detector_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  pony_actor_pad_t pad;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t next_token;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t min_deferred;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t max_deferred;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t conf_group;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t next_deferred;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t since_deferred;
+\end_layout
+
+\begin_layout Plain Layout
+
+  viewmap_t views;
+\end_layout
+
+\begin_layout Plain Layout
+
+  viewmap_t deferred;
+\end_layout
+
+\begin_layout Plain Layout
+
+  perceivedmap_t perceived;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t attempted;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t detected;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t collected;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t created;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t destroyed;
+\end_layout
+
+\begin_layout Plain Layout
+
+} detector_t; 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Cycle-detector-state"
+
+\end_inset
+
+Cycle detector state
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The cycle detector's view of the actor topology is tracked in the 
+\begin_inset Formula $\mathtt{views}$
+\end_inset
+
+ map of actor addresses to topology views, as shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Cycle-detector-state"
+
+\end_inset
+
+.
+ In addition, the cycle detector keeps track of the next confirmation-acknowledg
+ment token, detailed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Acknowledgement-Messages"
+
+\end_inset
+
+, state related to deferred checks for isolated graphs of blocked actors,
+ detailed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Finding-Isolated-Graphs"
+
+\end_inset
+
+, and some useful debugging statistics.
+\end_layout
+
+\begin_layout Standard
+A topology view is shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:A-view-of"
+
+\end_inset
+
+.
+ Here, the 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ is the actor's last reported view of its own local reference count.
+ The 
+\begin_inset Formula $\mathtt{view\_rc}$
+\end_inset
+
+ is used internally to manually manage the view structure memory.
+ The use of the remaining fields will be explained in the following sections.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Block-Messages"
+
+\end_inset
+
+Block Messages
+\end_layout
+
+\begin_layout Standard
+When an actor believes it has blocked, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Blocking-and-Unblocking"
+
+\end_inset
+
+, it sends a message to the cycle detector indicating that it is blocked,
+ and also indicating the actor's view of its own topology.
+ This is sent as the actor's view of its own local reference count, from
+ the structure in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Tracking-local-and"
+
+\end_inset
+
+, and its topology delta, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Topology-Deltas"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+When the cycle detector receives a block message from an actor, it first
+ retrieves the actor from the 
+\begin_inset Formula $\mathtt{views}$
+\end_inset
+
+ map in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Cycle-detector-state"
+
+\end_inset
+
+, or adds it if the actor is not yet present.
+ Then, the cycle detector updates the view 
+\begin_inset Formula $\mathtt{rc}$
+\end_inset
+
+ with the value reported by the actor.
+ Then, any previous topology delta that has been cached in the 
+\begin_inset Formula $\mathtt{delta}$
+\end_inset
+
+ field of the view is applied to the actor, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Apply-Topology-Deltas"
+
+\end_inset
+
+.
+ The current topology delta is then cached in the 
+\begin_inset Formula $\mathtt{delta}$
+\end_inset
+
+ field.
+ This delayed application of the topology delta is used to avoid unnecessary
+ work by the cycle detector.
+\end_layout
+
+\begin_layout Standard
+The actor is then marked as 
+\begin_inset Formula $\mathtt{blocked}$
+\end_inset
+
+, and any perceived cycles (as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Finding-Isolated-Graphs"
+
+\end_inset
+
+) that the actor is a member of are expired.
+\end_layout
+
+\begin_layout Standard
+TOO: not done
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Apply-Topology-Deltas"
+
+\end_inset
+
+Applying Topology Deltas
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Unblock-Messages"
+
+\end_inset
+
+Unblock Messages
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Finding-Isolated-Graphs"
+
+\end_inset
+
+Finding Isolated Graphs of Blocked Actors
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Acknowledgement-Messages"
+
+\end_inset
+
+Acknowledgement Messages
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Scheduler-Queues"
+
+\end_inset
+
+Scheduler Queues
+\end_layout
+
+\begin_layout Section
+Scheduler
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Cache-Locality"
+
+\end_inset
+
+Cache Locality
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Back-Pressure"
+
+\end_inset
+
+Back Pressure
+\end_layout
+
+\begin_layout Section
+Asynchronous I/O
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Object-Layout"
+
+\end_inset
+
+Object Layout
+\end_layout
+
+\begin_layout Section
+Virtual Dispatch
+\end_layout
+
+\begin_layout Section
+Pattern Matching
+\end_layout
+
+\begin_layout Standard
+TODO: structural typing at runtime
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Finalisation"
+
+\end_inset
+
+Finalisation
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Foreign-Function-Inteface"
+
+\end_inset
+
+Foreign Function Interface
+\end_layout
+
+\begin_layout Standard
+TODO: both directions, Pony->C, C->Pony
+\end_layout
+
+\end_body
+\end_document

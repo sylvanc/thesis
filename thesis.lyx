@@ -1,0 +1,279 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass extreport
+\use_default_options true
+\begin_modules
+fixltx2e
+fix-cm
+theorems-ams-bytype
+\end_modules
+\maintain_unincluded_children false
+\language british
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date true
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 1
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Pony: Co-designing a Type System and a Runtime
+\end_layout
+
+\begin_layout Author
+Sylvan W.
+ Clebsch
+\end_layout
+
+\begin_layout Section*
+Abstract
+\end_layout
+
+\begin_layout Standard
+I have written a new programming language, called Pony, that allows the
+ user to easily write fast, safe, parallel programs.
+ The focus of this work is using a powerful and novel static type system
+ to guarantee properties of a program in order to eliminate many runtime
+ checks.
+ This includes eliminating all forms of locking, as well as enabling a novel
+ fully concurrent garbage collection protocol for both objects and actors
+ that has no stop-the-world step, while also having no read or write barriers.
+ Essentially, the type system is used to enable not just safer computation
+ but faster computation.
+\end_layout
+
+\begin_layout Standard
+The core type system feature that enables this is 
+\emph on
+reference capabilities
+\emph default
+.
+ These are a system of type annotations that guarantee data-race freedom
+ even in the presence of asynchronous messages that can contain mutable
+ data.
+ Reference capabilities show that concepts such as isolation and immutability
+ can be derived rather than being treated as fundamental.
+\end_layout
+
+\begin_layout Standard
+Guaranteeing data-race freedom allows the language to use a novel fully
+ concurrent garbage collection protocol.
+ This protocol allows each actor to collect its own heap independently and
+ concurrently, while still allowing objects to be sent by reference in asynchron
+ous messages (zero-copy message passing).
+ This is achieved using Ownership and Reference Counting for Actors (ORCA),
+ a system of deferred, distributed, weighted reference counting in which
+ reference counts do not reflect the number of reachable paths in a heap
+ and do not result in cycles that cannot be collected.
+\end_layout
+
+\begin_layout Standard
+The ORCA protocol is also extended to allow garbage collecting actors themselves.
+ This requires a cycle detection actor to be able to collect isolated cyclic
+ graphs of actors.
+ To do this with no stop-the-world step, a novel and inexpensive CNF-ACK
+ protocol is used to determine that the cycle detector's view of the actor
+ topology was the true actor topology when the cycle was detected.
+\end_layout
+
+\begin_layout Standard
+To validate these ideas, I have written a complete runtime (including a
+ workstealing scheduler, garbage collector, memory allocator, message queuing,
+ asynchronous I/O, and more) and an ahead-of-time optimising compiler with
+ an LLVM backend.
+ The language is open source.
+\end_layout
+
+\begin_layout Standard
+Finally, I discuss opportunities for further work, including extensions
+ to both the language (e.g.
+ reflection and meta-programming) and the runtime (e.g.
+ distributed computing).
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FloatList table
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FloatList figure
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand include
+filename "introduction.lyx"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand include
+filename "architecture.lyx"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand include
+filename "opsem.lyx"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand include
+filename "refcaps.lyx"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand include
+filename "typesystem.lyx"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand include
+filename "objectgc.lyx"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand include
+filename "actorgc.lyx"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand include
+filename "implementation.lyx"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand include
+filename "furtherwork.lyx"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "/Users/sylvan/Dropbox/pony/writing/formal-pony"
+options "bibtotoc,plain"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
