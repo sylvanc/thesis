@@ -75,7 +75,667 @@ theorems-ams-bytype
 \begin_body
 
 \begin_layout Chapter
-Language Architecture
+Language Design Decisions
+\end_layout
+
+\begin_layout Standard
+Pony is a language predicated on the idea that a sufficiently powerful static
+ type system can be leveraged to write a faster runtime.
+ In particular, such a type system could make guarantees that result in
+ eliminating many dynamic checks, not just related to dynamically checking
+ data types, but also eliminating checks that would otherwise be required
+ for safe concurrency, garbage collection, and security.
+\end_layout
+
+\begin_layout Section
+Single Model for Concurrent and Distributed Execution
+\end_layout
+
+\begin_layout Standard
+One of the driving principles behind the design of Pony has been the desire
+ for a single model for both concurrent and distributed execution.
+ As a result, the communication mechanism between units of execution cannot
+ rely on shared mutable state, since such shared memory is not available
+ in a distributed setting.
+ In addition, the communication mechanism cannot be synchronous, as relying
+ on synchronous communication in a distributed context can introduce severe
+ performance problems.
+ These are also important considerations when ensuring that maximum use
+ is made of the hardware available on a single node.
+ For example, synchronous messaging can introduce deadlocks and priority
+ inversion, and shared mutable state can cause data races and put a heavy
+ load on cache coherency hardware.
+\end_layout
+
+\begin_layout Standard
+Pony uses asynchronous message passing for communicating between units of
+ execution.
+ This decision, combined with a desire to provide dynamic topology and object
+ capabilities, lead to a decision use actors as the unit of execution.
+\end_layout
+
+\begin_layout Standard
+The actor model has been implemented in many ways, but at its core it has
+ three fundamental requirements:
+\end_layout
+
+\begin_layout Enumerate
+An actor can send messages to other actors or itself.
+\end_layout
+
+\begin_layout Enumerate
+An actor can create new actors.
+\end_layout
+
+\begin_layout Enumerate
+An actor can choose the way in which it will respond to the next message
+ it receives.
+\end_layout
+
+\begin_layout Standard
+These requirements are intentionally weak.
+ For example, while the model does require that messages are eventually
+ delivered, it does not require a delivery order.
+ Similarly, while the third requirement allows actors to encode state, the
+ model does not require an implementation to encode state in any particular
+ way.
+ For example, encoding state via recursion or via mutating object fields
+ are both allowable strategies.
+\end_layout
+
+\begin_layout Standard
+On the other hand, there are subtle implications of these three requirements.
+ For example, since an actor can send a message to itself, and message delivery
+ is guaranteed, messages must be buffered, as otherwise an actor would deadlock
+ when attempting to send itself a message.
+ Interestingly, while real world constraints limit the size of a message
+ buffer, the model implicitly requires that buffer space is logically unbounded:
+ any upper bounds devolves to a situation where an actor cannot send a message
+ to itself, because its message buffer is full and it cannot clear it, since
+ it is blocked attempting to send a message to itself.
+\end_layout
+
+\begin_layout Standard
+Another subtle requirement is that there can be no shared mutable state
+ across actors.
+ This follows from the requirement that an actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ can only send a message to another actor 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ in response to some message 
+\begin_inset Formula $m$
+\end_inset
+
+ if:
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ was known to 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ before 
+\begin_inset Formula $m$
+\end_inset
+
+ was received, or
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ is contained in 
+\begin_inset Formula $m$
+\end_inset
+
+, or
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\alpha$
+\end_inset
+
+ created 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ while handling 
+\begin_inset Formula $m$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+This is the 
+\emph on
+introduction requirement
+\emph default
+: an actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ can only send a message to another actor 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ if they have been properly introduced.
+ Shared mutable state would allow 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ to read the address of 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ from some shared variable that a third-party actor modified, without 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ either receiving 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ in a message or creating 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+.
+ Furthermore, such a shared variable could be modified while 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ was handling 
+\begin_inset Formula $m$
+\end_inset
+
+, such that 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ was not known to 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ before 
+\begin_inset Formula $m$
+\end_inset
+
+ was received.
+\end_layout
+
+\begin_layout Standard
+The implementation of the actor model in Pony is intended to satisfy all
+ of these aspects of the actor model, including the more subtle implications.
+\end_layout
+
+\begin_layout Section
+Tools for Correctness and Reasoning
+\end_layout
+
+\begin_layout Standard
+It is important to note that, while Pony makes some guarantees that are
+ useful for ensuring correctness and reasoning about programs, Pony is not
+ a tool for formal verification.
+ In addition, the implementation of the runtime is not itself formally verified.
+ It would be extremely interesting to apply techniques used in formal verificati
+on tools, such as Dafny and F*, to allow Pony to function as its own proof
+ assistant, and to implement a formally verified runtime (perhaps using
+ an extended Pony that provides for formal verification), but that must
+ be left for future work.
+\end_layout
+
+\begin_layout Standard
+Pony makes additional guarantees that extend the fundamental requirements
+ of the actor model:
+\end_layout
+
+\begin_layout Enumerate
+Data-race freedom, including mutable state isolation, is guaranteed statically.
+\end_layout
+
+\begin_layout Enumerate
+Message handling is 
+\emph on
+logically atomic
+\emph default
+.
+\end_layout
+
+\begin_layout Enumerate
+The language is 
+\emph on
+capabilities secure
+\emph default
+.
+\end_layout
+
+\begin_layout Enumerate
+Within a node, message delivery is 
+\emph on
+causal
+\emph default
+, and across nodes, message delivery is pairwise FIFO ordered, and can be
+ made optionally 
+\emph on
+causal
+\emph default
+.
+\end_layout
+
+\begin_layout Enumerate
+Both actors and objects are garbage collected without requiring coordination
+ outside of the underlying message passing system.
+\end_layout
+
+\begin_layout Standard
+TODO:
+\end_layout
+
+\begin_layout Subsection
+Static Data-Race Freedom
+\end_layout
+
+\begin_layout Standard
+If the type system can statically ensure data-race freedom, the runtime
+ and every program written in the language can contain no dynamic locking
+ mechanisms.
+ This is a significant performance gain, and the impact is felt not just
+ in computational performance, but, as we will see later, also in parallel
+ scalability and garbage collection.
+\end_layout
+
+\begin_layout Standard
+To ensure data-race free concurrent execution, it is sufficient to enforce
+ a single principle: if a unit of execution (whether it is a thread, a process,
+ or any other implementation) can write to a data structure, no other unit
+ of execution can read from that data structure.
+ This has a natural corollary: if a unit of execution can read from a data
+ structure, no other unit of execution can write to that data structure.
+\end_layout
+
+\begin_layout Standard
+Enforcing this property on individual memory locations, as opposed to complete
+ data structures, is insufficient, as it could result in the data structure
+ as a whole being inconsistent, even though the individual reads and writes
+ were safe.
+ For example, a data structure comprised of a linked list and a count of
+ the number of nodes in the list cannot be safely updated by controlling
+ access to individual memory locations: either the count or the list itself
+ would have to be changed first, resulting in a period where the count does
+ not accurately reflect the number of nodes in the list.
+\end_layout
+
+\begin_layout Standard
+As a result, in order to enforce this property dynamically, access to a
+ data structure must be controlled with some form of runtime locking mechanism.
+ For example, the counted linked list could also include a mutex that must
+ be acquired in order to read from or write to the data structure.
+ However, this does not address safe access to the contents of the list
+ nodes.
+ If two units of execution each read the first element of the list, two
+ threads now have access to the same contained data.
+ In order to make the list as a whole data-race safe, every data element
+ that could be put in the list must also be protected by a mutex.
+ This problem is recursive: the data elements themselves may contain references
+ to data structures that must also be lockable.
+\end_layout
+
+\begin_layout Standard
+This is the fine-grained locking problem.
+ There are many approaches to mitigating this problem, particularly in database
+ research.
+ The most common approach is to rely on a programer's domain knowledge to
+ correctly guess what the minimum level of locking is to ensure correct
+ behaviour.
+ However, all of these approaches are domain specific, are subject to programmin
+g errors, and rely on locking mechanisms that are expensive on shared memory
+ systems and prohibitive in distributed systems.
+\end_layout
+
+\begin_layout Standard
+A type system that allows only immutable data types solves the data-race
+ problem by disallowing all mutation.
+ This is an approach favoured by functional programming languages.
+ Since no unit of execution can write to the data structure, it is trivial
+ to guarantee without dynamic checks that the program is data-race free.
+ However, some algorithms are faster to compute or easier to implement over
+ mutable data structures than immutable ones.
+ As such, a type system that can express data-race free mutable data types
+ might offer advantages over a type system that can express only immutable
+ data types.
+\end_layout
+
+\begin_layout Standard
+Purely static data-race free mutability has been expressed several ways,
+ including via ownership types, fractional permissions, and uniqueness and
+ immutability type systems.
+ In Pony, the type system incorporates 
+\emph on
+reference capabilities
+\emph default
+, which are a form of uniqueness and immutability type system influenced
+ by both 
+\emph on
+object capabilities
+\emph default
+ and 
+\emph on
+deny guarantee reasoning
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+Reference capabilities describe what other aliases are 
+\emph on
+denied
+\emph default
+ by the existence of a reference.
+ The result is a matrix of 
+\emph on
+deny properties
+\emph default
+, with notions such as isolation, mutability, and immutability all being
+ derived from these deny properties.
+ What aliases to the object are allowed to do is explicit rather than implied,
+ whereas what the reference is allowed to do is derived.
+\end_layout
+
+\begin_layout Standard
+TODO:
+\end_layout
+
+\begin_layout Subsection
+Logically Atomic Behaviours
+\end_layout
+
+\begin_layout Standard
+The code that an actor executes upon receipt of some message 
+\begin_inset Formula $m$
+\end_inset
+
+ is termed a 
+\emph on
+behaviour
+\emph default
+.
+ In Pony, every behaviour on every actor is 
+\emph on
+logically atomic
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+When a behaviour begins execution, it has a set of object and reference
+ capabilities defined by the actor's state and the contents of the message
+ 
+\begin_inset Formula $m$
+\end_inset
+
+ that has been received.
+ In Pony, an actor's state is represented as fields of the actor, and the
+ contents of the message 
+\begin_inset Formula $m$
+\end_inset
+
+ are represented as arguments to the behaviour, in much the same way as
+ an object-oriented method call has a receiver and a set of arguments.
+ This initial state of capabilities is the total set of capabilities that
+ the behaviour will have.
+ No new capabilities that are not present when the behaviour begins executing
+ can be acquired.
+ Note that the behaviour may still create new actors and objects, but these
+ new actors and objects do not represent an expansion of the set of capabilities
+: they must be created with the capabilities that were initially available.
+\end_layout
+
+\begin_layout Standard
+As a result, a behaviour cannot witness heap mutation that the behaviour
+ does not itself perform.
+ This is a result of combining the reference capability type system, which
+ statically guarantees that if an actor can read from a memory address then
+ no other actor can write to it, with the guarantee that the initial set
+ of capabilities available to a behaviour cannot be expanded.
+ It is interesting to note that, since it is permissible for the set of
+ capabilities to be contracted, it is possible for a behaviour to have the
+ capability to read or write some memory address, to give up that capability,
+ and for the contents of that address to be mutated by some other actor
+ while the original behaviour is still executing.
+ However, in this case, the behaviour will not be able to expand its set
+ of capabilities to once again include the capability to read from that
+ memory address.
+ As a result, the behaviour will not be able to witness the heap mutation.
+\end_layout
+
+\begin_layout Standard
+Arguably, logically atomic behaviours could be considered an implicit requiremen
+t of the actor model.
+ Specifically, the 
+\emph on
+introduction requirement
+\emph default
+ that implies that there can be no shared mutable state could be read to
+ also imply that a memory location that is not readable when a behaviour
+ begins executing must not become readable during execution.
+ This is because a newly readable memory location could contain an actor
+ address previously unknown to the actor executing the behaviour.
+ On the other hand, if the event of a previously unreadable memory location
+ becoming readable is considered to be a new message 
+\begin_inset Formula $m'$
+\end_inset
+
+, with the response to 
+\begin_inset Formula $m$
+\end_inset
+
+ being considered finished and any remaining code to execute being considered
+ a response to 
+\begin_inset Formula $m'$
+\end_inset
+
+, then the introduction requirement is not violated.
+\end_layout
+
+\begin_layout Standard
+Logically atomic behaviours are a powerful tool for reasoning about actors.
+ TODO:
+\end_layout
+
+\begin_layout Section
+(Performance)
+\end_layout
+
+\begin_layout Section
+Data-race freedom
+\end_layout
+
+\begin_layout Subsection
+Communication mechanism
+\end_layout
+
+\begin_layout Standard
+Communicating between units of execution is a process which is itself subject
+ to data races.
+ If mutable data structures are used to express communication, then the
+ advantages of a data-race free type system are lost.
+\end_layout
+
+\begin_layout Standard
+One approach to solving this is software transactional memory, which allows
+ groups of related changes to shared mutable state to be coordinated in
+ transactions that succeed only when the result is consistent.
+ That is, if another transaction has written to any memory location that
+ the current transaction has read from, the transaction cannot be committed.
+ However, STM requires the ability to both detect conflicts and roll back
+ transactions, which can be expensive to implement: STM-based algorithms
+ are generally significantly slower than their lock-based equivalents.
+ In addition, STM relies on shared memory semantics, and is not extendable
+ to distributed computing.
+\end_layout
+
+\begin_layout Standard
+Message passing, on the other hand, encapsulates communication between units
+ of execution in channels.
+ Such channels come in many forms: implicit or explicit, bounded or unbounded,
+ synchronous or asynchronous, typed or untyped, single or multiple reader,
+ and single or multiple writer.
+ A channel provides the ability to communicate between units of execution
+ without relying on shared memory or mutable data structures.
+\end_layout
+
+\begin_layout Standard
+Combining message passing with immutability results in data-race freedom
+ with safe communication between units of execution.
+ As such, a type system that can express both of these concepts statically
+ can be leveraged to build a runtime that takes advantage of the guarantee
+ and performs fewer dynamic checks.
+\end_layout
+
+\begin_layout Subsection
+Adding data-race free mutability
+\end_layout
+
+\begin_layout Standard
+Type-safe software transactional memory is an example of such an approach.
+ However, just as for a communication mechanism, STM's approach introduces
+ overheads that whittle away the performance advantage offered by mutable
+ data structures.
+ There are other hybrid approaches, using both static and dynamic features,
+ including the Rust type system, but the inclusion of dynamic checking results
+ in some runtime overhead.
+\end_layout
+
+\begin_layout Section
+(Race car analogy)
+\end_layout
+
+\begin_layout Standard
+TODO: The Race Car Analogy, and why it is false
+\end_layout
+
+\begin_layout Standard
+Language design is often considered as a series of trade-offs, similar in
+ spirit to other forms of engineering.
+ For example, when designing a car, if the car can carry more, it will use
+ more fuel.
+ If it is more comfortable, it will be more expensive.
+ If it is safer, it will be slower.
+\end_layout
+
+\begin_layout Standard
+But what if programming languages are not subject to these same trade-offs?
+ TODO:
+\end_layout
+
+\begin_layout Section
+(Freeform writing)
+\end_layout
+
+\begin_layout Standard
+Pony is a language that has been designed to scratch a particular itch.
+ My industry experience in several diverse areas, including embedded operating
+ systems, cryptography, voice-over-IP, online video games, and the financial
+ industry, left me feeling that there were fundamental semantic problems
+ with existing programming languages that made it more difficult to express
+ correct, high-performance programs in these domains.
+\end_layout
+
+\begin_layout Standard
+The first semantic issue was that programs in these domains often form ad-hoc
+ distributed programs.
+ Particularly for financial systems, online video games, and voice-over-IP,
+ where network communication amongst cooperating nodes is inherent to the
+ problem, rather than an optimisation; these systems don't use distributed
+ computing to make a problem easier to solve, but rather to allow many input
+ and output streams across many physical locations to agree on the state
+ of a computation that every node plays a role in.
+\end_layout
+
+\begin_layout Standard
+Given the pervasive and intrusive nature of distributed computing in these
+ domains, a programming language with the same semantics for concurrent
+ and distributed computation could perhaps make it simpler to develop and
+ reason about these systems.
+ That is, if a program can be agnostic about 
+\end_layout
+
+\begin_layout Section
+The Goal
+\end_layout
+
+\begin_layout Standard
+The design goal is a language that is capabilities-secure and suitable for
+ high-performance concurrent and distributed programs.
+ All of the decisions regarding the type system, the concurrency model,
+ etc., have been in the pursuit of this goal.
+ While the end result is a statically typed, ahead-of-time compiled, actor-model
+ language, none of these decisions should be considered fundamental.
+\end_layout
+
+\begin_layout Standard
+TODO: why cap secure? why high performance?
+\end_layout
+
+\begin_layout Standard
+TODO: easy to write and reason about?
+\end_layout
+
+\begin_layout Section
+Capabilities Security
+\end_layout
+
+\begin_layout Standard
+The first design decision for Pony was the use of the 
+\emph on
+object capability
+\emph default
+ model to express capabilities security.
+ This was an easy choice, influenced both by other capabilities-secure languages
+ (such as Joule, E, AmbientTalk, Caja, and BitC) and capabilities-secure
+ operating systems (such as KeyKOS, EROS, Coyotos, and seL4).
+ In the absence of hardware support for capability-based addressing, the
+ object capability model proved to be the most efficient way to implement
+ capabilities security.
+ The use of a C-list to express capabilities without an object model was
+ simply too expensive.
+\end_layout
+
+\begin_layout Standard
+Adopting the object capability model had several follow on effects.
+ Most importantly, it required Pony to express 
+\emph on
+identity
+\emph default
+ as a first-class concept.
+\end_layout
+
+\begin_layout Section
+Actor Model
+\end_layout
+
+\begin_layout Section
+Shared Memory
+\end_layout
+
+\begin_layout Standard
+Although Pony is an actor-model language that uses exclusively message passing
+ communication, it is designed to leverage the performance benefits of shared
+ memory.
+ 
+\end_layout
+
+\begin_layout Section
+TODO:
 \end_layout
 
 \begin_layout Standard

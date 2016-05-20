@@ -75,6 +75,12 @@ theorems-ams-bytype
 \begin_body
 
 \begin_layout Chapter
+\begin_inset CommandInset label
+LatexCommand label
+name "chap:Reference-Capabilities"
+
+\end_inset
+
 Reference Capabilities
 \end_layout
 
