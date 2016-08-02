@@ -1,7 +1,9 @@
-#LyX 2.1 created this file. For more info see http://www.lyx.org/
-\lyxformat 474
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
 \begin_document
 \begin_header
+\save_transient_properties true
+\origin unavailable
 \textclass extreport
 \use_default_options true
 \begin_modules
@@ -14,16 +16,16 @@ theorems-ams-bytype
 \language_package default
 \inputencoding auto
 \fontencoding global
-\font_roman default
-\font_sans default
-\font_typewriter default
-\font_math auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
-\font_sf_scale 100
-\font_tt_scale 100
+\font_sf_scale 100 100
+\font_tt_scale 100 100
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -88,7 +90,7 @@ Abstract
 \end_layout
 
 \begin_layout Standard
-I have written a new programming language, called Pony, that allows the
+I have developed a new programming language, called Pony, that allows the
  user to easily write fast, safe, parallel programs.
  The focus of this work is using a powerful and novel static type system
  to guarantee properties of a program in order to eliminate many runtime

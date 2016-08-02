@@ -1,7 +1,9 @@
-#LyX 2.1 created this file. For more info see http://www.lyx.org/
-\lyxformat 474
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
 \begin_document
 \begin_header
+\save_transient_properties true
+\origin unavailable
 \textclass extreport
 \use_default_options true
 \begin_modules
@@ -14,16 +16,16 @@ theorems-ams-bytype
 \language_package default
 \inputencoding auto
 \fontencoding global
-\font_roman default
-\font_sans default
-\font_typewriter default
-\font_math auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
-\font_sf_scale 100
-\font_tt_scale 100
+\font_sf_scale 100 100
+\font_tt_scale 100 100
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -75,16 +77,660 @@ theorems-ams-bytype
 \begin_body
 
 \begin_layout Chapter
+\noindent
 Operational Semantics
 \end_layout
 
+\begin_layout Standard
+The operational semantics of Pony is presented here as a small-step operational
+ semantics that expresses a subset of the full Pony language.
+ In this subset, tuples are modelled as classes, whereas in the full language
+ they are not.
+ In addition, control structures such as conditional, loops, pattern matching,
+ and exception handling, have been not been covered in this semantics, nor
+ have the semantics of boolean and machine word types been addressed.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Formula $\begin{array}{rclcl}
+\chi & \in & \mathit{Heap} & = & \mathit{Addr\rightarrow(Actor\vee Object)}\\
+\sigma & \in & \mathit{Stack} & = & \mathit{ActorAddr\cdot\overline{Frame}}\\
+\varphi & \in & \mathit{Frame} & = & \mathit{MethodID\times(LocalID\rightarrow Value)}\\
+ &  &  &  & \times\mathit{ExprHole}\\
+ &  & \mathit{LocalID} & = & \mathit{SourceID}\cup\mathit{TempID}\\
+v & \in & \mathit{Value} & = & \mathit{Addr\cup\{null\}}\\
+\iota & \in & \mathit{Addr} & = & \mathit{ActorAddr\cup ObjectAddr}\\
+\alpha & \in & \mathit{ActorAddr}\\
+\omega & \in & \mathit{ObjectAddr}\\
+ &  & \mathit{Actor} & = & \mathit{ActorID\times(FieldID\rightarrow Value)}\\
+ &  &  &  & \mathit{\times\overline{Message}}\times Stack\times Expr\\
+ &  & \mathit{Object} & = & \mathit{ClassID\times(FieldID\rightarrow Value)}\\
+\mu & \in & \mathit{Message} & = & \mathit{MethodID\times\overline{Value}}
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Runtime-entities"
+
+\end_inset
+
+Runtime entities
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Formula $\begin{array}{ccc}
+\dfrac{\chi,\sigma\cdot\varphi,\mathtt{e}\rightsquigarrow\chi',\sigma\cdot\varphi',\mathtt{e'}}{\chi,\sigma\cdot\varphi,\mathtt{E[e]}\rightsquigarrow\chi',\sigma\cdot\varphi',\mathtt{E[e']}}\;\textrm{\textsc{ExprHole}} &  & \dfrac{\mathtt{t}\notin\varphi\quad\iota=\varphi(\mathtt{z})\quad\varphi'=\varphi[\mathtt{t}\mapsto\chi(\iota,\mathtt{f})]}{\chi,\sigma\cdot\varphi,\mathtt{z.f}\rightsquigarrow\chi,\sigma\cdot\varphi',\mathtt{t}}\;\textrm{\textsc{Fld}}\\
+\\
+\dfrac{\mathtt{t}\notin\varphi\quad\varphi'=\varphi[\mathtt{t}\mapsto\mathit{null}]}{\chi,\sigma\cdot\varphi,\mathtt{null}\rightsquigarrow\chi,\sigma\cdot\varphi',\mathtt{t}}\;\textrm{\textsc{Null}} &  & \dfrac{}{\chi,\sigma,\mathtt{z}\mathtt{;e}\rightsquigarrow\chi,\sigma,\mathtt{e}}\;\textrm{\textsc{Seq}}\\
+\\
+\dfrac{\mathtt{t}\notin\varphi\quad\varphi'=\varphi[\mathtt{x}\mapsto\varphi(\mathtt{z}),\mathtt{t}\mapsto\varphi(\mathtt{x})]}{\chi,\sigma\cdot\varphi,\mathtt{x=z}\rightsquigarrow\chi,\sigma\cdot\varphi',\mathtt{t}}\;\textrm{\textsc{AsnLocal}} &  & \dfrac{\begin{array}{c}
+\mathtt{t}\notin\varphi\quad\iota=\varphi(\mathtt{z})\quad\varphi'=\varphi[\mathtt{t}\mapsto\chi(\iota,\mathtt{f})]\\
+\chi'=\chi[\varphi(\mathtt{z}),\mathtt{f}\mapsto\varphi(\mathtt{y})]
+\end{array}}{\chi,\sigma\cdot\varphi,\mathtt{z.f=y}\rightsquigarrow\chi',\sigma\cdot\varphi',\mathtt{t}}\;\textrm{\textsc{AsnFld}}\\
+\\
+\dfrac{\begin{array}{c}
+\iota=\varphi(\mathtt{z})\quad\mathcal{M}(\chi(\iota)\downarrow_{1},\mathtt{m})=\mathtt{(\_,\overline{x}:\_,e,\_)}\\
+\varphi'=(\mathtt{m},[\mathtt{this}\mapsto\iota,\mathtt{\overline{x}}\mapsto\varphi(\mathtt{\overline{y}})],\mathtt{E[\cdot]})
+\end{array}}{\chi,\sigma\cdot\varphi,\mathtt{E[z.m(\overline{y})}]\rightsquigarrow\chi,\sigma\cdot\varphi\cdot\varphi',\mathtt{e}}\;\textrm{\textsc{Sync}} &  & \dfrac{\begin{array}{c}
+\mathtt{t}\notin\varphi\quad\iota=\varphi'(\mathtt{z})\\
+\varphi'\downarrow_{3}=\mathtt{E[\cdot]}\quad\varphi''=\varphi[\mathtt{t}\mapsto\iota]
+\end{array}}{\chi,\sigma\cdot\varphi\cdot\varphi',\mathtt{z}\rightsquigarrow\chi,\sigma\cdot\varphi'',\mathtt{E[t]}}\;\textrm{\textsc{Return}}\\
+\\
+\dfrac{\alpha=\varphi(\mathtt{z})\quad\chi(\alpha)\downarrow_{3}=\overline{\mu}}{\chi,\sigma\cdot\varphi,\mathtt{z.b(\overline{y})}\rightsquigarrow\chi[\alpha\mapsto\overline{\mu}\cdot(\mathtt{b},\varphi(\mathtt{\overline{y}})],\sigma\cdot\varphi,\mathtt{z}}\;\textrm{\textsc{Async}} &  & \dfrac{\begin{array}{c}
+\mathtt{A}=\chi(\alpha)\downarrow_{1}\quad(\mathtt{n},\overline{v})\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
+\mathcal{M}(\mathtt{A,n})=\mathtt{(\_,\overline{x}:\_,e,\_)}\\
+\varphi=(\mathtt{n},[\mathtt{this}\mapsto\alpha,\mathtt{\overline{x}}\mapsto\overline{v}],\cdot)
+\end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi[\alpha\mapsto\overline{\mu}],\alpha\cdot\varphi,\mathtt{e}}\;\textrm{\textsc{Behave}}\\
+\\
+\dfrac{\begin{array}{c}
+\omega\not\in\mathit{dom}(\chi)\quad\mathtt{\overline{f}}={\cal F}s(\mathtt{C})\\
+\mathcal{M}(\mathtt{C,k})=\mathtt{(\_,\overline{x}:\_,e,\_)}\\
+\chi'=\chi[\omega\mapsto(\mathtt{C},\mathtt{\overline{f}}\mapsto\mathit{null})]\\
+\varphi'=(\mathtt{k},[\mathtt{this}\mapsto\omega,\mathtt{\overline{x}}\mapsto\varphi(\mathtt{\overline{y}})],\mathtt{E[\cdot]})
+\end{array}}{\chi,\sigma\cdot\varphi,\mathtt{E[C.k(\overline{y})]}\rightsquigarrow\chi',\sigma\cdot\varphi\cdot\varphi',\mathtt{e}}\;\textrm{\textsc{Ctor}} &  & \dfrac{\begin{array}{c}
+\alpha\not\in\mathit{dom}(\chi)\quad\mathtt{\overline{f}}={\cal F}s(\mathtt{A})\\
+\mathtt{t}\notin\varphi\quad\varphi'=\varphi[\mathtt{t}\mapsto\alpha]\\
+\chi'=\chi[\alpha\mapsto(\mathtt{A},\mathtt{\overline{f}}\mapsto\mathit{null},(\mathtt{k},\varphi(\mathtt{\overline{y}}),\alpha,\varepsilon)]
+\end{array}}{\chi,\sigma\cdot\varphi,\mathtt{A.k(\overline{y})}\rightsquigarrow\chi',\sigma\cdot\varphi',\mathtt{t}}\;\textrm{\textsc{Ator}}\\
+\\
+\dfrac{\chi,\sigma,\mathtt{e}\rightsquigarrow\chi',\sigma',\mathtt{e'}}{\chi,\sigma,\mathtt{recover\,e}\rightsquigarrow\chi',\sigma',\mathtt{recover\,e'}}\;\textrm{\textsc{Rec1}} &  & \dfrac{\mathtt{t}\notin\varphi\quad\varphi'=\varphi[\mathtt{t}\mapsto\varphi(\mathtt{z})]}{\chi,\sigma,\mathtt{recover\,z}\rightsquigarrow\chi,\sigma,\mathtt{t}}\;\textrm{\textsc{Rec}2}\\
+\\
+\dfrac{}{\chi,\sigma,\mathtt{consume\,x}\rightsquigarrow\chi,\sigma,\mathtt{x=null}}\;\textrm{\textsc{Consume}} &  & \dfrac{\chi,\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5}\rightsquigarrow\chi',\sigma,\mathtt{e}}{\chi\rightarrow\chi'[\alpha\mapsto(\sigma,\mathtt{e})]}\;\textrm{\textsc{Global}}
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Local-execution"
+
+\end_inset
+
+Execution.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\size scriptsize
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
 \begin_layout Itemize
+\begin_inset Formula $\varphi(\mathtt{x})=\varphi\downarrow_{2}(\mathtt{x})\downarrow_{1}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\varphi[\mathtt{x}\mapsto v]=(\varphi\downarrow_{1},\varphi\downarrow_{2}[\mathtt{x}\mapsto v],\varphi\downarrow_{3})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi(\iota,\mathtt{f})=\chi(\iota)\downarrow_{2}(\mathtt{f})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi[\omega,\mathtt{f}\mapsto v]=\chi[\omega\mapsto(\chi(\omega)\downarrow_{1},\chi(\omega)\downarrow_{2}[\mathtt{f}\mapsto v]]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi[\alpha,\mathtt{f}\mapsto v]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2}[\mathtt{f}\mapsto v],\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5})]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi[\alpha\mapsto(\sigma,\mathtt{e})]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\sigma,\mathtt{e}]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi[\alpha\mapsto\overline{\mu}]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\overline{\mu},\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5}]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Auxiliary-definitions"
+
+\end_inset
+
+Auxiliary definitions
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\size scriptsize
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Formula $\begin{array}{c}
+\dfrac{\begin{array}{c}
+\mathtt{P=\overline{CT}\,\overline{AT}}\\
+\mathtt{class\,C\,\mathtt{\overline{F}\,\overline{K}\,\overline{M}}\in\overline{CT}}
+\end{array}}{\begin{array}{c}
+\mathcal{P}(\mathtt{C})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\varepsilon}\\
+\mathtt{C\in P}
+\end{array}}\\
+\\
+\dfrac{\begin{array}{c}
+\mathtt{P=\overline{CT}\,\overline{AT}}\\
+\mathtt{actor\,A\,\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\in\overline{AT}}
+\end{array}}{\begin{array}{c}
+\mathcal{P}(\mathtt{A})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\\
+\mathtt{A\in P}
+\end{array}}\\
+\\
+\dfrac{\mathcal{P}(\mathtt{S})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}}{\mathcal{F}s(\mathtt{S})=\mathtt{\{f\,|\,var\,f:T\in\overline{F}\}}}\\
+\\
+\dfrac{\mathcal{P}(\mathtt{S})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\quad\mathtt{var\,f:T\in\overline{F}}}{\mathcal{F}(\mathtt{S,f})=\mathtt{T}}\\
+\\
+\dfrac{\mathcal{P}(\mathtt{C})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}}\quad\mathtt{(new\,k(\overline{x}:\overline{T})\Rightarrow e)}\in\mathtt{\overline{K}}}{\mathcal{M}(\mathtt{C,k})=\mathtt{(C\,ref,\overline{x}:\overline{T},e,C\,ref\circ)}}\\
+\\
+\dfrac{\mathcal{P}(\mathtt{A})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\quad\mathtt{(new\,k(\overline{x}:\overline{T})\Rightarrow e)}\in\mathtt{\overline{K}}}{\mathcal{M}(\mathtt{A,k})=\mathtt{(A\,var,\overline{x}:\overline{T},e,A\,tag)}}\\
+\\
+\dfrac{\mathcal{P}(\mathtt{S})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\quad\mathtt{(fun\,\kappa\,m(\overline{x}:\overline{T}):ET\Rightarrow e)}\in\mathtt{\overline{M}}}{\mathcal{M}(\mathtt{S,m})=\mathtt{(S\,\kappa,\overline{x}:\overline{T},e,ET)}}\\
+\\
+\dfrac{\mathcal{P}(\mathtt{A})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\quad\mathtt{(be\,b(\overline{x}:\overline{T})\Rightarrow e)}\in\mathtt{\overline{B}}}{\mathcal{M}(\mathtt{A,b})=\mathtt{(A\,ref,\overline{x}:\overline{T},e,A\,tag)}}
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Lookup-functions"
+
+\end_inset
+
+Lookup functions
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The operational semantics has the shape 
+\begin_inset Formula $\chi\rightarrow\chi'$
+\end_inset
+
+, where 
+\begin_inset Formula $\chi,\chi'$
+\end_inset
+
+ are heaps mapping object addresses 
+\begin_inset Formula $\omega$
+\end_inset
+
+ to their class identifier and their fields, and actor addresses 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ to their actor identifier, their fields, their message queue, their stack,
+ and the next expression to execute.
+ Runtime entities are defined in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Runtime-entities"
+
+\end_inset
+
+.
+ Some shorthand notation is used for clarity, as defined in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Auxiliary-definitions"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The symbol 
+\begin_inset Formula $\mathtt{x}$
+\end_inset
+
+ is used to indicate a source identifier, 
+\begin_inset Formula $\mathtt{t}$
+\end_inset
+
+ to indicate a temporary identifier, and 
+\begin_inset Formula $\mathtt{y}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{z}$
+\end_inset
+
+ to indicate identifiers which may be either.
+ Temporary identifiers are used in the semantics instead of values in order
+ to associate a type and reference capability with intermediate expression
+ results.
+\end_layout
+
+\begin_layout Standard
+A call stack consists of an actor address 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ followed by a sequence of frames 
+\begin_inset Formula $\varphi$
+\end_inset
+
+.
+ A frame consists of the method identifier, a mapping of its parameters
+ to values, and an expression hole.
+ The latter is the continuation of the caller and will be executed by the
+ previous frame when the current activation terminates.
+\end_layout
+
+\begin_layout Standard
+The auxiliary judgement 
+\begin_inset Formula $\chi,\sigma,\mathtt{e}\rightsquigarrow\chi',\sigma',\mathtt{e'}$
+\end_inset
+
+ expresses local execution within a 
+\emph on
+single
+\emph default
+ actor.
+ 
+\begin_inset Formula $\mathcal{M}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{F}$
+\end_inset
+
+ return method and field declarations, as defined in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Lookup-functions"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Execution is defined in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Local-execution"
+
+\end_inset
+
+.
+ All of the rules except 
+\noun on
+Global
+\noun default
+ define local execution within an actor.
+ 
+\noun on
+ExprHole 
+\noun default
+allows execution to propagate to the context.
+ 
+\noun on
+Fld,
+\noun default
+ 
+\noun on
+Null
+\noun default
+, and
+\noun on
+ Seq 
+\noun default
+are as expected.
+\end_layout
+
+\begin_layout Standard
+
+\noun on
+AsnLocal
+\noun default
+ and 
+\noun on
+AsnFld
+\noun default
+ combine assignment with a destructive read, returning the previous value
+ of the left-hand side.
+ The resulting value is 
+\emph on
+unaliased
+\emph default
+: while there may be other paths pointing to the value in the program, this
+ one no longer does.
+ In effect, one alias to the value has been discarded.
+ The existence of unaliased values is used in the type system, where 
+\noun on
+T-AsnLocal
+\noun default
+ and 
+\noun on
+T-AsnField
+\noun default
+ both return an 
+\emph on
+unaliased type
+\emph default
+, as explained in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Type-System"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+
+\noun on
+Sync
+\noun default
+ and 
+\noun on
+Return
+\noun default
+ describe synchronous method call and return.
+ In 
+\noun on
+Sync
+\noun default
+, method 
+\begin_inset Formula $\mathtt{m}$
+\end_inset
+
+ is called on object or actor 
+\begin_inset Formula $\iota$
+\end_inset
+
+.
+ The method parameters 
+\begin_inset Formula $\mathtt{\overline{x}}$
+\end_inset
+
+ and the method body 
+\family typewriter
+
+\begin_inset Formula $\mathtt{e}$
+\end_inset
+
+
+\family default
+ are looked up using the method 
+\begin_inset Formula $\mathtt{m}$
+\end_inset
+
+ and the type 
+\begin_inset Formula $\mathtt{S}$
+\end_inset
+
+ of 
+\begin_inset Formula $\iota$
+\end_inset
+
+ from the heap.
+ A new frame is pushed on to the stack, consisting of 
+\begin_inset Formula $\mathtt{m}$
+\end_inset
+
+, the address of the receiver, the values of the arguments, and the continuation.
+ In 
+\noun on
+Return
+\noun default
+, the topmost frame is popped from the stack and execution continues.
+\end_layout
+
+\begin_layout Standard
+
+\noun on
+Async
+\noun default
+ and 
+\noun on
+Behave
+\noun default
+ describe asynchronous method calls and execution.
+ In 
+\noun on
+Async
+\noun default
+, a message consisting of the behaviour identifier 
+\begin_inset Formula $\mathtt{b}$
+\end_inset
+
+ and the arguments is appended to the receiver's message queue.
+ In 
+\noun on
+Behave
+\noun default
+, an actor with an empty call stack and a non-empty message queue removes
+ the oldest message from the queue, and pushes a new frame on the stack.
+\end_layout
+
+\begin_layout Standard
+
+\noun on
+Ctor
+\noun default
+ and 
+\noun on
+Ator
+\noun default
+ describe the construction of new objects and actors.
+ In 
+\noun on
+Ctor
+\noun default
+, a new address 
+\begin_inset Formula $\omega$
+\end_inset
+
+ is allocated on the heap and the fields are initialised to 
+\begin_inset Formula $null$
+\end_inset
+
+
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+This is a simplification.
+ In Pony, we support object initialisation, and have no 
+\begin_inset Formula $null$
+\end_inset
+
+ values.
+\end_layout
+
+\end_inset
+
+.
+ A new frame is pushed on the stack in the same way as for 
+\noun on
+Sync
+\noun default
+.
+ In 
+\noun on
+Ator
+\noun default
+, instead of pushing a new frame on the stack, the new actor's queue is
+ initialised with a constructor message containing the constructor identifier
+ 
+\begin_inset Formula $\mathtt{k}$
+\end_inset
+
+ and the arguments.
+ The first local execution rule for a new actor will be 
+\noun on
+Behave
+\noun default
+, which will execute the body of the constructor 
+\begin_inset Formula $\mathtt{k}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+
+\noun on
+Rec
+\noun default
+ is a no-op in the operational semantics, but has an impact in the type
+ system, where 
+\noun on
+T-Rec
+\noun default
+ affects the reference capability of the result of the expression.
+\end_layout
+
+\begin_layout Standard
+
+\noun on
+Global 
+\noun default
+defines global execution and says that if an actor can execute, then its
+ stack and next expression to execute will be updated.
+\end_layout
+
+\begin_layout Standard
+TODO:
+\end_layout
+
+\begin_layout Itemize
+\noindent
 Without implementation details, but with explanation of asynchronicity,
  how we are implementing the actor model, examples of orderings of events
  (constructor ordering, etc.).
 \end_layout
 
 \begin_layout Itemize
+\noindent
 In source code examples, 
 \begin_inset Quotes eld
 \end_inset
@@ -97,6 +743,7 @@ dim
 \end_layout
 
 \begin_layout Itemize
+\noindent
 Use pony intro slides examples.
 \end_layout
 

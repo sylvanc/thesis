@@ -1,7 +1,9 @@
-#LyX 2.1 created this file. For more info see http://www.lyx.org/
-\lyxformat 474
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
 \begin_document
 \begin_header
+\save_transient_properties true
+\origin unavailable
 \textclass extreport
 \use_default_options true
 \begin_modules
@@ -14,16 +16,16 @@ theorems-ams-bytype
 \language_package default
 \inputencoding auto
 \fontencoding global
-\font_roman default
-\font_sans default
-\font_typewriter default
-\font_math auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
-\font_sf_scale 100
-\font_tt_scale 100
+\font_sf_scale 100 100
+\font_tt_scale 100 100
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -111,7 +113,7 @@ One of the driving principles behind the design of Pony has been the desire
 Pony uses asynchronous message passing for communicating between units of
  execution.
  This decision, combined with a desire to provide dynamic topology and object
- capabilities, lead to a decision use actors as the unit of execution.
+ capabilities, lead to the decision to use actors as the unit of execution.
 \end_layout
 
 \begin_layout Standard
@@ -150,13 +152,16 @@ On the other hand, there are subtle implications of these three requirements.
  when attempting to send itself a message.
  Interestingly, while real world constraints limit the size of a message
  buffer, the model implicitly requires that buffer space is logically unbounded:
- any upper bounds devolves to a situation where an actor cannot send a message
- to itself, because its message buffer is full and it cannot clear it, since
- it is blocked attempting to send a message to itself.
+ any upper bounds devolves to the possibility that an actor will be blocked
+ if it tries to send a message to itself, because its message buffer is
+ full and it cannot clear it.
+ That is, the actor can neither enqueue the message and continue execution,
+ nor can it dequeue messages to create space, as the actor must not interleave
+ message handling executions.
 \end_layout
 
 \begin_layout Standard
-Another subtle requirement is that there can be no shared mutable state
+Another subtle implication is that there can be no shared mutable state
  across actors.
  This follows from the requirement that an actor 
 \begin_inset Formula $\alpha$
@@ -219,7 +224,8 @@ This is the
 \emph on
 introduction requirement
 \emph default
-: an actor 
+, as detailed in Gul Agha's Ph.D.
+ thesis: an actor 
 \begin_inset Formula $\alpha$
 \end_inset
 
@@ -228,11 +234,12 @@ introduction requirement
 \end_inset
 
  if they have been properly introduced.
- Shared mutable state would allow 
+ Shared mutable state would allow an actor to send messages without prior
+ introduction: namely, 
 \begin_inset Formula $\alpha$
 \end_inset
 
- to read the address of 
+ could read the address of 
 \begin_inset Formula $\alpha'$
 \end_inset
 
@@ -249,27 +256,7 @@ introduction requirement
 \end_inset
 
 .
- Furthermore, such a shared variable could be modified while 
-\begin_inset Formula $\alpha$
-\end_inset
-
- was handling 
-\begin_inset Formula $m$
-\end_inset
-
-, such that 
-\begin_inset Formula $\alpha'$
-\end_inset
-
- was not known to 
-\begin_inset Formula $\alpha$
-\end_inset
-
- before 
-\begin_inset Formula $m$
-\end_inset
-
- was received.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -279,18 +266,6 @@ The implementation of the actor model in Pony is intended to satisfy all
 
 \begin_layout Section
 Tools for Correctness and Reasoning
-\end_layout
-
-\begin_layout Standard
-It is important to note that, while Pony makes some guarantees that are
- useful for ensuring correctness and reasoning about programs, Pony is not
- a tool for formal verification.
- In addition, the implementation of the runtime is not itself formally verified.
- It would be extremely interesting to apply techniques used in formal verificati
-on tools, such as Dafny and F*, to allow Pony to function as its own proof
- assistant, and to implement a formally verified runtime (perhaps using
- an extended Pony that provides for formal verification), but that must
- be left for future work.
 \end_layout
 
 \begin_layout Standard
@@ -337,7 +312,25 @@ Both actors and objects are garbage collected without requiring coordination
 \end_layout
 
 \begin_layout Standard
-TODO:
+Each of these guarantees is made possible due to the interaction between
+ the type system and the runtime.
+ In some cases this interaction is obvious, such as the semantics of the
+ language providing no global variables, which is important for capabilities
+ security, and in other cases it is more subtle, such as data-race freedom
+ being important for logically atomic message handling, which is in turn
+ important for both causal messaging and garbage collection.
+\end_layout
+
+\begin_layout Standard
+It is important to note that, while Pony makes some guarantees that are
+ useful for ensuring correctness and reasoning about programs, Pony is not
+ a tool for formal verification, nor is the implementation of the runtime
+ itself formally verified.
+ It would be extremely interesting to apply techniques used in formal verificati
+on tools, such as Dafny and F*, to allow Pony to function as its own proof
+ assistant, and to implement a formally verified runtime (perhaps using
+ an extended Pony that provides for formal verification), but that must
+ be left for future work.
 \end_layout
 
 \begin_layout Subsection
@@ -346,7 +339,7 @@ Static Data-Race Freedom
 
 \begin_layout Standard
 If the type system can statically ensure data-race freedom, the runtime
- and every program written in the language can contain no dynamic locking
+ and every program written in the language need not contain dynamic locking
  mechanisms.
  This is a significant performance gain, and the impact is felt not just
  in computational performance, but, as we will see later, also in parallel
@@ -420,10 +413,19 @@ Purely static data-race free mutability has been expressed several ways,
  immutability type systems.
  In Pony, the type system incorporates 
 \emph on
-reference capabilities
+deny capabilities
 \emph default
-, which are a form of uniqueness and immutability type system influenced
- by both 
+, expressed as 
+\emph on
+reference 
+\emph default
+capabilities
+\emph on
+.
+ 
+\emph default
+Deny capabilities are a form of uniqueness and immutability type system
+ influenced by both 
 \emph on
 object capabilities
 \emph default
@@ -435,11 +437,22 @@ deny guarantee reasoning
 \end_layout
 
 \begin_layout Standard
-Reference capabilities describe what other aliases are 
+Deny capabilities describe what other aliases are 
 \emph on
 denied
 \emph default
  by the existence of a reference.
+ Furthermore, we distinguish between what is denied 
+\emph on
+locally 
+\emph default
+(i.e.
+ aliases reachable via the same actor) and what is denied 
+\emph on
+globally
+\emph default
+ (i.e.
+ aliases reachable via other actors).
  The result is a matrix of 
 \emph on
 deny properties
@@ -451,7 +464,50 @@ deny properties
 \end_layout
 
 \begin_layout Standard
-TODO:
+Importantly, reference capabilities obey simple type checking rules that
+ allow for reasoning about data-race freedom to be done locally, both by
+ the programmer and by the compiler, rather than requiring global knowledge
+ about a program.
+ That is, the existence of some reference capability in some lexical scope
+ explicitly indicates that:
+\end_layout
+
+\begin_layout Enumerate
+No other alias to that object can exist that violates that reference capability'
+s deny properties.
+\end_layout
+
+\begin_layout Enumerate
+No other alias to that object can exist whose deny properties would be violated
+ by that reference capability.
+\end_layout
+
+\begin_layout Standard
+Such reasoning is both local (i.e.
+ can be done without reference to implementation details outside of the
+ function being reasoned about) and modular (i.e.
+ reasoning about a function once is sufficient regardless of the context
+ in which that function is used), even in the presence of type variables,
+ i.e.
+ generic types.
+ The Pony type system accomplishes this through a combination of 
+\emph on
+viewpoint adaptation
+\emph default
+, which determines a reference capability for a path based on all elements
+ of that path, rather than simply the reference capability of the final
+ element of the path, a separate and more liberal treatment of the types
+ of temporary values (that is, the result of an expression which is then
+ used in another expression, without establishing a path to the value by
+ assigning it to a field or a stack variable), and 
+\emph on
+aliased and unaliased
+\emph default
+ types, which provide a way to refer to the alias of a reference capability
+ (the type that results when a new path to a reference capability is created)
+ and the unalias of a reference capability (the type that results when a
+ path to a reference capability is removed, either through destructive read
+ or by explicitly removing a variable in the lexical scope).
 \end_layout
 
 \begin_layout Subsection
@@ -506,15 +562,108 @@ As a result, a behaviour cannot witness heap mutation that the behaviour
  statically guarantees that if an actor can read from a memory address then
  no other actor can write to it, with the guarantee that the initial set
  of capabilities available to a behaviour cannot be expanded.
- It is interesting to note that, since it is permissible for the set of
- capabilities to be contracted, it is possible for a behaviour to have the
- capability to read or write some memory address, to give up that capability,
- and for the contents of that address to be mutated by some other actor
- while the original behaviour is still executing.
+\end_layout
+
+\begin_layout Standard
+It is interesting to note that, while the set of capabilities cannot be
+ expanded, it is possible for it to be contracted.
+ Specifically, a capability that allows mutation of an address can be 
+\emph on
+sent
+\emph default
+ to another actor, and the data-race free type system guarantees that the
+ sending actor retains neither the ability to read from nor write to that
+ address.
+ As a result, it is possible for a behaviour to have the capability to read
+ or write some memory address, to give up that capability, and for the contents
+ of that address to be mutated by some other actor while the original behaviour
+ is still executing.
  However, in this case, the behaviour will not be able to expand its set
  of capabilities to once again include the capability to read from that
  memory address.
  As a result, the behaviour will not be able to witness the heap mutation.
+\end_layout
+
+\begin_layout Subsubsection
+Reasoning About Atomic Behaviours
+\end_layout
+
+\begin_layout Standard
+Requiring logically atomic behaviours is a powerful tool for reasoning about
+ actors.
+ Each behaviour can be considered as a separate sequential program, with
+ a separate heap, that operates on some set of preexisting state (fields
+ of the actor) and a set of input values (behaviour arguments).
+ The resulting program will produce output in four forms:
+\end_layout
+
+\begin_layout Enumerate
+Sending a finite number of messages to other actors or itself.
+\end_layout
+
+\begin_layout Enumerate
+The creation of a finite number of new actors.
+\end_layout
+
+\begin_layout Enumerate
+Changes to the executing actor's state that will be propagated to the next
+ behaviour on that actor.
+\end_layout
+
+\begin_layout Enumerate
+Side effects in the form of output to some device, for example a file system,
+ network, display, etc.
+\end_layout
+
+\begin_layout Standard
+Note that these possible outputs correspond to the fundamental requirements
+ of the actor model, with the addition of device output.
+\end_layout
+
+\begin_layout Standard
+Reasoning about individual behaviours as separate sequential programs removes
+ the need to consider concurrency within a behaviour.
+ This significantly simplifies the reasoning process.
+ However, it does not remove the need to consider concurrency in a program
+ as a whole.
+ While interleaved concurrent reads and writes to memory locations no longer
+ must be considered, message ordering remains non-deterministic where a
+ causal relationship is not present, which can introduce program executions
+ that exhibit race conditions at the logical level while still being data-race
+ free.
+\end_layout
+
+\begin_layout Subsubsection
+Asynchronous Function Results
+\end_layout
+
+\begin_layout Standard
+There are three primary techniques for returning asynchronous results from
+ asynchronous functions.
+ The first is blocking futures, where an asynchronous function returns a
+ value that may not yet be the result, but will be populated with the result
+ in the future.
+ The caller can then choose to block execution at some point until the result
+ has been populated.
+ The second is non-blocking futures, also referred to as asynchronous await.
+ This approach captures the stack as a continuation that will be executed
+ when the asynchronous result is available, and allows the caller to continue
+ handling other messages in the meantime.
+ The third is promises, which are similar to non-blocking futures, but instead
+ of capturing the stack as a continuation, closures are explicitly specified.
+ Promises allow more than one receiver of an asynchronous result, and also
+ allow exceptional behaviour to be propagated in the form of separate closures
+ for successful and unsuccessful execution.
+\end_layout
+
+\begin_layout Standard
+These approaches are closely related, and each can be used, with some effort,
+ to implement the others.
+ Pony uses promises rather than blocking or non-blocking futures.
+ This decision is motivated by reasoning rather than performance: logically
+ atomic behaviours require asynchronous results to be returned via promises
+ rather than futures in order to avoid expanding the available set of capabiliti
+es during execution of a behaviour.
 \end_layout
 
 \begin_layout Standard
@@ -529,7 +678,10 @@ introduction requirement
  begins executing must not become readable during execution.
  This is because a newly readable memory location could contain an actor
  address previously unknown to the actor executing the behaviour.
- On the other hand, if the event of a previously unreadable memory location
+\end_layout
+
+\begin_layout Standard
+On the other hand, if the event of a previously unreadable memory location
  becoming readable is considered to be a new message 
 \begin_inset Formula $m'$
 \end_inset
@@ -544,296 +696,815 @@ introduction requirement
 \end_inset
 
 , then the introduction requirement is not violated.
+ Such an approach treats messages as more abstract than actual messages
+ in a mail queue: any expansion of the set of capabilities is treated as
+ the logical arrival of a new message.
+ This would allow, for example, blocking futures, which prevent shared mutable
+ state but allow expanding the set of capabilities.
 \end_layout
 
 \begin_layout Standard
-Logically atomic behaviours are a powerful tool for reasoning about actors.
- TODO:
+Awaiting an asynchronous result, i.e.
+ using a non-blocking future, pauses a behaviour until an asynchronous result
+ is returned, but allows the actor to continue receiving messages and executing
+ their associated behaviours in the meantime.
+ Effectively, the behaviour stack is captured as a continuation and resumed
+ when the asynchronous result becomes available.
+ This approach also results in non-atomic behaviours, as the actor may have
+ been given new capabilities by intervening messages, resulting in the continuat
+ion being executed with a larger set of capabilities than existed when 
+\begin_inset Formula $m$
+\end_inset
+
+ initially arrived.
 \end_layout
 
-\begin_layout Section
-(Performance)
+\begin_layout Standard
+Both blocking and non-blocking futures can be encoded with logically atomic
+ behaviours, either with or without promises, but doing so can result in
+ code that is difficult to understand.
+ A non-blocking future (asynchronous await) can be encoded as a closure
+ that will be executed upon receipt of a message containing the expected
+ result.
+ This is continuation-passing style for asynchronous messages.
+ Encoding a blocking future involves combining continuation-passing style
+ with a queue to store messages that arrive before the message containing
+ the expected result.
+ The processing of these queued messages is delayed until after the expected
+ result is received and the associated closure executed.
+ In both cases, the programmer writes code to explicitly do what a compiler
+ transformation would implicitly do.
 \end_layout
 
-\begin_layout Section
-Data-race freedom
+\begin_layout Standard
+Using promises, which are implemented in Pony as part of the standard library
+ rather than as a language feature, preserves the introduction requirement
+ without requiring the fulfilment of a future to be treated as a equivalent
+ to a new message.
+ The semantics of both blocking and non-blocking futures are still possible
+ to achieve, but the underlying complexity of these approaches is directly
+ exposed to the programmer.
 \end_layout
 
 \begin_layout Subsection
-Communication mechanism
-\end_layout
-
-\begin_layout Standard
-Communicating between units of execution is a process which is itself subject
- to data races.
- If mutable data structures are used to express communication, then the
- advantages of a data-race free type system are lost.
-\end_layout
-
-\begin_layout Standard
-One approach to solving this is software transactional memory, which allows
- groups of related changes to shared mutable state to be coordinated in
- transactions that succeed only when the result is consistent.
- That is, if another transaction has written to any memory location that
- the current transaction has read from, the transaction cannot be committed.
- However, STM requires the ability to both detect conflicts and roll back
- transactions, which can be expensive to implement: STM-based algorithms
- are generally significantly slower than their lock-based equivalents.
- In addition, STM relies on shared memory semantics, and is not extendable
- to distributed computing.
-\end_layout
-
-\begin_layout Standard
-Message passing, on the other hand, encapsulates communication between units
- of execution in channels.
- Such channels come in many forms: implicit or explicit, bounded or unbounded,
- synchronous or asynchronous, typed or untyped, single or multiple reader,
- and single or multiple writer.
- A channel provides the ability to communicate between units of execution
- without relying on shared memory or mutable data structures.
-\end_layout
-
-\begin_layout Standard
-Combining message passing with immutability results in data-race freedom
- with safe communication between units of execution.
- As such, a type system that can express both of these concepts statically
- can be leveraged to build a runtime that takes advantage of the guarantee
- and performs fewer dynamic checks.
-\end_layout
-
-\begin_layout Subsection
-Adding data-race free mutability
-\end_layout
-
-\begin_layout Standard
-Type-safe software transactional memory is an example of such an approach.
- However, just as for a communication mechanism, STM's approach introduces
- overheads that whittle away the performance advantage offered by mutable
- data structures.
- There are other hybrid approaches, using both static and dynamic features,
- including the Rust type system, but the inclusion of dynamic checking results
- in some runtime overhead.
-\end_layout
-
-\begin_layout Section
-(Race car analogy)
-\end_layout
-
-\begin_layout Standard
-TODO: The Race Car Analogy, and why it is false
-\end_layout
-
-\begin_layout Standard
-Language design is often considered as a series of trade-offs, similar in
- spirit to other forms of engineering.
- For example, when designing a car, if the car can carry more, it will use
- more fuel.
- If it is more comfortable, it will be more expensive.
- If it is safer, it will be slower.
-\end_layout
-
-\begin_layout Standard
-But what if programming languages are not subject to these same trade-offs?
- TODO:
-\end_layout
-
-\begin_layout Section
-(Freeform writing)
-\end_layout
-
-\begin_layout Standard
-Pony is a language that has been designed to scratch a particular itch.
- My industry experience in several diverse areas, including embedded operating
- systems, cryptography, voice-over-IP, online video games, and the financial
- industry, left me feeling that there were fundamental semantic problems
- with existing programming languages that made it more difficult to express
- correct, high-performance programs in these domains.
-\end_layout
-
-\begin_layout Standard
-The first semantic issue was that programs in these domains often form ad-hoc
- distributed programs.
- Particularly for financial systems, online video games, and voice-over-IP,
- where network communication amongst cooperating nodes is inherent to the
- problem, rather than an optimisation; these systems don't use distributed
- computing to make a problem easier to solve, but rather to allow many input
- and output streams across many physical locations to agree on the state
- of a computation that every node plays a role in.
-\end_layout
-
-\begin_layout Standard
-Given the pervasive and intrusive nature of distributed computing in these
- domains, a programming language with the same semantics for concurrent
- and distributed computation could perhaps make it simpler to develop and
- reason about these systems.
- That is, if a program can be agnostic about 
-\end_layout
-
-\begin_layout Section
-The Goal
-\end_layout
-
-\begin_layout Standard
-The design goal is a language that is capabilities-secure and suitable for
- high-performance concurrent and distributed programs.
- All of the decisions regarding the type system, the concurrency model,
- etc., have been in the pursuit of this goal.
- While the end result is a statically typed, ahead-of-time compiled, actor-model
- language, none of these decisions should be considered fundamental.
-\end_layout
-
-\begin_layout Standard
-TODO: why cap secure? why high performance?
-\end_layout
-
-\begin_layout Standard
-TODO: easy to write and reason about?
-\end_layout
-
-\begin_layout Section
 Capabilities Security
 \end_layout
 
 \begin_layout Standard
-The first design decision for Pony was the use of the 
+A capability is an unforgeable token that both designates an object and
+ provides access to that object.
+ Capabilities security uses the possession of such tokens to control access
+ to resources.
+ Capabilities have a long history, stretching from operating system research
+ (such as KeyKOS, EROS, Coyotos, and seL4) to programming languages (such
+ as Joule, E, AmbientTalk, Caja, and BitC).
+ 
+\end_layout
+
+\begin_layout Standard
+Capabilities are usually compared with access control list systems, where
+ some arbiter that holds a mapping of roles to permissions must be traversed
+ in order to gain access to a resource.
+ While the two approaches are both security mechanisms, capabilities security
+ is a more interesting match for a programming language, as a language can
+ express unforgeable tokens easily and naturally.
+\end_layout
+
+\begin_layout Standard
+Pony uses the 
 \emph on
 object capability
 \emph default
  model to express capabilities security.
- This was an easy choice, influenced both by other capabilities-secure languages
- (such as Joule, E, AmbientTalk, Caja, and BitC) and capabilities-secure
- operating systems (such as KeyKOS, EROS, Coyotos, and seL4).
- In the absence of hardware support for capability-based addressing, the
- object capability model proved to be the most efficient way to implement
- capabilities security.
- The use of a C-list to express capabilities without an object model was
- simply too expensive.
+ This was an easy choice, as in the absence of hardware support for capability-b
+ased addressing, the object capability model is the most efficient way to
+ implement capabilities security.
+ The alternative would be using a C-list, which is a protected data structure
+ that maps a process identifier and integer handle to a capability.
+ In operating systems such as KeyKOS, the C-list is maintained by the kernel.
+ The use of a C-list to express capabilities at the language level without
+ an object model is simply too expensive; it would require a mapping of
+ actor identifier and integer handle to capabilities, plus a mechanism for
+ delegating capabilities to other actors.
+ In contrast, the object capability model requires no runtime mechanism.
 \end_layout
 
 \begin_layout Standard
-Adopting the object capability model had several follow on effects.
+Adopting the object capability model had several follow-on effects.
  Most importantly, it required Pony to express 
 \emph on
 identity
 \emph default
  as a first-class concept.
-\end_layout
-
-\begin_layout Section
-Actor Model
-\end_layout
-
-\begin_layout Section
-Shared Memory
+ An object's identity serves as the unforgeable token.
+ In a memory safe language, such a mapping of identity to capability is
+ a natural fit, as object identities cannot be manufactured or forged.
+ The lack of mechanisms such as pointer arithmetic to manipulate identities
+ allows those identities to be issuable only via controlled mechanisms.
+ In Pony's case, this is via constructors.
 \end_layout
 
 \begin_layout Standard
-Although Pony is an actor-model language that uses exclusively message passing
- communication, it is designed to leverage the performance benefits of shared
- memory.
+The object capability model in Pony is designed to take advantage of type
+ safety as well as memory safety.
+ For example, a type with a private constructor is a capability that can
+ only be constructed from within a certain package, providing a lexical
+ bounds on capability creation.
+\end_layout
+
+\begin_layout Subsection
+Causal Messaging
+\end_layout
+
+\begin_layout Standard
+The actor model requires that messages are delivered, but makes no requirement
+ as to the order of delivery.
+ Many implementations of the actor model effectively provide pairwise FIFO
+ ordering of messages between actors, because the implementation of a message
+ queue, even in a distributed setting, can make this relatively inexpensive
+ to provide.
+\end_layout
+
+\begin_layout Standard
+In addition, some implementations of the actor model provide 
+\emph on
+causal messaging
+\emph default
+ between actors running on the same physical hardware (node), again due
+ to the availability of an inexpensive implementation.
+ Here, causal messaging refers to a message order guarantee wherein an 
+\emph on
+effect
+\emph default
+ (a message) does not get delivered until after all of its 
+\emph on
+causes
+\emph default
+, where the causes of a message are every message that the sending actor
+ has previously sent or received.
+ Such causality is transitive.
+\end_layout
+
+\begin_layout Standard
+Pony also provides
+\emph on
+ 
+\emph default
+causal messaging between actors running on the same node.
+ In addition, it was originally believed that message-based garbage collection
+ would require causal messaging across nodes in the distributed setting.
+ To address this, 
+\emph on
+tree-structured networks
+\emph default
+ were used to guarantee causality with no space overhead, but with 
+\begin_inset Formula $O(\mathit{log}\,n)$
+\end_inset
+
+ latency overhead due to messages traversing the tree.
+ This is a significant improvement compared to other causal messaging techniques
+, but still represents both a latency cost and a possible message bottleneck.
+\end_layout
+
+\begin_layout Standard
+To address these problems, the garbage collection algorithm was extended
+ to work with only pairwise FIFO ordering, which can be implemented in a
+ distributed setting with no overhead, eliminating the additional latency
+ and the possible bottlenecks for system-level messages.
+\end_layout
+
+\begin_layout Standard
+However, distributed message causality can be useful at the application
+ level.
+ Using multiple tree-structured networks (overlaid on the actual underlying
+ network), it is possible to build any number of 
+\emph on
+causality bubbles
+\emph default
+, over which messaging, whether on a single node or across nodes, maintain
+ causality.
+ These causality bubbles can each have a different topology over the same
+ nodes.
+ As a result, the 
+\begin_inset Formula $O(\mathit{log}\,n)$
+\end_inset
+
+ latency cost is still born, but bottlenecks are reduced because each bubble
+ has a different tree-structure.
+\end_layout
+
+\begin_layout Standard
+It is interesting to note that logically atomic behaviours, and thus deny
+ capabilities for data-race freedom, play an important part in causal messaging.
+ The ability to expand a capability set to examine some modified memory
+ location during the execution of 
+\begin_inset Formula $m$
+\end_inset
+
+, and therefor treating the modified memory location as a new message 
+\begin_inset Formula $m'$
+\end_inset
+
+, effectively allows an actor to reorder its message queue.
+ Such reordering can lead to causality violations.
+ Any data race can cause such a violation by propagating information outside
+ of message passing system, but it is also possible to have causality violations
+ when data-race freedom is preserved if behaviours are not logically atomic.
+\end_layout
+
+\begin_layout Standard
+For example, suppose actor 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ sends messages 
+\begin_inset Formula $m_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $m_{2}$
+\end_inset
+
+, in that order, to actor 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+.
+ In this case, 
+\begin_inset Formula $m_{1}$
+\end_inset
+
+ is a cause of 
+\begin_inset Formula $m_{2}$
+\end_inset
+
+.
+ Now suppose that while handling 
+\begin_inset Formula $m_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ sends message 
+\begin_inset Formula $m_{3}$
+\end_inset
+
+ to 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ and receives the result as a blocking future, such that 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ will treat the result generated by 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ as a new message 
+\begin_inset Formula $m_{1}'$
+\end_inset
+
+, handling it as a continuation of 
+\begin_inset Formula $m_{1}$
+\end_inset
+
+ and, importantly, 
+\emph on
+before
+\emph default
+ handling 
+\begin_inset Formula $m_{2}$
+\end_inset
+
+.
+ When 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ then receives 
+\begin_inset Formula $m_{3}$
+\end_inset
+
+ and generates a result, it populates the future that 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ has blocked on.
+ This result is a message 
+\begin_inset Formula $m_{4}$
+\end_inset
+
+, and its causes are 
+\begin_inset Formula $m_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $m_{2}$
+\end_inset
+
+ (the messages 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ has previously sent) and 
+\begin_inset Formula $m_{3}$
+\end_inset
+
+ (the messages 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ has previously received).
+ Now 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ unblocks, as the future has been fulfilled, and handles the result 
+\begin_inset Formula $m_{4}$
+\end_inset
+
+.
+ At this point, 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ has handled 
+\begin_inset Formula $m_{1}$
+\end_inset
+
+, is handling 
+\begin_inset Formula $m_{4}$
+\end_inset
+
+ next, and will handle 
+\begin_inset Formula $m_{2}$
+\end_inset
+
+ in the future, resulting in a causality violation: 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ handles the effect 
+\begin_inset Formula $m_{4}$
+\end_inset
+
+ before the cause 
+\begin_inset Formula $m_{2}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Message-based Garbage Collection
+\end_layout
+
+\begin_layout Standard
+Pony's garbage collector uses the underlying message-passing architecture
+ as its only form of concurrent coordination.
+ This is important for performance, but it is also important for correctness
+ and reasoning.
+\end_layout
+
+\begin_layout Standard
+Most implementations of the actor model require actors to be 
+\emph on
+explicitly terminated
+\emph default
+.
+ That is, the programmer must manually manage actor lifetime, and send an
+ actor that is no longer required a message requesting termination.
+ This is effectively equivalent to manual memory management, with all of
+ the attendant pitfalls.
+ An actor that is prematurely collected may result in messages being ignored,
+ or delivered to the wrong actor, or cause the program to terminate.
+ An actor that is never collected will continue to consume memory and possibly
+ CPU time.
+\end_layout
+
+\begin_layout Standard
+Message-based garbage collection in Pony allows both actors and passive
+ objects to be garbage collected, in both the concurrent and the distributed
+ setting.
+ As a result, the programmer not only need not manually manage actors, but
+ also need not write code to defend against the possibility of a message
+ being sent to a prematurely terminated actor.
+ This both reduces the burden on the programmer and also allows for truly
+ composable actor model subsystems, since the details of actor lifetime
+ management do not have to be communicated between layers or components.
+\end_layout
+
+\begin_layout Standard
+The same protocol that is used to garbage collect actors is also used to
+ determine quiescence amongst scheduler threads on a single node and amongst
+ nodes in a distributed environment.
+ As a result, programs themselves also need not be explicitly terminated.
+ Instead, a program terminates when there is no more work to be done and
+ no more work can be created, without explicitly exiting a top level function
+ or any other such explicit mechanism.
+ As a result, no unit of execution is the leader, in the sense that no unit
+ of execution can terminate and result in the termination of a program that
+ may or may not have finished processing all pending and future work.
+\end_layout
+
+\begin_layout Standard
+Message-based garbage collection relies on both the data-race free type
+ system and causal messaging.
+ Static data-race freedom allows coordination-free traversal of of data
+ structures, both when sending and receiving messages and when collecting
+ an individual actor's heap.
+ Without static data-race freedom guarantees, the protocol would be both
+ significantly more complicated and require runtime thread coordination,
+ which is problematic when scaling over a large number of cores on a single
+ node, and even more problematic in a distributed environment.
+\end_layout
+
+\begin_layout Standard
+Causal messaging is used on a single node to enable the protocol to function
+ without requiring acknowledgement messages when message-based reference
+ counts are changed.
+ Without causal messaging, such acknowledgement messages would effectively
+ constitute a form of coordination, and would exhibit similar scaling problems.
+\end_layout
+
+\begin_layout Section
+Performance
+\end_layout
+
+\begin_layout Standard
+In co-designing the type system and the runtime, one of the motivations
+ has been the idea that an advanced type system can be a tool for performance
+ as well as for correctness.
+ Some aspects of this are already well known, such as simplifying runtime
+ virtual dispatch, eliding error checking and handling in the presence of
+ an invalid type assumption, or using a type system that ensures data-race
+ freedom to write concurrent programs without locks.
+\end_layout
+
+\begin_layout Standard
+There are other design decisions, however, which impact performance in a
+ way that may not be immediately obvious.
+\end_layout
+
+\begin_layout Subsection
+Behaviours as Methods
+\end_layout
+
+\begin_layout Standard
+In many actor model languages, receiving a message involves an explicit
+ expression in the source code.
+ In Pony, behaviours are instead written as methods on an actor type.
+ As a result, Pony messages behave as asynchronous function calls: they
+ are statically typed, and can interact fully with subtyping.
+ For example, it is possible for an actor behaviour to be a subtype of a
+ synchronous function.
+\end_layout
+
+\begin_layout Standard
+This approach disallows receiving a new message while handling the current
+ message.
+ This is important for maintaining logically atomic behaviours, as it disallows
+ expanding the available capability set with the arguments to a future message.
+ In addition, pattern matching on the queue to select a specific message
+ is also effectively disallowed, which is important for maintaining message
+ causality.
+\end_layout
+
+\begin_layout Standard
+Defining behaviours as methods has important performance implications as
+ well.
+ An obvious benefit is that strongly typed messages have similar performance
+ benefits to strongly typed functions.
+ Runtime type checking of arguments is not required, and machine words need
+ not be boxed or otherwise distinguished at runtime from object references.
+\end_layout
+
+\begin_layout Standard
+In addition, the lack of an explicit source statement to receive a message
+ removes the need to capture a stack in order to suspend the execution of
+ an actor while awaiting message delivery.
+ Removing the need to capture the stack significantly simplifies the runtime.
+ Not only does it avoid the need for user-space stack swapping or copying,
+ but it also allows the runtime to use standard operating system stacks
+ for scheduler threads.
+ This allows the foreign function interface (FFI) to conform to the local
+ platform's C ABI, allowing Pony to call code written in any language that
+ can expose a conforming interface, without any overhead.
+ No marshalling or other preparation is required.
+ When link-time optimisation information is available, the Pony compiler
+ can even inline FFI calls in Pony programs.
+\end_layout
+
+\begin_layout Standard
+Disallowing pattern matching on an actor's message queue not only maintains
+ message causality, it also allows an efficient lock-free unbounded intrusive
+ queue to be used in the runtime.
+ The queue can perform integral memory management without needing to garbage
+ collect queue entries, which is important for coordination-free garbage
+ collection.
+\end_layout
+
+\begin_layout Subsection
+Exceptions as Partial Functions
+\end_layout
+
+\begin_layout Standard
+Exception handling is a complex topic, both for reasons of type safety,
+ particularly in the presence of checked exceptions, and for performance.
+ The approach adopted by Pony is somewhat different from existing exception
+ handling mechanisms, in that exceptions that unwind the stack can be raised,
+ but these exception do not carry information.
+ That is, there is no type or value associated with an exception.
+ Effectively, a function that can raise an exception represents a partial
+ function, one for which not every value in the domain produces a value
+ in the range.
+\end_layout
+
+\begin_layout Standard
+This approach allows Pony to have fully checked exceptions without the associate
+d problems of function type signature expansion or issues with modularity.
+ A Pony exception still represents a non-local return, but since it carries
+ no information, the possibility of a non-local return can be indicated
+ with a single bit of information (i.e.
+ annotation as a partial function) rather than requiring all possible non-local
+ return types to be enumerated.
+ This also addresses the modularity problem: a change in a callee's exception
+ raising behaviour (assuming the callee was already a partial function)
+ does not impact the caller.
+\end_layout
+
+\begin_layout Standard
+At runtime, this has a noticeable performance impact.
+ In most languages, an exception results in a two-phase stack unwinding
+ process.
+ The first phase the locates a landing pad (a destination for the non-local
+ return) in the stack that is capable of handling an exception of the type
+ being raised.
+ The second phase iterates through the stack frames that will be discarded,
+ running any finalisation code, for example 
+\begin_inset Formula $\mathtt{finally}$
+\end_inset
+
+ blocks in Java or destructors for objects on the stack in C++, and then
+ continues execution at the landing pad.
+ Some languages, such as Java, compound the resulting performance issues
+ by carrying a backtrace in the exception information, which must be built
+ before unwinding since frames will be discarded during the unwinding process.
+\end_layout
+
+\begin_layout Standard
+In contrast, Pony effectively has a one-phase unwind process.
+ The stack is searched for a landing pad, without having to determine if
+ the landing pad is capable of handling the exception, since the exception
+ has no value and can be handled by any landing pad.
+ Once the landing pad is found, execution immediately continues at the landing
+ pad, without the need to walk the stack or reify a backtrace.
+\end_layout
+
+\begin_layout Standard
+Including exceptions in the language at all was also a performance decision.
+ In the absence of exceptions, methods could return union types that include
+ error values (an approach that is also used in the Pony standard library
+ when a reason for failure must be propagated up the stack).
+ However, this would require machine-word return values to be boxed in order
+ to be able to distinguish them from types representing errors, which is
+ a significant performance penalty.
+ In addition, the return value would have to be checked by the caller, which
+ has a runtime cost.
+ Exceptions allow for code that does not normally fail to elide the cost
+ of checking the return value, improving performance when no error occurs,
+ at the expense of an increased cost (due to stack unwinding) when an error
+ does happen.
+\end_layout
+
+\begin_layout Subsection
+Single Compilation Unit
+\end_layout
+
+\begin_layout Standard
+Many ahead-of-time compiled languages provide 
+\emph on
+separate
+\emph default
+ or even 
+\emph on
+independent
+\emph default
+ compilation.
+ In contrast, even though the Pony type system allows type checking to be
+ both local and modular, the compiler treats a program as a single compilation
+ unit.
+ Compiler passes before code generation are separate, but code generation
+ occurs for the entire program at once.
+\end_layout
+
+\begin_layout Standard
+Performance oriented compilers, such as C and C++, have been moving towards
+ this approach with 
+\emph on
+link-time optimisation
+\emph default
+, wherein object files include the compiler's internal program representation
+ (such as GIMPLE or LLVM IR) and the linker can then perform inter-procedural
+ optimisations across object files.
+\end_layout
+
+\begin_layout Standard
+Pony leverages the single compilation unit approach not just for inter-procedura
+l optimisation, but also to perform reachability analysis, which is used
+ for dead code elimination, generic type and method instantiation, to enable
+ 
+\emph on
+selector colouring
+\emph default
+ for virtual dispatch, and to reify structural types for runtime pattern-matchin
+g on type.
+\end_layout
+
+\begin_layout Standard
+Reachability analysis in Pony is performed by tracing the program from the
+ entry point and finding all types and methods that are instantiated in
+ the program.
+ When a method receiver is a trait, an interface, or a union type, the method
+ is instantiated on all subtypes of the receiving type.
+ This process simultaneously performs dead code elimination.
+\end_layout
+
+\begin_layout Standard
+Type and method reifications account for the full type of all type arguments,
+ including reference capabilities and viewpoint adaptation, to allow the
+ most specific possible code to be generated, including elements not present
+ in the source, such as code generation to support garbage collection.
+ During this process, all subtyping information required at runtime is reified,
+ which allows both nominal and structural subtyping to be determined at
+ compile time and stored in the type descriptors.
+\end_layout
+
+\begin_layout Standard
+Precomputing subtyping information allows a selector colouring algorithm
+ to be used to calculate method indices for virtual dispatch.
+ This algorithm is similar to register colouring.
+ It assigns an integer index to each method based on a matrix of types and
+ the methods that are instantiated on those types.
+ As a result, at runtime, virtual dispatch is always a single integer lookup
+ in an array, without requiring thunking or other methods of selecting the
+ correct vtable.
+\end_layout
+
+\begin_layout Standard
+Since this approach precomputes both nominal and structural subtyping, there
+ is no additional runtime cost when using structural types as compared to
+ nominal types.
+ Effectively, during reachability, structural types are reified as anonymous
+ nominal types.
+\end_layout
+
+\begin_layout Standard
+The downside of using a single compilation unit is that it prevents incremental
+ compilation.
+ This results in longer compilation times when making small edits to programs,
+ since the entire program must be recompiled.
+ In addition, it prevents constructing a REPL for the language, as adding
+ code to a running program is not possible.
+ This will be addressed in future work.
+\end_layout
+
+\begin_layout Subsection
+C ABI Compatibility
+\end_layout
+
+\begin_layout Standard
+The runtime is designed so that the 
+\emph on
+foreign function interface
+\emph default
+ does not require marshalling or unmarshalling of arguments, nor any stack
+ manipulation.
+ The underlying scheduler threads use standard kernel threads on every platform,
+ and do not require the stack to be copied or modified.
+ The use of logically atomic behaviours allows this to be done efficiently,
+ as each behaviour runs to completion on a single scheduler thread, using
+ the stack in the usual manner.
+\end_layout
+
+\begin_layout Standard
+As a result, FFI calls can be made without any cost other than the function
+ prologue and epilogue of the target function, i.e.
+ the same cost paid in C, C++ or Fortran.
+ A Pony program can link to a static or dynamic library written in any language,
+ which allows Pony programs to leverage existing software.
+ For example, the standard library uses both OpenSSL (for SSL, TLS and cryptogra
+phic functions) and PCRE2 (for Perl compatible regular expressions).
+\end_layout
+
+\begin_layout Standard
+If the target library provides link time optimisation information, a Pony
+ program can inline functions from the library, providing a significant
+ performance improvement.
+\end_layout
+
+\begin_layout Standard
+In order to provide more complete FFI compatibility, Pony has a separate
+ object type called a 
+\begin_inset Formula $\mathtt{struct}$
+\end_inset
+
+ that is ABI compatible with a C 
+\begin_inset Formula $\mathtt{struct}$
+\end_inset
+
+.
+ As a result, it has no object header, and so a Pony 
+\begin_inset Formula $\mathtt{struct}$
+\end_inset
+
+ cannot be a subtype of any other type, since it would not be able to disambigua
+te the type at runtime.
+ Their use is confined solely to FFI interoperability.
+\end_layout
+
+\begin_layout Section
+Philosophy
+\end_layout
+
+\begin_layout Standard
+In the spirit of Richard Gabriel, the Pony philosophy is neither "the-right-thin
+g" nor "worse-is-better".
+ It is "get-stuff-done".
  
 \end_layout
 
-\begin_layout Section
-TODO:
+\begin_layout Itemize
+Correctness.
+ Incorrectness is simply not allowed.
+ 
+\emph on
+It's pointless to try to get stuff done if you can't guarantee the result
+ is correct.
+ 
+\end_layout
+
+\begin_layout Itemize
+Performance.
+ Runtime speed is more important than everything except correctness.
+ If performance must be sacrificed for correctness, try to come up with
+ a new way to do things.
+ 
+\emph on
+The faster the program can get stuff done, the better.
+ This is more important than anything except a correct result.
+ 
+\end_layout
+
+\begin_layout Itemize
+Simplicity.
+ Simplicity can be sacrificed for performance.
+ It is more important for the interface to be simple than the implementation.
+ 
+\emph on
+The faster the programmer can get stuff done, the better.
+ It's ok to make things a bit harder on the programmer to improve performance,
+ but it's more important to make things easier on the programmer than it
+ is to make things easier on the language/runtime.
+ 
+\end_layout
+
+\begin_layout Itemize
+Consistency.
+ Consistency can be sacrificed for simplicity or performance.
+ 
+\emph on
+Don't let excessive consistency get in the way of getting stuff done.
+ 
+\end_layout
+
+\begin_layout Itemize
+Completeness.
+ It's nice to cover as many things as possible, but completeness can be
+ sacrificed for anything else.
+ 
+\emph on
+It's better to get some stuff done now than wait until everything can get
+ done later.
+ 
 \end_layout
 
 \begin_layout Standard
-Design decisions:
+The "get-stuff-done" approach has the same attitude towards correctness
+ and simplicity as "the-right-thing", but the same attitude towards consistency
+ and completeness as "worse-is-better".
+ It also adds performance as a new principle, treating it as the second
+ most important thing, after correctness.
 \end_layout
 
-\begin_layout Itemize
-Actor model
-\end_layout
-
-\begin_layout Itemize
-Mutation
-\end_layout
-
-\begin_layout Itemize
-Shared memory
-\end_layout
-
-\begin_layout Itemize
-Statically, strongly typed
-\end_layout
-
-\begin_layout Itemize
-Safety through type system
-\end_layout
-
-\begin_layout Itemize
-Lock free
-\end_layout
-
-\begin_layout Itemize
-Garbage collected
-\end_layout
-
-\begin_layout Itemize
-GC'ing actors as well as objects
-\end_layout
-
-\begin_layout Itemize
-Native compilation (no VM)
-\end_layout
-
-\begin_layout Itemize
-C ABI compatibility
-\end_layout
-
-\begin_layout Itemize
-Generics, traits, interfaces
-\end_layout
-
-\begin_layout Itemize
-Structural types and invariant generics
-\end_layout
-
-\begin_layout Itemize
-LL(1) parsing
-\end_layout
-
-\begin_layout Itemize
-Causal messaging?
-\end_layout
-
-\begin_layout Itemize
-Implementation architecture
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Compiler structure
-\end_layout
-
-\begin_layout Itemize
-LLVM
-\end_layout
-
-\begin_layout Itemize
-Runtime API
-\end_layout
-
-\end_deeper
 \begin_layout Standard
-Perhaps also:
-\end_layout
-
-\begin_layout Itemize
-Functional features
-\end_layout
-
-\begin_layout Itemize
-Null-free type system
-\end_layout
-
-\begin_layout Itemize
-Pattern matching
-\end_layout
-
-\begin_layout Itemize
-ADTs
+As with any self-professed philosophy, this one should be taken with a grain
+ of salt.
+ It has helped guide the development of Pony, but it is the map, not the
+ territory.
 \end_layout
 
 \end_body
