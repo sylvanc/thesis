@@ -77,6 +77,12 @@ theorems-ams-bytype
 \begin_body
 
 \begin_layout Chapter
+\begin_inset CommandInset label
+LatexCommand label
+name "chap:Evaluation-and-Further"
+
+\end_inset
+
 Evaluation and Further Work
 \end_layout
 

@@ -77,6 +77,12 @@ theorems-ams-bytype
 \begin_body
 
 \begin_layout Chapter
+\begin_inset CommandInset label
+LatexCommand label
+name "chap:Language-Design-Decisions"
+
+\end_inset
+
 Language Design Decisions
 \end_layout
 

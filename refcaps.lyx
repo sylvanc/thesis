@@ -1,7 +1,9 @@
-#LyX 2.1 created this file. For more info see http://www.lyx.org/
-\lyxformat 474
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
 \begin_document
 \begin_header
+\save_transient_properties true
+\origin unavailable
 \textclass extreport
 \use_default_options true
 \begin_modules
@@ -14,16 +16,16 @@ theorems-ams-bytype
 \language_package default
 \inputencoding auto
 \fontencoding global
-\font_roman default
-\font_sans default
-\font_typewriter default
-\font_math auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
-\font_sf_scale 100
-\font_tt_scale 100
+\font_sf_scale 100 100
+\font_tt_scale 100 100
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -85,8 +87,3817 @@ Reference Capabilities
 \end_layout
 
 \begin_layout Standard
-Start with refcap vs ocap.
- Do AGERE plus some of the extended stuff in the ECOOP submission.
+Capabilities were introduced to support protection across processes 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "lampson1974protection"
+
+\end_inset
+
+, and have been adopted into several branches of computing since.
+ The term 
+\emph on
+object capabilities
+\emph default
+ was coined by Mark Miller 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "miller2006robust,miller2003capability"
+
+\end_inset
+
+ to describe the set of operations an object is allowed to apply on some
+ other object.
+ Mark Miller proposes that in order to restrict this set, one should create
+ a new object which only offers these capabilities, and which delegates
+ to the original object.
+ This is a critical insight: in a memory safe language, the methods on an
+ object are the capabilities available on that object.
+\end_layout
+
+\begin_layout Standard
+A 
+\emph on
+reference capability
+\emph default
+ is an annotation on a reference, rather than an object, that modifies the
+ capabilities available on the underlying object when it is accessed through
+ that reference.
+ In Pony, reference capabilities are used to statically ensure data-race
+ freedom.
+\end_layout
+
+\begin_layout Standard
+In previous work, reference capabilities for data-race freedom have been
+ expressed as 
+\emph on
+permissions
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand citep*
+key "boyland2001capabilities"
+
+\end_inset
+
+, 
+\emph on
+fractional permissions
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand citep*
+key "boyland2003checking"
+
+\end_inset
+
+, 
+\emph on
+uniqueness
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand citep*
+key "clarke2003external"
+
+\end_inset
+
+, 
+\emph on
+immutability
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand citep*
+key "ostlund2008ownership"
+
+\end_inset
+
+, and 
+\emph on
+isolation
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand citep*
+key "gordon2012uniqueness"
+
+\end_inset
+
+ (a refinement of 
+\emph on
+separate uniqueness
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "haller2010capabilities"
+
+\end_inset
+
+, which is a refinement of 
+\emph on
+external uniqueness
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand citep*
+key "clarke2003external"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+These approaches use reference capabilities to describe what a reference
+ is 
+\emph on
+allowed
+\emph default
+ to do.
+ Pony's type system takes a different approach and uses reference capabilities
+ to describe what other aliases are 
+\emph on
+denied
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand citep*
+key "dodds2009deny"
+
+\end_inset
+
+ by the existence of a reference.
+ This is accomplished using a matrix of 
+\emph on
+deny properties
+\emph default
+, with notions such as isolation, mutability, and immutability all being
+ derived from these properties.
+ What aliases to the object are allowed to do is explicit rather than implied,
+ whereas what the reference is allowed is derived.
+ This change in approach gives a derivation for properties previously considered
+ intrinsic, and models a reduction in reference capabilities as a weaker
+ guarantee.
+\end_layout
+
+\begin_layout Standard
+Other approaches have combined actors with data-race freedom, such as minimal
+ ownership for active objects 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "clarke2008minimal"
+
+\end_inset
+
+, capabilities for uniqueness and borrowing in Scala 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "haller2010capabilities"
+
+\end_inset
+
+, and Kilim 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "srinivasan2008kilim"
+
+\end_inset
+
+.
+ However, various useful patterns have not been supported, e.g.
+ traversing and modifying an isolated data structure, or updating an object
+ and then sending it in a message while keeping read access to it.
+ By taking a more fundamental view of reference capabilities, a more flexible
+ type system that supports such patterns became possible.
+\end_layout
+
+\begin_layout Standard
+The matrix of deny properties exposes two novel reference capability types,
+ 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+ (
+\emph on
+transition
+\emph default
+).
+ A 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ reference capability allows identity comparison and 
+\emph on
+asynchronous 
+\emph default
+method call, but does not allow reading from or writing to the reference.
+ Actors are typed as 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+, which allows them to be integrated into the object type system and passed
+ in messages.
+ A 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+ reference capability is a new form of uniqueness, 
+\emph on
+write uniqueness
+\emph default
+, that describes objects that can only be written to through a single reference,
+ but can be read from through many aliases.
+\end_layout
+
+\begin_layout Standard
+This work also extends 
+\emph on
+viewpoint adaptation
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "cunningham2008universe,gordon2012uniqueness"
+
+\end_inset
+
+ to apply to every reference capability and introduce the concept of 
+\emph on
+safe to write
+\emph default
+, which, taken together, allow reading from and writing to both unique objects
+ and unique fields.
+ The types of 
+\emph on
+temporary identifiers
+\emph default
+ are treated differently from those of permanent paths, which allows the
+ traversal of unique structures, something that is not possible using other
+ approaches 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "gordon2012uniqueness,haller2010capabilities,clarke2008minimal"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+In this system, an alias may have a different reference capability from
+ the initial reference.
+ This addresses a key issue in reference capability systems, namely that
+ sub-typing is not reflexive: an isolated type cannot be assigned to a field
+ or local variable unless the source reference is eliminated with a technique
+ such as 
+\emph on
+destructive read 
+\emph default
+or 
+\emph on
+alias burying
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand citep*
+key "boyland2001alias"
+
+\end_inset
+
+.
+ As a part of this, we introduce 
+\emph on
+unaliased types
+\emph default
+, which provide static alias tracking without alias analysis.
+\end_layout
+
+\begin_layout Standard
+Reference capabilities based on deny properties also provide a static 
+\emph on
+region
+\emph default
+ system 
+\begin_inset CommandInset citation
+LatexCommand citep*
+key "grossman2002region"
+
+\end_inset
+
+, requiring no additional annotation.
+ The 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+ reference capability provides a new form of 
+\emph on
+write region
+\emph default
+, in which a region boundary applies to write operations but not read operations.
+\end_layout
+
+\begin_layout Section
+Deny Properties
+\end_layout
+
+\begin_layout Standard
+
+\size footnotesize
+\begin_inset Float table
+wide true
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+makebox[
+\backslash
+textwidth][c]{
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+
+\size footnotesize
+\begin_inset Tabular
+<lyxtabular version="3" rows="5" columns="4">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0pt">
+<column alignment="center" valignment="top" width="0pt">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+Deny global read/write aliases
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+Deny global write aliases
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+Allow all global aliases
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+Deny local read/write aliases
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\emph on
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+cellcolor{writeable}
+\end_layout
+
+\end_inset
+
+Isolated (
+\begin_inset Formula $iso$
+\end_inset
+
+)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+Deny local write aliases
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\emph on
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+cellcolor{writeable}
+\end_layout
+
+\end_inset
+
+
+\emph default
+Transition (
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\emph on
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+cellcolor{readable}
+\end_layout
+
+\end_inset
+
+Value (
+\begin_inset Formula $val$
+\end_inset
+
+)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+Allow all local aliases
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\emph on
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+cellcolor{writeable}
+\end_layout
+
+\end_inset
+
+
+\emph default
+Reference (
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\emph on
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+cellcolor{readable}
+\end_layout
+
+\end_inset
+
+
+\emph default
+Box (
+\begin_inset Formula $\mathtt{box}$
+\end_inset
+
+)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\emph on
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+cellcolor{opaque}
+\end_layout
+
+\end_inset
+
+Tag (
+\begin_inset Formula $tag$
+\end_inset
+
+)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\emph on
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+cellcolor{writeable}
+\end_layout
+
+\end_inset
+
+
+\emph default
+(Mutable)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\emph on
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+cellcolor{readable}
+\end_layout
+
+\end_inset
+
+
+\emph default
+(Immutable)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\emph on
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+cellcolor{opaque}
+\end_layout
+
+\end_inset
+
+
+\emph default
+(Opaque)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Capability-matrix.-Capabilities"
+
+\end_inset
+
+Reference capability matrix
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Rather than indicate which operations are allowed on a reference
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+We use the term 
+\emph on
+reference 
+\emph default
+to mean the path currently being considered, and 
+\emph on
+alias
+\emph default
+ to mean any other path to the same object.
+\end_layout
+
+\end_inset
+
+, reference capabilities indicate what operations are 
+\emph on
+denied
+\emph default
+ on aliases (other references) to the same object.
+ Deny properties distinguish what is denied to the actor that holds a reference
+ (local aliases) from what is denied to all other actors (global aliases).
+ Each reference capability stands for a pair of local and global deny properties.
+ These are shown in table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:Capability-matrix.-Capabilities"
+
+\end_inset
+
+.
+ For example, 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+ denies global aliases that can read from or write to the object, but it
+ allows local aliases to both read from and write to it.
+\end_layout
+
+\begin_layout Standard
+No reference capability can deny local aliases that it allows globally.
+ Therefore, some cells in the matrix are empty.
+ For example, there is no reference capability that denies local read and
+ write aliases, but denies only write aliases globally.
+ This is because local execution is a subset of global execution.
+ As such, local deny properties can be weaker than global deny properties,
+ but not stronger.
+\end_layout
+
+\begin_layout Standard
+These deny properties are used to derive the operations permitted on a reference.
+ A reference that denies global read and write aliases is safe to both read
+ and write, i.e.
+ is 
+\emph on
+mutable
+\emph default
+, since it guarantees that no other actor can read from or write to the
+ object.
+ A reference that denies only global write aliases is only safe to read,
+ i.e.
+ 
+\emph on
+immutable
+\emph default
+, since it guarantees no other actor will write to the object, but does
+ not guarantee no other actor will read from it.
+ A reference that allows all global aliases is not safe to either read or
+ write, i.e.
+ it is opaque.
+\end_layout
+
+\begin_layout Standard
+When the local deny properties and the global deny properties of a reference
+ are the same, the reference can be safely sent as an argument to an asynchronou
+s method call to another actor, i.e.
+ it is 
+\emph on
+sendable
+\emph default
+.
+ In other words, when the local alias deny properties are the same as the
+ global alias deny properties, it does not matter which actor holds the
+ reference.
+ Reference capabilities in italics in table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:Capability-matrix.-Capabilities"
+
+\end_inset
+
+ are 
+\emph on
+sendable.
+\end_layout
+
+\begin_layout Section
+Short Examples
+\end_layout
+
+\begin_layout Standard
+A 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+ reference to an object denies global read/write aliases.
+ As a result, it is safe to mutate the object, since no other actor can
+ read from it.
+ This is effectively a traditional object-oriented 
+\emph on
+reference type
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+If an actor has a 
+\begin_inset Formula $\mathtt{box}$
+\end_inset
+
+ reference to an object, no alias can be used by other actors to write to
+ that object.
+ This means that other actors may be able to read the object, and aliases
+ in the same actor may be able to write to it (although not both: if the
+ actor can write to the object, other actors cannot read from it).
+ Using 
+\begin_inset Formula $\mathtt{box}$
+\end_inset
+
+ for immutability allows a program to enforce read-only behaviour, similar
+ to 
+\begin_inset Formula $\mathtt{const}$
+\end_inset
+
+ in C/C++.
+ For example:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+class List
+\end_layout
+
+\begin_layout Plain Layout
+
+  fun box size1(): Int => ...
+\end_layout
+
+\begin_layout Plain Layout
+
+  fun val size2(): Int => ...
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note that the receiver reference capability is specified after the keyword
+ 
+\begin_inset Formula $\mathtt{fun}$
+\end_inset
+
+.
+ In 
+\begin_inset Formula $\mathtt{size1}$
+\end_inset
+
+, by indicating that the receiver has 
+\begin_inset Formula $\mathtt{box}$
+\end_inset
+
+ reference capability, we can be certain that 
+\begin_inset Formula $\mathtt{this}$
+\end_inset
+
+ will not be mutated when calculating its size.
+ In addition, immutability is transitive, so no readable fields of 
+\begin_inset Formula $\mathtt{this}$
+\end_inset
+
+ will be mutated either.
+ Since 
+\begin_inset Formula $\mathtt{box}$
+\end_inset
+
+ denies global write aliases but does not deny local write aliases, it is
+ possible for 
+\begin_inset Formula $\mathtt{this}$
+\end_inset
+
+ to be mutated through some alias if that alias is held by the same actor.
+ The 
+\begin_inset Formula $\mathtt{box}$
+\end_inset
+
+ reference functions as a 
+\emph on
+black box
+\emph default
+: the underlying object may be mutable through an alias or it may be immutable
+ through any alias, but in any case it is immutable through this reference.
+ This form of immutability is referred to as 
+\emph on
+local immutability
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+In 
+\begin_inset Formula $\mathtt{size2}$
+\end_inset
+
+, by indicating that the receiver has 
+\begin_inset Formula $\mathtt{val}$
+\end_inset
+
+ reference capability, we make a stronger guarantee: we deny both local
+ and global write aliases.
+ As a result, it is not possible for 
+\begin_inset Formula $\mathtt{this}$
+\end_inset
+
+ (and all its readable fields) to be mutated, regardless of other aliases,
+ nor will it be mutated at any time in the future.
+ This form of immutability is referred to as 
+\emph on
+global immutability
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+Since a 
+\begin_inset Formula $\mathtt{val}$
+\end_inset
+
+ reference has the same local and global deny properties, it is possible
+ to 
+\emph on
+send
+\emph default
+ a 
+\begin_inset Formula $\mathtt{val}$
+\end_inset
+
+ reference to another actor.
+ A 
+\begin_inset Formula $\mathtt{val}$
+\end_inset
+
+ reference is effectively a 
+\emph on
+value type
+\emph default
+, similar to values in functional languages.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+actor Dataflow
+\end_layout
+
+\begin_layout Plain Layout
+
+  be calculate1(list: List val) => ...
+\end_layout
+
+\begin_layout Plain Layout
+
+  be calculate2(list: List box) // Not allowed
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We use the keyword 
+\begin_inset Formula $\mathtt{actor}$
+\end_inset
+
+ to indicate a class that can have 
+\emph on
+behaviours
+\emph default
+ (asynchronous methods), and we use the keyword 
+\begin_inset Formula $\mathtt{be}$
+\end_inset
+
+ to define behaviours.
+ A behaviour is executed asynchronously by the receiving actor, and a given
+ actor executes only one behaviour at a time, making behaviours 
+\emph on
+atomic
+\emph default
+.
+ While executing a behaviour, the receiver sees itself (i.e.
+ 
+\begin_inset Formula $\mathtt{this}$
+\end_inset
+
+ in the behaviour) as 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+, and is able to freely read from and write to its own fields.
+ However, at the call-site, a behaviour does not read from or write to the
+ receiver, and so a behaviour can be called on a 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ receiver.
+\end_layout
+
+\begin_layout Standard
+In 
+\begin_inset Formula $\mathtt{calculate1}$
+\end_inset
+
+, the 
+\begin_inset Formula $\mathtt{list}$
+\end_inset
+
+ parameter is guaranteed to be deeply and globally immutable, because a
+ 
+\begin_inset Formula $\mathtt{val}$
+\end_inset
+
+ is guaranteed to have no local or global write aliases.
+ As a result, it is safe to share this object amongst actors.
+ Denying local and global write aliases means no actor can write to the
+ object, regardless of how many actors have an alias to 
+\begin_inset Formula $\mathtt{list}$
+\end_inset
+
+, making concurrent reads safe without copying, locks, or any other runtime
+ safety mechanism.
+ In 
+\begin_inset Formula $\mathtt{calculate2}$
+\end_inset
+
+, a parameter of type 
+\begin_inset Formula $\mathtt{List\,box}$
+\end_inset
+
+ is rejected by the type system, as a 
+\begin_inset Formula $\mathtt{box}$
+\end_inset
+
+ does not deny local write aliases, making it unsafe to send a 
+\begin_inset Formula $\mathtt{box}$
+\end_inset
+
+ to another actor as the sending actor could retain a mutable alias.
+\end_layout
+
+\begin_layout Standard
+A 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ reference has no deny properties, but it can be used for 
+\emph on
+asynchronous 
+\emph default
+method calls, i.e.
+ calling behaviours.
+ A reference capability with no permissions has appeared in previous work
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Naden:2012:TSB:2103621.2103722"
+
+\end_inset
+
+, but without allowing asynchronous method calls.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+actor Dataflow
+\end_layout
+
+\begin_layout Plain Layout
+
+  be step(list: List val, flow: Dataflow tag) => ...
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Here, we can call behaviours on 
+\begin_inset Formula $\mathtt{flow}$
+\end_inset
+
+, but we cannot read or write the fields of 
+\begin_inset Formula $\mathtt{flow}$
+\end_inset
+
+.
+ However, when 
+\begin_inset Formula $\mathtt{flow}$
+\end_inset
+
+ executes those behaviours asynchronously, it will see itself as a 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+, allowing it to mutate its own state.
+ As such, 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ allows actors themselves to have a reference capability, thus integrating
+ them into the type system and allowing threads of control (in the form
+ of actors) to be treated as first-class values.
+ In contrast to existing systems 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "gordon2012uniqueness"
+
+\end_inset
+
+, this allows for the formalisation of both dynamic thread creation (actor
+ constructors) and communicating actor graphs of any shape (including cycles).
+\end_layout
+
+\begin_layout Standard
+In order to pass mutable data between actors, we use 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ references.
+ All mutable reference capabilities deny global read/write aliases, allowing
+ them to be written to because no other actor can read from the object.
+ An 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ reference also denies local read/write aliases, which means if the 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ reference is sent to another actor, we are guaranteed that the sending
+ actor no longer holds either read or write aliases to the object sent.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+actor Dataflow
+\end_layout
+
+\begin_layout Plain Layout
+
+  be step(list: List iso, flow: Dataflow tag) => ...
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Here, by passing an 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ reference, a 
+\begin_inset Formula $\mathtt{Dataflow}$
+\end_inset
+
+ actor can mutate the 
+\begin_inset Formula $\mathtt{list}$
+\end_inset
+
+ before sending it to the 
+\begin_inset Formula $\mathtt{flow}$
+\end_inset
+
+ actor.
+ In order to do this, we must be certain the sending actor does not retain
+ a read or write alias.
+ To this end we use an 
+\emph on
+aliasing 
+\emph default
+type system wherein a newly created alias to an object cannot violate the
+ deny properties of the reference being aliased.
+ For example, a newly created alias of an 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ reference must be neither readable nor writeable (i.e.
+ a 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+).
+ 
+\end_layout
+
+\begin_layout Standard
+To 
+\emph on
+move 
+\emph default
+deny properties, we 
+\emph on
+consume
+\emph default
+ a reference or use a 
+\emph on
+destructive read
+\emph default
+, both with the expected semantics.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+actor Dataflow
+\end_layout
+
+\begin_layout Plain Layout
+
+  be step(list: List iso, flow: Dataflow tag) =>
+\end_layout
+
+\begin_layout Plain Layout
+
+    flow.step(list, this) // Not allowed
+\end_layout
+
+\begin_layout Plain Layout
+
+    flow.step(consume list, this)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The type system introduces the concept of 
+\emph on
+unaliased types,
+\emph default
+ annotated with 
+\begin_inset Formula $\circ$
+\end_inset
+
+, in order to type
+\emph on
+ 
+\emph default
+values for which an alias has been removed.
+ Here, the 
+\begin_inset Formula $\mathtt{consume}$
+\end_inset
+
+ produces a 
+\begin_inset Formula $\mathtt{List\,iso\circ}$
+\end_inset
+
+ which is aliased as a 
+\begin_inset Formula $\mathtt{List\,iso}$
+\end_inset
+
+ when the behaviour is called.
+ The non-destructive read produces a 
+\begin_inset Formula $\mathtt{List\,iso}$
+\end_inset
+
+ which is aliased as a 
+\begin_inset Formula $\mathtt{List\,tag}$
+\end_inset
+
+, which is rejected by the type system.
+\end_layout
+
+\begin_layout Standard
+We distinguish between aliases which outlive the execution of an expression,
+ and 
+\emph on
+temporary identifiers
+\emph default
+ which do not.
+ The use of 
+\emph on
+temporary identifiers
+\emph default
+, combined with 
+\emph on
+viewpoint adaptation
+\emph default
+, allows reading from and writing to isolated objects and isolated fields.
+ Earlier work on isolation and external uniqueness systems 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "clarke2003external,gordon2012uniqueness,haller2010capabilities"
+
+\end_inset
+
+ does not provide this.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+actor Dataflow
+\end_layout
+
+\begin_layout Plain Layout
+
+  be step(list1: List iso, list2: List iso,
+\end_layout
+
+\begin_layout Plain Layout
+
+      flow: Dataflow tag) =>
+\end_layout
+
+\begin_layout Plain Layout
+
+    list1.next = consume list2
+\end_layout
+
+\begin_layout Plain Layout
+
+    flow.step(consume list1)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Here, we mutate 
+\begin_inset Formula $\mathtt{list1}$
+\end_inset
+
+ by assigning 
+\begin_inset Formula $\mathtt{list2}$
+\end_inset
+
+ to its 
+\begin_inset Formula $\mathtt{next}$
+\end_inset
+
+ field, maintaining isolation for both 
+\begin_inset Formula $\mathtt{list1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{list1.next}$
+\end_inset
+
+.
+ Similarly, we could read from or write to fields of 
+\begin_inset Formula $\mathtt{list1.next}$
+\end_inset
+
+, since path traversal is allowed.
+ This also allows calling methods on isolated references and fields of any
+ path depth.
+ 
+\end_layout
+
+\begin_layout Standard
+Unsafe reads are prevented by 
+\emph on
+viewpoint adaptation
+\emph default
+, and unsafe writes are prevented by 
+\emph on
+safe-to-write
+\emph default
+ rules.
+ For example:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+actor Dataflow
+\end_layout
+
+\begin_layout Plain Layout
+
+  fun ref append(list1: List iso,
+\end_layout
+
+\begin_layout Plain Layout
+
+      list2: List ref) =>
+\end_layout
+
+\begin_layout Plain Layout
+
+    list1.next = list2 // Not allowed
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Even if 
+\begin_inset Formula $\mathtt{list1.next}$
+\end_inset
+
+ had the type 
+\begin_inset Formula $\mathtt{List\,ref}$
+\end_inset
+
+, this assignment is rejected.
+ As a result, isolated references form 
+\emph on
+static regions
+\emph default
+, wherein mutable references reachable by the 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ reference can only be reached via the 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ reference and immutable references reachable by the 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ reference are either globally immutable or can only be reached via the
+ 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ reference.
+\end_layout
+
+\begin_layout Standard
+A 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+ reference makes a novel guarantee: 
+\emph on
+write uniqueness
+\emph default
+ without 
+\emph on
+read uniqueness
+\emph default
+.
+ By denying global read/write aliases, but only denying local write aliases,
+ it allows an object to be written to only via the 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+ reference, but read from via other aliases held by the same actor.
+ This allows the object to be mutable while still allowing it to 
+\emph on
+transition 
+\emph default
+to an immutable reference capability in the future, in order to share it
+ with another actor.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+class BookingManager
+\end_layout
+
+\begin_layout Plain Layout
+
+  var accountant: Accountant
+\end_layout
+
+\begin_layout Plain Layout
+
+  var all: Map[Date, Booking box]
+\end_layout
+
+\begin_layout Plain Layout
+
+  var future: Map[Date, Booking trn]
+\end_layout
+
+\begin_layout Plain Layout
+
+  fun ref close(date: Date) =>
+\end_layout
+
+\begin_layout Plain Layout
+
+    accountant.account(future.remove(date))
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+actor Accountant
+\end_layout
+
+\begin_layout Plain Layout
+
+  be account(booking: Booking val) => ...
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Here
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+In this example, we are using generic types and default reference capabilities
+ (
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+ for objects and 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ for actors).
+ While the full Pony language supports these, we will not formalise them
+ here.
+\end_layout
+
+\end_inset
+
+ we use a 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+ reference to model bookings that remain mutable until they are closed and
+ sent for accounting.
+ All bookings are in the 
+\begin_inset Formula $\mathtt{all}$
+\end_inset
+
+ map, but only mappings that have not been closed out and are still mutable
+ are in the 
+\begin_inset Formula $\mathtt{future}$
+\end_inset
+
+ map.
+ When a booking is closed, it is removed from the 
+\begin_inset Formula $\mathtt{future}$
+\end_inset
+
+ map, returning a 
+\begin_inset Formula $\mathtt{Booking\,trn\circ}$
+\end_inset
+
+, which is aliased as a 
+\begin_inset Formula $\mathtt{Booking\,trn}$
+\end_inset
+
+, which is a subtype of 
+\begin_inset Formula $\mathtt{Booking\,val}$
+\end_inset
+
+ and can be shared with the 
+\begin_inset Formula $\mathtt{Accountant}$
+\end_inset
+
+ actor.
+ Without a 
+\emph on
+write unique
+\emph default
+ type, namely 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+, this would require copying the 
+\begin_inset Formula $\mathtt{Booking}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+A 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+ reference also forms a 
+\emph on
+static region
+\emph default
+, but with a looser guarantee than an 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ reference.
+ Mutable references reachable by the 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+ reference can only be reached via the 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+ reference, but immutable references, whether global or local, are not contained
+ in the resulting 
+\emph on
+write region
+\emph default
+.
+\end_layout
+
+\begin_layout Section
+Type System
+\end_layout
+
+\begin_layout Standard
+
+\size footnotesize
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+makebox[
+\backslash
+textwidth][c]{
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $\begin{array}{ccc}
+\dfrac{\mathtt{x}\in\Gamma}{\Gamma\vdash\mathtt{x:}\Gamma(\mathtt{x})\,|\,\Gamma}\;\textrm{\textsc{T-Local}} &  & \dfrac{\Gamma\vdash\mathtt{e:S}\,\kappa\,|\,\Gamma'\quad\mathcal{F}(\mathtt{S,f})=\mathtt{S'}\,\kappa'}{\Gamma\vdash\mathtt{e.f:S'}\,\kappa\triangleright\kappa'\,|\,\Gamma'}\;\textrm{\textsc{T-Fld}}\\
+\\
+\dfrac{\mathtt{\mathtt{x}\notin\Gamma}}{\Gamma\vdash\mathtt{var\,x:ET}\,|\,\Gamma[\mathtt{x}\mapsto\mathtt{ET}]}\;\textrm{\textsc{T-DeclLocal}} &  & \dfrac{\Gamma\vdash\mathtt{e:ET\,|\,\Gamma'}\quad\Gamma'\vdash\mathtt{e':ET'}\,\Gamma''}{\Gamma\vdash\mathtt{e;e':ET'}\,|\,\Gamma''}\;\textrm{\textsc{T-Seq}}\\
+\\
+\dfrac{\Gamma(\mathtt{x})=\mathtt{S\,\kappa}\quad\Gamma\vdash_{\mathcal{A}}\mathtt{e:S\,\kappa}\,|\,\Gamma'}{\Gamma\vdash\mathtt{x=e}:\mathcal{U}(\mathtt{S}\,\kappa)\,|\,\Gamma'}\;\textrm{\textsc{T-AsnLocal}} &  & \dfrac{\begin{array}{c}
+\Gamma\vdash_{\mathcal{A}}\mathtt{e':S'}\,\kappa'\,|\,\Gamma'\\
+\Gamma'\vdash\mathtt{e:S\,\kappa\,|\,\Gamma''}\\
+\mathcal{F}(\mathtt{S,f})=\mathtt{S'}\,\kappa''\quad\kappa'\le\kappa''\\
+\vdash\kappa\triangleleft\kappa'\vee\vdash\kappa\triangleleft\kappa''
+\end{array}}{\Gamma\vdash\mathtt{e.f=e'}:\mathcal{U}(\mathtt{S'}\,\kappa\triangleright\kappa'')\,|\,\Gamma''}\;\textrm{\textsc{T-AsnFld}}\\
+\\
+\dfrac{\begin{array}{c}
+\mathcal{M}(\mathtt{S,m})=\mathtt{(T,\overline{x}:\mathtt{\overline{T}},e,ET)}\\
+\Gamma_{0}=\Gamma\quad\Gamma_{\mathtt{i-1}}\vdash_{\mathcal{A}}\mathtt{e_{i}:T{}_{i}}\,|\,\Gamma_{\mathtt{i}}\\
+\Gamma_{\mathtt{|\overline{e}|}}\vdash_{\mathcal{A}}\mathtt{e:T}\,|\,\Gamma'
+\end{array}}{\Gamma\vdash\mathtt{e.m(\overline{e}):ET}\,|\,\Gamma'}\;\textrm{\textsc{T-Sync}} &  & \dfrac{\begin{array}{c}
+\mathcal{M}(\mathtt{A,b})=\mathtt{(A\,ref,\overline{x}:\mathtt{\overline{T}},e,A\,tag)}\\
+\Gamma_{0}=\Gamma\quad\Gamma_{\mathtt{i-1}}\vdash_{\mathcal{A}}\mathtt{e_{i}:T{}_{i}}\,|\,\Gamma_{\mathtt{i}}\\
+\Gamma_{\mathtt{|\overline{e}|}}\vdash_{\mathcal{A}}\mathtt{e:A\,tag}\,|\,\Gamma'
+\end{array}}{\Gamma\vdash\mathtt{e.b(\overline{e}):A\,tag}\,|\,\Gamma'}\;\textrm{\textsc{T-Async}}\\
+\\
+\dfrac{\begin{array}{c}
+\mathcal{M}(\mathtt{C,k})=\mathtt{(C\,ref,\overline{x}:\mathtt{\overline{T}},e,C\,ref\circ)}\\
+\Gamma_{0}=\Gamma\quad\Gamma_{\mathtt{i-1}}\vdash_{\mathcal{A}}\mathtt{e_{i}:T{}_{i}}\,|\,\Gamma_{\mathtt{i}}
+\end{array}}{\Gamma\vdash\mathtt{C.k(\overline{e}):C\,ref\circ}\,|\,\Gamma_{\mathtt{|\overline{e}|}}}\;\textrm{\textsc{T-Ctor}} &  & \dfrac{\begin{array}{c}
+\mathcal{M}(\mathtt{A,k})=\mathtt{(A\,ref,\overline{x}:\mathtt{\overline{T}},e,A\,tag)}\\
+\Gamma_{0}=\Gamma\quad\Gamma_{\mathtt{i-1}}\vdash_{\mathcal{A}}\mathtt{e_{i}:T{}_{i}}\,|\,\Gamma_{\mathtt{i}}
+\end{array}}{\Gamma\vdash\mathtt{A.k(\overline{e}):A\,tag}\,|\,\Gamma_{\mathtt{|\overline{e}|}}}\;\textrm{\textsc{T-Ator}}\\
+\\
+\dfrac{\mathtt{x}\in\Gamma}{\Gamma\vdash\mathtt{consume\,x}:\mathcal{U}(\Gamma(\mathtt{x}))\,|\,\Gamma\backslash\{\mathtt{x}\}}\;\textrm{\textsc{T-Consume}} &  & \dfrac{\Gamma\backslash\{\mathtt{x}\,|\,\neg\mathit{Sendable}(\Gamma(\mathtt{x}))\}\vdash\mathtt{e:ET}}{\Gamma\vdash\mathtt{recover\,e:}\mathcal{R}(\mathtt{ET})\,|\,\Gamma}\;\textrm{\textsc{T-Rec}}\\
+\\
+\dfrac{\Gamma\vdash\mathtt{e:ET'}\,|\,\Gamma'\quad\mathcal{A}(\mathtt{ET'})\le\mathtt{T}}{\Gamma\vdash_{\mathcal{A}}\mathtt{e:T}\,|\,\Gamma'}\;\textrm{\textsc{T-Alias}} &  & \dfrac{\Gamma\vdash\mathtt{e:S}\,\kappa\circ\,|\,\Gamma'}{\Gamma\vdash\mathtt{e:S}\,\kappa\,|\,\Gamma'}\;\textrm{\textsc{T-Subsume}}
+\end{array}$
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Expression-typing"
+
+\end_inset
+
+Expression typing
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\size footnotesize
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Formula $\begin{array}{c}
+\begin{array}{ccccc}
+\dfrac{\mathtt{ET\le ET''}\quad\mathtt{ET''\le ET'}}{\mathtt{ET\le ET'}} &  & \dfrac{}{\mathtt{S\,\kappa\circ\le S\,\kappa}} &  & \dfrac{\mathtt{\kappa\le\kappa'}}{\mathtt{S\,\kappa\le S\,\kappa'}}\end{array}\\
+\\
+\mathit{\mathtt{iso\le trn\le\{ref,val\}\le box\le tag}}\\
+\\
+\mathit{Sendable}(\mathtt{T})\,\mathit{iff}\,\mathtt{T=S\,\kappa\wedge\kappa\in\{iso,val,tag\}}
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Sub-types"
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Sendable-types."
+
+\end_inset
+
+Sub-types and auxiliary type definitions
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The type system has the format 
+\begin_inset Formula $\Gamma\vdash\mathtt{e:ET}\,|\,\Gamma'$
+\end_inset
+
+ and is defined in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Expression-typing"
+
+\end_inset
+
+.
+ A new environment is generated in order to allow local variable declaration
+ and 
+\begin_inset Formula $\mathtt{consume}$
+\end_inset
+
+ to be simply expressed.
+\end_layout
+
+\begin_layout Standard
+Because this simplified type system does not formalise traits, interfaces,
+ type expressions, or generic types, the 
+\noun on
+T-Subsume 
+\noun default
+rule and the subtyping rules account only for reference capabilities.
+\end_layout
+
+\begin_layout Section
+Viewpoint Adaptation
+\end_layout
+
+\begin_layout Standard
+
+\size footnotesize
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="8" columns="7">
+<features booktabs="true" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\kappa\triangleright\kappa'$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="1" alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\kappa'$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\kappa$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+iso
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+trn
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+ref
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+val
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+box
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+tag
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+iso
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+iso
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+tag
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+tag
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+val
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+tag
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+tag
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+trn
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+iso
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+trn
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+box
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+val
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+box
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+tag
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+ref
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+iso
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+trn
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+ref
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+val
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+box
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+tag
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+val
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+val
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+val
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+val
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+val
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+val
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+tag
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+box
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+tag
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+box
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+box
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+val
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+box
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+tag
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+tag
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\bot$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\bot$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\bot$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\bot$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\bot$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\bot$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Viewpoint-adaptation"
+
+\end_inset
+
+Viewpoint adaptation.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\size footnotesize
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="8" columns="7">
+<features booktabs="true" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\kappa\triangleleft\kappa'$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="1" alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\kappa'$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\kappa$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+iso
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+trn
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+ref
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+val
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+box
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+tag
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+iso
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\surd$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\surd$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\surd$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+trn
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\surd$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\surd$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\surd$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\surd$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+ref
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\surd$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\surd$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\surd$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\surd$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\surd$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\surd$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+val
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+box
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+tag
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Safe-to-write,"
+
+\end_inset
+
+Safe to write.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+When reading a field 
+\family typewriter
+
+\begin_inset Formula $\mathtt{f}$
+\end_inset
+
+
+\family default
+ from an object 
+\begin_inset Formula $\mathtt{\iota}$
+\end_inset
+
+ we obtain a temporary identifier.
+ The reference capability of this temporary identifier must be a combination
+ of 
+\begin_inset Formula $\kappa$
+\end_inset
+
+, the reference capability of the path leading to 
+\begin_inset Formula $\iota$
+\end_inset
+
+, and 
+\begin_inset Formula $\kappa'$
+\end_inset
+
+, the reference capability with which 
+\begin_inset Formula $\iota$
+\end_inset
+
+ sees the field.
+ We express this through the operator 
+\begin_inset Formula $\triangleright$
+\end_inset
+
+, defined in table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:Viewpoint-adaptation"
+
+\end_inset
+
+.
+ When reading a field through an origin, the result must not violate the
+ deny properties of either the origin or the field.
+ For example, reading a 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+ field from an 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ reference returns 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ - thus we do not violate the deny properties of the origin or the field
+ itself.
+\end_layout
+
+\begin_layout Standard
+Storing a reference into a field of an object 
+\begin_inset Formula $\iota$
+\end_inset
+
+ is legal if the type of the reference is both a subtype of the type of
+ the field and also 
+\emph on
+safe to write
+\emph default
+ into the origin.
+ The relation 
+\begin_inset Formula $\kappa\triangleleft\kappa'$
+\end_inset
+
+, as defined in table  
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:Safe-to-write,"
+
+\end_inset
+
+, expresses which reference capabilities 
+\begin_inset Formula $\kappa'$
+\end_inset
+
+ are safe to write into origin 
+\begin_inset Formula $\kappa$
+\end_inset
+
+.
+ When writing to a field through an origin, no alias of the object being
+ written may exist that would violate the deny properties of the origin.
+ Therefore, all entries for 
+\begin_inset Formula $\mathtt{val}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathtt{box}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ are empty.
+ Moreover, only 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathtt{val}$
+\end_inset
+
+ or 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ references may be stored into an 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ origin; all other writes would violate the region introduced by the 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ origin.
+\end_layout
+
+\begin_layout Section
+Reference Capability Recovery
+\end_layout
+
+\begin_layout Standard
+The evaluation of an expression which has access only to sendable variables
+ (i.e.
+ 
+\family typewriter
+
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+
+\family default
+, 
+\begin_inset Formula $\mathtt{val}$
+\end_inset
+
+, and 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+) will return a sendable type.
+ This is an extension of previous work on 
+\emph on
+recovery
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "gordon2012uniqueness"
+
+\end_inset
+
+, which is related to work on 
+\emph on
+borrowing
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "haller2010capabilities"
+
+\end_inset
+
+.
+ We introduce such expressions through the 
+\begin_inset Formula $\mathtt{recover}$
+\end_inset
+
+ keyword (
+\noun on
+T-Rec
+\noun default
+).
+ The return type of 
+\begin_inset Formula $\mathtt{recover\,e}$
+\end_inset
+
+ is the sendable version of the return type of 
+\begin_inset Formula $\mathtt{e}$
+\end_inset
+
+.
+ For example, if 
+\begin_inset Formula $\mathtt{e}$
+\end_inset
+
+ has type 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+, then 
+\begin_inset Formula $\mathtt{recover\,e}$
+\end_inset
+
+ has type 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+, and if 
+\begin_inset Formula $\mathtt{e}$
+\end_inset
+
+ has type 
+\begin_inset Formula $\mathtt{ref\circ}$
+\end_inset
+
+, then 
+\begin_inset Formula $\mathtt{recover\,e}$
+\end_inset
+
+ has type 
+\begin_inset Formula $\mathtt{iso\circ}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Definition
+Reference capability recovery
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $\mathcal{R}(\mathtt{S}\,\kappa\,\phi)=\begin{cases}
+\mathtt{S\,iso\,\phi} & \mathit{iff}\,\kappa\in\mathtt{\{iso,trn,ref\}}\\
+\mathtt{S\,val} & \mathit{iff}\,\kappa\in\mathtt{\{val,box\}}\\
+\mathtt{S\,tag} & \mathit{otherwise}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\mathcal{R}(\mathtt{ET})$
+\end_inset
+
+ is the sendable reference capability that retains the same local read and/or
+ write guarantee.
+ In other words, a writeable reference capability can become 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ and a readable reference capability can become 
+\family typewriter
+
+\begin_inset Formula $\mathtt{val}$
+\end_inset
+
+
+\family default
+.
+ In Pony, explicit 
+\begin_inset Formula $\mathtt{recover}$
+\end_inset
+
+ expressions are used along with implicit recovery detected by the compiler.
+\end_layout
+
+\begin_layout Section
+Treatment of Actors
+\end_layout
+
+\begin_layout Standard
+Actors introduce the question of who may read or update the actor’s fields,
+ the possibility of synchronous calls on actors, and the type required for
+ asynchronous calls.
+\end_layout
+
+\begin_layout Standard
+Field read and write requires that the actor should see itself as a 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+.
+ As a result, any other actor will see it as 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+.
+ Therefore no other actor except the current one will be allowed to observe
+ an actor’s fields - a nice consequence of the type system.
+\end_layout
+
+\begin_layout Standard
+By a similar argument, because the actor sees itself as 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+, any other paths that point to it will do so as 
+\begin_inset Formula $\mathtt{box}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+, or 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+, and this means that the actor may call synchronous methods on itself,
+ provided that the receiver reference capability of the method declaration
+ is 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathtt{box}$
+\end_inset
+
+, or 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+.
+ Interestingly, for asynchronous (behaviour) calls, the receiving actor
+ only needs to be seen as a 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+, even though the receiver reference capability in the behaviour is 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+.
+ This is in contrast to method calls, where the receiving object or actor
+ has to be seen as a reference capability which is a subtype of the receiver
+ reference capability in the method declaration.
+ The looser requirement for actors is sound, because, as discussed above,
+ no other actor may obtain access to the actor’s state.
+\end_layout
+
+\begin_layout Section
+Aliasing and Unaliasing
+\end_layout
+
+\begin_layout Standard
+Assignment operations discard aliases, as they return the previous value
+ of the left-hand side (
+\noun on
+AsnLocal
+\noun default
+ and 
+\noun on
+AsnField
+\noun default
+) after overwriting it.
+ The fact that an alias has been discarded is important in the cases where
+ the reference capability is unique (
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ or 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+).
+ We indicate this through the unaliased annotation 
+\begin_inset Formula $\circ$
+\end_inset
+
+, which expresses that there is no stable path to the corresponding object.
+\end_layout
+
+\begin_layout Standard
+Because unaliasing is of importance only when the underlying reference capabilit
+y is 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+ or 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+, we have defined the unaliasing operation 
+\begin_inset Formula $\mathcal{U}$
+\end_inset
+
+, which takes a type and returns an extended type, as seen in definition
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "def:Aliasing-and-unaliasing."
+
+\end_inset
+
+.
+ This operator is used whenever an alias is discarded, for example in the
+ type system rules 
+\noun on
+T-AsnLocal
+\noun default
+ and 
+\noun on
+T-AsnFld
+\noun default
+.
+ Object constructors also introduce unaliased values, as indicated in the
+ type system rule 
+\noun on
+T-Ctor
+\noun default
+.
+\end_layout
+
+\begin_layout Standard
+Some operations introduce stable aliases (eg.
+ assignment), while others introduce only unstable ones (eg.
+ field read).
+ We express the distinction in the type system through the difference between
+ the type judgments 
+\begin_inset Formula $\Gamma\vdash\mathtt{e:ET}$
+\end_inset
+
+ and the 
+\emph on
+aliased
+\emph default
+ type judgment 
+\begin_inset Formula $\Gamma\vdash_{{\cal A}}\mathtt{e:ET}$
+\end_inset
+
+.
+ For example, when assigning an expression 
+\begin_inset Formula $\mathtt{e}$
+\end_inset
+
+ to a variable 
+\begin_inset Formula $\mathtt{x}$
+\end_inset
+
+, the right-hand side is typed in the judgment 
+\begin_inset Formula $\vdash_{\mathcal{A}}$
+\end_inset
+
+ (cf.
+ 
+\noun on
+T-AsnLocal
+\noun default
+).
+ The aliasing judgement is also applied to the receiver and arguments of
+ method calls and asynchronous behaviours (
+\noun on
+T-Sync
+\noun default
+ and 
+\noun on
+T-Async
+\noun default
+), the arguments to object and actor constructors (
+\noun on
+T-Ctor
+\noun default
+ and 
+\noun on
+T-Ator
+\noun default
+), and the right-hand side of a field assignment (
+\noun on
+T-AsnFld
+\noun default
+).
+\end_layout
+
+\begin_layout Standard
+The aliased type judgment 
+\begin_inset Formula $\Gamma\vdash_{{\cal A}}\mathtt{e:ET}$
+\end_inset
+
+ is defined in terms of the unaliased type judgment 
+\begin_inset Formula $\Gamma\vdash\mathtt{e:ET'}$
+\end_inset
+
+, where 
+\begin_inset Formula $\mathtt{ET}$
+\end_inset
+
+ has to be a super-type of the aliased version of 
+\begin_inset Formula $\mathtt{ET'}$
+\end_inset
+
+, i.e.
+ 
+\begin_inset Formula ${\cal A}(\mathtt{ET'})\le\mathtt{ET}$
+\end_inset
+
+.
+ The operation 
+\begin_inset Formula ${\cal A}(\mathtt{ET})$
+\end_inset
+
+ gives the type that an alias of 
+\begin_inset Formula $\mathtt{ET}$
+\end_inset
+
+ would have.
+ When aliasing an unaliased type there is no previous alias to consider,
+ and therefore 
+\begin_inset Formula ${\cal A}(\mathtt{S}\,\kappa\circ)=\mathtt{S}\,\kappa$
+\end_inset
+
+.
+ For other types, the result must be the minimal super-type of the underlying
+ type which is locally compatible with it, i.e.
+ 
+\begin_inset Formula $\mathcal{A}(\mathtt{S}\,\kappa)=\mathtt{S}\,\kappa'$
+\end_inset
+
+ where 
+\begin_inset Formula $\kappa'\le\mathcal{A}(\kappa')$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{A}(\kappa')$
+\end_inset
+
+ does not locally deny 
+\begin_inset Formula $\kappa'$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Definition
+\begin_inset CommandInset label
+LatexCommand label
+name "def:Aliasing-and-unaliasing."
+
+\end_inset
+
+Aliasing and unaliasing.
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Formula $\mathcal{A}(\mathtt{S}\,\mathtt{\kappa}\circ)=\mathtt{S}\,\kappa$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathcal{A}(\mathtt{S}\,\kappa)=\begin{cases}
+\mathtt{\mathtt{S}\,tag} & \mathit{iff}\,\kappa=\mathtt{iso}\\
+\mathtt{\mathtt{S}\,box} & \mathit{iff}\,\kappa=\mathtt{trn}\\
+\mathtt{S}\,\kappa & \mathit{otherwise}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathcal{U}(\mathtt{S}\,\kappa)=\begin{cases}
+\mathtt{\mathtt{S}}\,\kappa\circ & \mathit{iff}\,\kappa\in\mathtt{\{iso,trn,ref\}}\\
+\mathtt{S}\,\kappa & \mathit{otherwise}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+Thus, through a combination of aliasing and unaliasing, we can obtain unique
+ types when needed.
+ For example, for 
+\begin_inset Formula $\mathtt{x}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{y}$
+\end_inset
+
+ of type 
+\begin_inset Formula $\mathtt{C\,trn}$
+\end_inset
+
+, the assignment 
+\begin_inset Formula $\mathtt{x=y}$
+\end_inset
+
+ is illegal, because the aliased type of 
+\begin_inset Formula $\mathtt{y}$
+\end_inset
+
+ is 
+\begin_inset Formula $\mathtt{C\,box}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{C\,box}\not\le\mathtt{C\,trn}$
+\end_inset
+
+.
+ However, the assignment 
+\begin_inset Formula $\mathtt{x=consume\,y}$
+\end_inset
+
+ is legal, because the type of 
+\begin_inset Formula $\mathtt{consume\,y}$
+\end_inset
+
+ is 
+\begin_inset Formula $\mathtt{C\,trn\circ}$
+\end_inset
+
+, and the alias of 
+\begin_inset Formula $\mathtt{C\,trn\circ}$
+\end_inset
+
+ is 
+\begin_inset Formula $\mathtt{C\,trn}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Capabilities Security
+\end_layout
+
+\begin_layout Standard
+Pony is both an object capability
+\emph on
+ 
+\emph default
+and reference capability secure language.
+ TODO:
 \end_layout
 
 \end_body

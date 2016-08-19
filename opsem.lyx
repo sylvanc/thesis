@@ -78,17 +78,292 @@ theorems-ams-bytype
 
 \begin_layout Chapter
 \noindent
-Operational Semantics
+Syntax and Operational Semantics
 \end_layout
 
 \begin_layout Standard
-The operational semantics of Pony is presented here as a small-step operational
- semantics that expresses a subset of the full Pony language.
+The syntax and operational semantics of Pony is presented here as a small-step
+ operational semantics that expresses a simplified subset of the full Pony
+ language.
  In this subset, tuples are modelled as classes, whereas in the full language
  they are not.
- In addition, control structures such as conditional, loops, pattern matching,
- and exception handling, have been not been covered in this semantics, nor
- have the semantics of boolean and machine word types been addressed.
+ In addition, control structures such as conditional, loops, and exception
+ handling, have been not been covered in this semantics, nor have the semantics
+ of boolean and machine word types been addressed.
+\end_layout
+
+\begin_layout Standard
+In addition, the full language has 
+\emph on
+primitive 
+\emph default
+types (stateless singleton types similar to parameterised modules), 
+\emph on
+struct 
+\emph default
+types for C ABI compatibility, single-assignment fields and variables, embedded
+ fields, nominal and structural subtyping, intersection and union types,
+ object literals, lambdas, partial application, pattern matching, case functions
+, and most importantly generic types and methods.
+ Various forms of syntactic sugar are also used to allow for more succinct
+ code.
+\end_layout
+
+\begin_layout Section
+Syntax
+\end_layout
+
+\begin_layout Standard
+
+\size footnotesize
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Formula $\begin{array}{rcccl}
+\mathtt{P} & \in & \mathit{Program} & ::= & \mathtt{\overline{CT}\,\overline{AT}}\\
+\mathtt{CT} & \in & \mathit{ClassDef} & ::= & \mathtt{class\,C\,\overline{F}\,\overline{K}\,\overline{M}}\\
+\mathtt{AT} & \in & \mathit{ActorDef} & ::= & \mathtt{actor\,A\,\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\\
+\mathtt{S} & \in & \mathit{TypeID} & ::= & \mathtt{A\,|\,C}\\
+\mathtt{T} & \in & \mathit{Type} & ::= & \mathtt{S\,\kappa}\\
+\mathtt{ET} & \in & ExtType & ::= & \mathtt{T\,|\,S\,\kappa\circ}\\
+\mathtt{F} & \in & \mathit{Field} & ::= & \mathtt{var\,f:T}\\
+\mathtt{K} & \in & \mathit{Ctor} & ::= & \mathtt{new\,k(\overline{x}:\overline{T})\Rightarrow e}\\
+\mathtt{M} & \in & \mathit{Func} & ::= & \mathtt{fun\,\kappa\,m(\overline{x}:\overline{T}):ET\Rightarrow e}\\
+\mathtt{B} & \in & \mathit{Behv} & ::= & \mathtt{be\,b(\overline{x}:\overline{T})\Rightarrow e}\\
+\mathtt{n} & \in & \mathit{MethodID} & ::= & \mathtt{k\,|\,m\,|\,b}\\
+\mathtt{\kappa} & \in & \mathit{Cap} & ::= & \mathtt{iso\,|\,trn\,|\,ref\,|\,val\,|\,box\,|\,tag}\\
+\mathtt{e} & \in & \mathit{Expr} & ::= & \mathtt{this\,|\,x\,|\,var\,x:T\,|\,x=e\,|\,e;e\,|\,e.f}\\
+ &  &  & | & \mathtt{e.f=e\,|\,consume\,x\,|\,recover\,e}\\
+ &  &  & | & \mathtt{e.m(\overline{e})\,|\,e.b(\overline{e})\,|\,S.k(\overline{e})}\\
+\mathtt{E[\cdot]} & \in & \mathit{ExprHole} & ::= & \mathtt{x=E[\cdot]\,|\,E[\cdot];e\,|\,(E[\cdot])\,|\,E[\cdot].f}\\
+ &  &  & | & \mathtt{e.f=E[\cdot]\,|\,E[\cdot].f=z\,|\,E[\cdot].n(\overline{z})}\\
+ &  &  & | & \mathtt{e.n(\overline{z},E[\cdot],\overline{e})\,|\,recover\,E[\cdot]}
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Syntax"
+
+\end_inset
+
+Syntax
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\size footnotesize
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Formula $\begin{array}{rclcccl}
+\mathtt{C} & \in & \mathit{ClassID} &  & \mathtt{k} & \in & \mathit{CtorID}\\
+\mathtt{A} & \in & \mathit{ActorID} &  & \mathtt{m} & \in & \mathit{FuncID}\\
+\mathtt{f} & \in & \mathit{FieldID} &  & \mathtt{b} & \in & \mathit{BehvID}\\
+\mathtt{this,x} & \in & \mathit{SourceID} &  & \mathtt{n} & \in & \mathit{CtorID\cup BehvID}\\
+\mathtt{t} & \in & \mathit{TempID} &  & \mathtt{y,z} & \in & \mathit{LocalID}
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Identifiers"
+
+\end_inset
+
+Identifiers
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The syntax is presented in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Syntax"
+
+\end_inset
+
+.
+ Actors have a type, in the mould of active objects, and are introduced
+ with the keyword 
+\begin_inset Formula $\mathtt{actor}$
+\end_inset
+
+.
+ These can have both synchronous methods (
+\emph on
+functions
+\emph default
+, introduced through the keyword 
+\begin_inset Formula $\mathtt{fun}$
+\end_inset
+
+) and asynchronous methods (
+\emph on
+behaviours
+\emph default
+, introduced through the keyword 
+\begin_inset Formula $\mathtt{be}$
+\end_inset
+
+) as well as named constructors (introduced through the keyword 
+\begin_inset Formula $\mathtt{new}$
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+Passive objects (introduced through the keyword 
+\begin_inset Formula $\mathtt{class}$
+\end_inset
+
+) have only synchronous methods (functions) and constructors.
+ The term 
+\emph on
+method
+\emph default
+ is used to refer to constructors, functions, and behaviours.
+\end_layout
+
+\begin_layout Standard
+The novel element of the syntax is the inclusion of
+\emph on
+ reference capability annotations
+\emph default
+ 
+\begin_inset Formula $\kappa$
+\end_inset
+
+ on types and functions, where:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\kappa\in\{\mathtt{iso,trn,ref,val,box,tag}\}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+These reference capabilities are the foundation of the Pony type system.
+\end_layout
+
+\begin_layout Standard
+Types consist of a class or actor identifier 
+\begin_inset Formula $\mathtt{S}$
+\end_inset
+
+ followed by a reference capability 
+\begin_inset Formula $\kappa$
+\end_inset
+
+.
+ In addition, extended types 
+\begin_inset Formula $\mathtt{ET}$
+\end_inset
+
+ can be 
+\emph on
+unaliased
+\emph default
+, 
+\begin_inset Formula $\circ$
+\end_inset
+
+.
+ An 
+\emph on
+unaliased type
+\emph default
+ is created with constructors and destructive reads.
+ This is described in detail in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Type-System"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The over-bar notation indicates a sequence of elements such as 
+\begin_inset Formula $\mathtt{\overline{F}}$
+\end_inset
+
+, with the convention that the 
+\begin_inset Formula $n^{th}$
+\end_inset
+
+ element is referred to as 
+\begin_inset Formula $\mathtt{F_{n}}$
+\end_inset
+
+.
+ Similarly, 
+\begin_inset Formula $\mathtt{\overline{x}:\overline{T}}$
+\end_inset
+
+ indicates a pairwise sequence of identifiers and types.
+ To reduce notation, a 
+\emph on
+fixed
+\emph default
+ program 
+\begin_inset Formula $\mathtt{P}$
+\end_inset
+
+ is assumed.
+\end_layout
+
+\begin_layout Section
+Operational Semantics
 \end_layout
 
 \begin_layout Standard
@@ -111,6 +386,7 @@ v & \in & \mathit{Value} & = & \mathit{Addr\cup\{null\}}\\
 \omega & \in & \mathit{ObjectAddr}\\
  &  & \mathit{Actor} & = & \mathit{ActorID\times(FieldID\rightarrow Value)}\\
  &  &  &  & \mathit{\times\overline{Message}}\times Stack\times Expr\\
+ &  &  &  & \times(\mathit{ActorID}\rightarrow\overline{Message})\\
  &  & \mathit{Object} & = & \mathit{ClassID\times(FieldID\rightarrow Value)}\\
 \mu & \in & \mathit{Message} & = & \mathit{MethodID\times\overline{Value}}
 \end{array}$
@@ -150,10 +426,27 @@ status open
 
 \begin_layout Plain Layout
 \align center
+
+\size small
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+makebox[
+\backslash
+textwidth][c]{
+\end_layout
+
+\end_inset
+
+
 \begin_inset Formula $\begin{array}{ccc}
 \dfrac{\chi,\sigma\cdot\varphi,\mathtt{e}\rightsquigarrow\chi',\sigma\cdot\varphi',\mathtt{e'}}{\chi,\sigma\cdot\varphi,\mathtt{E[e]}\rightsquigarrow\chi',\sigma\cdot\varphi',\mathtt{E[e']}}\;\textrm{\textsc{ExprHole}} &  & \dfrac{\mathtt{t}\notin\varphi\quad\iota=\varphi(\mathtt{z})\quad\varphi'=\varphi[\mathtt{t}\mapsto\chi(\iota,\mathtt{f})]}{\chi,\sigma\cdot\varphi,\mathtt{z.f}\rightsquigarrow\chi,\sigma\cdot\varphi',\mathtt{t}}\;\textrm{\textsc{Fld}}\\
 \\
-\dfrac{\mathtt{t}\notin\varphi\quad\varphi'=\varphi[\mathtt{t}\mapsto\mathit{null}]}{\chi,\sigma\cdot\varphi,\mathtt{null}\rightsquigarrow\chi,\sigma\cdot\varphi',\mathtt{t}}\;\textrm{\textsc{Null}} &  & \dfrac{}{\chi,\sigma,\mathtt{z}\mathtt{;e}\rightsquigarrow\chi,\sigma,\mathtt{e}}\;\textrm{\textsc{Seq}}\\
+\dfrac{\mathtt{x}\notin\varphi\quad\varphi'=\varphi[\mathtt{x}\mapsto\mathit{null}]}{\chi,\sigma\cdot\varphi,\mathtt{var\,x:ET}\rightsquigarrow\chi,\sigma\cdot\varphi',\mathit{null}}\;\textrm{\textsc{DeclLocal}} &  & \dfrac{}{\chi,\sigma,\mathtt{z}\mathtt{;e}\rightsquigarrow\chi,\sigma,\mathtt{e}}\;\textrm{\textsc{Seq}}\\
 \\
 \dfrac{\mathtt{t}\notin\varphi\quad\varphi'=\varphi[\mathtt{x}\mapsto\varphi(\mathtt{z}),\mathtt{t}\mapsto\varphi(\mathtt{x})]}{\chi,\sigma\cdot\varphi,\mathtt{x=z}\rightsquigarrow\chi,\sigma\cdot\varphi',\mathtt{t}}\;\textrm{\textsc{AsnLocal}} &  & \dfrac{\begin{array}{c}
 \mathtt{t}\notin\varphi\quad\iota=\varphi(\mathtt{z})\quad\varphi'=\varphi[\mathtt{t}\mapsto\chi(\iota,\mathtt{f})]\\
@@ -168,7 +461,10 @@ status open
 \varphi'\downarrow_{3}=\mathtt{E[\cdot]}\quad\varphi''=\varphi[\mathtt{t}\mapsto\iota]
 \end{array}}{\chi,\sigma\cdot\varphi\cdot\varphi',\mathtt{z}\rightsquigarrow\chi,\sigma\cdot\varphi'',\mathtt{E[t]}}\;\textrm{\textsc{Return}}\\
 \\
-\dfrac{\alpha=\varphi(\mathtt{z})\quad\chi(\alpha)\downarrow_{3}=\overline{\mu}}{\chi,\sigma\cdot\varphi,\mathtt{z.b(\overline{y})}\rightsquigarrow\chi[\alpha\mapsto\overline{\mu}\cdot(\mathtt{b},\varphi(\mathtt{\overline{y}})],\sigma\cdot\varphi,\mathtt{z}}\;\textrm{\textsc{Async}} &  & \dfrac{\begin{array}{c}
+\dfrac{\begin{array}{c}
+\alpha=\varphi(\mathtt{z})\quad\chi(\alpha)\downarrow_{6}(\alpha')=\overline{\mu}\\
+\chi'=\chi[\alpha,\alpha'\mapsto\overline{\mu}\cdot(\mathtt{b},\varphi(\mathtt{\overline{y}})]
+\end{array}}{\chi,\alpha'\cdot\overline{\varphi}\cdot\varphi,\mathtt{z.b(\overline{y})}\rightsquigarrow\chi',\alpha'\cdot\overline{\varphi}\cdot\varphi,\mathtt{z}}\;\textrm{\textsc{Async}} &  & \dfrac{\begin{array}{c}
 \mathtt{A}=\chi(\alpha)\downarrow_{1}\quad(\mathtt{n},\overline{v})\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
 \mathcal{M}(\mathtt{A,n})=\mathtt{(\_,\overline{x}:\_,e,\_)}\\
 \varphi=(\mathtt{n},[\mathtt{this}\mapsto\alpha,\mathtt{\overline{x}}\mapsto\overline{v}],\cdot)
@@ -185,10 +481,20 @@ status open
 \chi'=\chi[\alpha\mapsto(\mathtt{A},\mathtt{\overline{f}}\mapsto\mathit{null},(\mathtt{k},\varphi(\mathtt{\overline{y}}),\alpha,\varepsilon)]
 \end{array}}{\chi,\sigma\cdot\varphi,\mathtt{A.k(\overline{y})}\rightsquigarrow\chi',\sigma\cdot\varphi',\mathtt{t}}\;\textrm{\textsc{Ator}}\\
 \\
-\dfrac{\chi,\sigma,\mathtt{e}\rightsquigarrow\chi',\sigma',\mathtt{e'}}{\chi,\sigma,\mathtt{recover\,e}\rightsquigarrow\chi',\sigma',\mathtt{recover\,e'}}\;\textrm{\textsc{Rec1}} &  & \dfrac{\mathtt{t}\notin\varphi\quad\varphi'=\varphi[\mathtt{t}\mapsto\varphi(\mathtt{z})]}{\chi,\sigma,\mathtt{recover\,z}\rightsquigarrow\chi,\sigma,\mathtt{t}}\;\textrm{\textsc{Rec}2}\\
-\\
-\dfrac{}{\chi,\sigma,\mathtt{consume\,x}\rightsquigarrow\chi,\sigma,\mathtt{x=null}}\;\textrm{\textsc{Consume}} &  & \dfrac{\chi,\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5}\rightsquigarrow\chi',\sigma,\mathtt{e}}{\chi\rightarrow\chi'[\alpha\mapsto(\sigma,\mathtt{e})]}\;\textrm{\textsc{Global}}
+\dfrac{\mathtt{t}\notin\varphi\quad\varphi'=\varphi[\mathtt{t}\mapsto\varphi(\mathtt{x})]\backslash\mathtt{x}}{\chi,\sigma\cdot\varphi,\mathtt{consume\,x}\rightsquigarrow\chi,\sigma\cdot\varphi',\mathtt{t}}\;\textrm{\textsc{Consume}} &  & \dfrac{\mathtt{t}\notin\varphi\quad\varphi'=\varphi[\mathtt{t}\mapsto\varphi(\mathtt{z})]}{\chi,\sigma,\mathtt{recover\,z}\rightsquigarrow\chi,\sigma,\mathtt{t}}\;\textrm{\textsc{Recover}}
 \end{array}$
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+\size small
+}
+\end_layout
+
 \end_inset
 
 
@@ -204,11 +510,59 @@ name "fig:Local-execution"
 
 \end_inset
 
-Execution.
+Local execution.
 \end_layout
 
 \end_inset
 
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\[
+\begin{array}{c}
+\dfrac{\chi,\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5}\rightsquigarrow\chi',\sigma,\mathtt{e}}{\chi\rightarrow\chi'[\alpha\mapsto(\sigma,\mathtt{e})]}\;\textrm{\textsc{Global}}\\
+\\
+\dfrac{\chi(\alpha)\downarrow_{3}=\overline{\mu}\quad\exists\alpha'.\chi(\alpha)\downarrow_{6}(\alpha')=\mu\cdot\overline{\mu'}}{\chi\rightarrow\chi[\alpha\mapsto\overline{\mu}\cdot\mu]}\;\textrm{\textsc{Deliver}}
+\end{array}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Global-execution."
+
+\end_inset
+
+Global execution.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
 
 \end_layout
 
@@ -240,6 +594,13 @@ status open
 \end_layout
 
 \begin_layout Itemize
+\begin_inset Formula $\varphi\backslash\mathtt{x}=(\varphi\downarrow_{1},[\mathtt{z}\mapsto v\,|\,\varphi(\mathtt{z})=v\wedge\mathtt{z}\neq\mathtt{x}],\varphi\downarrow_{3})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
 \begin_inset Formula $\chi(\iota,\mathtt{f})=\chi(\iota)\downarrow_{2}(\mathtt{f})$
 \end_inset
 
@@ -254,7 +615,7 @@ status open
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\chi[\alpha,\mathtt{f}\mapsto v]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2}[\mathtt{f}\mapsto v],\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5})]$
+\begin_inset Formula $\chi[\alpha,\mathtt{f}\mapsto v]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2}[\mathtt{f}\mapsto v],\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6})]$
 \end_inset
 
 
@@ -268,7 +629,7 @@ status open
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\chi[\alpha\mapsto\overline{\mu}]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\overline{\mu},\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5}]$
+\begin_inset Formula $\chi[\alpha,\alpha'\mapsto\overline{\mu}]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6}[\alpha'\mapsto\overline{\mu}])$
 \end_inset
 
 
@@ -285,75 +646,6 @@ name "fig:Auxiliary-definitions"
 \end_inset
 
 Auxiliary definitions
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-
-\size scriptsize
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-\align center
-\begin_inset Formula $\begin{array}{c}
-\dfrac{\begin{array}{c}
-\mathtt{P=\overline{CT}\,\overline{AT}}\\
-\mathtt{class\,C\,\mathtt{\overline{F}\,\overline{K}\,\overline{M}}\in\overline{CT}}
-\end{array}}{\begin{array}{c}
-\mathcal{P}(\mathtt{C})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\varepsilon}\\
-\mathtt{C\in P}
-\end{array}}\\
-\\
-\dfrac{\begin{array}{c}
-\mathtt{P=\overline{CT}\,\overline{AT}}\\
-\mathtt{actor\,A\,\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\in\overline{AT}}
-\end{array}}{\begin{array}{c}
-\mathcal{P}(\mathtt{A})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\\
-\mathtt{A\in P}
-\end{array}}\\
-\\
-\dfrac{\mathcal{P}(\mathtt{S})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}}{\mathcal{F}s(\mathtt{S})=\mathtt{\{f\,|\,var\,f:T\in\overline{F}\}}}\\
-\\
-\dfrac{\mathcal{P}(\mathtt{S})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\quad\mathtt{var\,f:T\in\overline{F}}}{\mathcal{F}(\mathtt{S,f})=\mathtt{T}}\\
-\\
-\dfrac{\mathcal{P}(\mathtt{C})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}}\quad\mathtt{(new\,k(\overline{x}:\overline{T})\Rightarrow e)}\in\mathtt{\overline{K}}}{\mathcal{M}(\mathtt{C,k})=\mathtt{(C\,ref,\overline{x}:\overline{T},e,C\,ref\circ)}}\\
-\\
-\dfrac{\mathcal{P}(\mathtt{A})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\quad\mathtt{(new\,k(\overline{x}:\overline{T})\Rightarrow e)}\in\mathtt{\overline{K}}}{\mathcal{M}(\mathtt{A,k})=\mathtt{(A\,var,\overline{x}:\overline{T},e,A\,tag)}}\\
-\\
-\dfrac{\mathcal{P}(\mathtt{S})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\quad\mathtt{(fun\,\kappa\,m(\overline{x}:\overline{T}):ET\Rightarrow e)}\in\mathtt{\overline{M}}}{\mathcal{M}(\mathtt{S,m})=\mathtt{(S\,\kappa,\overline{x}:\overline{T},e,ET)}}\\
-\\
-\dfrac{\mathcal{P}(\mathtt{A})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\quad\mathtt{(be\,b(\overline{x}:\overline{T})\Rightarrow e)}\in\mathtt{\overline{B}}}{\mathcal{M}(\mathtt{A,b})=\mathtt{(A\,ref,\overline{x}:\overline{T},e,A\,tag)}}
-\end{array}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-
-\size scriptsize
-\begin_inset Caption Standard
-
-\begin_layout Plain Layout
-\begin_inset CommandInset label
-LatexCommand label
-name "fig:Lookup-functions"
-
-\end_inset
-
-Lookup functions
 \end_layout
 
 \end_inset
@@ -384,8 +676,9 @@ The operational semantics has the shape
 \end_inset
 
  to their actor identifier, their fields, their message queue, their stack,
- and the next expression to execute.
- Runtime entities are defined in figure 
+ the next expression to execute, and a logical pairwise FIFO queue of messages
+ sent by other actors to this actor that have not yet been delivered.
+ These runtime entities are defined in figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:Runtime-entities"
@@ -401,6 +694,23 @@ reference "fig:Auxiliary-definitions"
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Standard
+Note that 
+\emph on
+null
+\emph default
+ is used to indicate an undefined field or variable in the operational semantics.
+ However, the full language does not permit the use of undefined fields
+ or variables, or the construction of a partially defined object (one where
+ some subset of fields remains undefined).
+ Thus there is no 
+\emph on
+null
+\emph default
+, in the sense of a bottom value that can inhabit any type, in the full
+ language.
 \end_layout
 
 \begin_layout Standard
@@ -422,8 +732,9 @@ The symbol
 
  to indicate identifiers which may be either.
  Temporary identifiers are used in the semantics instead of values in order
- to associate a type and reference capability with intermediate expression
- results.
+ to associate a type, including a reference capability, with intermediate
+ expression results.
+ Importantly, temporary identifiers are accounted for in well-formedness.
 \end_layout
 
 \begin_layout Standard
@@ -470,8 +781,12 @@ reference "fig:Lookup-functions"
 .
 \end_layout
 
+\begin_layout Subsection
+Local Execution
+\end_layout
+
 \begin_layout Standard
-Execution is defined in figure 
+Local execution is defined in figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:Local-execution"
@@ -479,23 +794,20 @@ reference "fig:Local-execution"
 \end_inset
 
 .
- All of the rules except 
-\noun on
-Global
-\noun default
- define local execution within an actor.
+ These rules define local execution within an actor.
  
 \noun on
 ExprHole 
 \noun default
-allows execution to propagate to the context.
+allows execution to propagate to the context, and also determines the order
+ of evaluation for complex expressions.
  
 \noun on
 Fld,
 \noun default
  
 \noun on
-Null
+DeclLocal
 \noun default
 , and
 \noun on
@@ -650,24 +962,9 @@ Ctor
 \end_inset
 
  is allocated on the heap and the fields are initialised to 
-\begin_inset Formula $null$
-\end_inset
-
-
-\begin_inset Foot
-status collapsed
-
-\begin_layout Plain Layout
-This is a simplification.
- In Pony, we support object initialisation, and have no 
-\begin_inset Formula $null$
-\end_inset
-
- values.
-\end_layout
-
-\end_inset
-
+\emph on
+null
+\emph default
 .
  A new frame is pushed on the stack in the same way as for 
 \noun on
@@ -699,23 +996,353 @@ Behave
 \begin_layout Standard
 
 \noun on
-Rec
+Recover
 \noun default
- is a no-op in the operational semantics, but has an impact in the type
- system, where 
+ and 
 \noun on
-T-Rec
+Consume
 \noun default
- affects the reference capability of the result of the expression.
+ are effectively no-ops in the operational semantics, but have an impact
+ in the type system, where 
+\noun on
+T-Recover
+\noun default
+ and 
+\noun on
+T-Consume
+\noun default
+ affect the reference capability of the result of the expression.
+\end_layout
+
+\begin_layout Subsection
+Global Execution
+\end_layout
+
+\begin_layout Standard
+Global execution is defined in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Global-execution."
+
+\end_inset
+
+ .
+
+\noun on
+ Global 
+\noun default
+says that if an actor can execute, then its stack and next expression to
+ execute will be updated.
+ 
+\noun on
+Deliver 
+\noun default
+moves a message from a logical pairwise FIFO queue to the actual actor message
+ queue.
+\end_layout
+
+\begin_layout Standard
+The purpose of the separate pairwise FIFO queues is to model an arbitrary
+ delay between some actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ sending a message and the delivery of that message to the destination actor
+ 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+.
+ On a single node, every execution of 
+\noun on
+Async 
+\noun default
+is effectively immediately followed by an execution of 
+\noun on
+Deliver
+\noun default
+ that immediately enqueues the new message.
+ This guarantees message causality on a single node.
+\end_layout
+
+\begin_layout Standard
+However, in the distributed context, 
+\noun on
+Async 
+\noun default
+is not guaranteed to be followed by 
+\noun on
+Deliver
+\noun default
+.
+ This models arbitrary delay, including network delays, and breaks causality.
+ Pairwise FIFO ordering is maintained, but it is possible for a third actor
+ to appear to violate causality.
+ Distributed causality can be built on top of this model using tree-structured
+ networks, which will be addressed in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Evaluation-and-Further"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Note that, unlike 
+\noun on
+Async, Ator 
+\noun default
+does not enqueue the constructor message.
+ Instead, the new actor is created with a single message in its queue, as
+ if 
+\noun on
+Deliver
+\noun default
+ had already taken place.
+ This is to avoid a situation in a distributed context where a message could
+ arrive before the actor had been constructed, while still allowing asynchronous
+ construction of actors in both concurrent and distributed settings.
+\end_layout
+
+\begin_layout Section
+Lookup Functions
 \end_layout
 
 \begin_layout Standard
 
-\noun on
-Global 
-\noun default
-defines global execution and says that if an actor can execute, then its
- stack and next expression to execute will be updated.
+\size scriptsize
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Formula $\begin{array}{c}
+\dfrac{\begin{array}{c}
+\mathtt{P=\overline{CT}\,\overline{AT}}\\
+\mathtt{class\,C\,\mathtt{\overline{F}\,\overline{K}\,\overline{M}}\in\overline{CT}}
+\end{array}}{\begin{array}{c}
+\mathcal{P}(\mathtt{C})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\varepsilon}\\
+\mathtt{C\in P}
+\end{array}}\\
+\\
+\dfrac{\begin{array}{c}
+\mathtt{P=\overline{CT}\,\overline{AT}}\\
+\mathtt{actor\,A\,\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\in\overline{AT}}
+\end{array}}{\begin{array}{c}
+\mathcal{P}(\mathtt{A})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\\
+\mathtt{A\in P}
+\end{array}}\\
+\\
+\dfrac{\mathcal{P}(\mathtt{S})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}}{\mathcal{F}s(\mathtt{S})=\mathtt{\{f\,|\,var\,f:T\in\overline{F}\}}}\\
+\\
+\dfrac{\mathcal{P}(\mathtt{S})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\quad\mathtt{var\,f:T\in\overline{F}}}{\mathcal{F}(\mathtt{S,f})=\mathtt{T}}\\
+\\
+\dfrac{\mathcal{P}(\mathtt{C})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}}\quad\mathtt{(new\,k(\overline{x}:\overline{T})\Rightarrow e)}\in\mathtt{\overline{K}}}{\mathcal{M}(\mathtt{C,k})=\mathtt{(C\,ref,\overline{x}:\overline{T},e,C\,ref\circ)}}\\
+\\
+\dfrac{\mathcal{P}(\mathtt{A})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\quad\mathtt{(new\,k(\overline{x}:\overline{T})\Rightarrow e)}\in\mathtt{\overline{K}}}{\mathcal{M}(\mathtt{A,k})=\mathtt{(A\,var,\overline{x}:\overline{T},e,A\,tag)}}\\
+\\
+\dfrac{\mathcal{P}(\mathtt{S})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\quad\mathtt{(fun\,\kappa\,m(\overline{x}:\overline{T}):ET\Rightarrow e)}\in\mathtt{\overline{M}}}{\mathcal{M}(\mathtt{S,m})=\mathtt{(S\,\kappa,\overline{x}:\overline{T},e,ET)}}\\
+\\
+\dfrac{\mathcal{P}(\mathtt{A})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\quad\mathtt{(be\,b(\overline{x}:\overline{T})\Rightarrow e)}\in\mathtt{\overline{B}}}{\mathcal{M}(\mathtt{A,b})=\mathtt{(A\,ref,\overline{x}:\overline{T},e,A\,tag)}}
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Lookup-functions"
+
+\end_inset
+
+Lookup functions
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Lookup functions are defined in fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Lookup-functions"
+
+\end_inset
+
+.
+ Function 
+\begin_inset Formula $\mathcal{P}$
+\end_inset
+
+ returns a type definition for a class identifier 
+\begin_inset Formula $\mathtt{C}$
+\end_inset
+
+ or actor identifier 
+\begin_inset Formula $\mathtt{A}$
+\end_inset
+
+.
+ This contains the fields 
+\begin_inset Formula $\mathtt{\overline{F}}$
+\end_inset
+
+, constructors 
+\begin_inset Formula $\mathtt{\overline{K}}$
+\end_inset
+
+, functions 
+\begin_inset Formula $\mathtt{\overline{M}}$
+\end_inset
+
+, and behaviours 
+\begin_inset Formula $\mathtt{\overline{B}}$
+\end_inset
+
+ defined for that type.
+ Since classes have no asynchronous behaviour, the last entry in 
+\begin_inset Formula $\mathcal{P}(\mathtt{C})$
+\end_inset
+
+ is empty, i.e.
+ 
+\begin_inset Formula $\varepsilon$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Function 
+\begin_inset Formula $\mathcal{F}s$
+\end_inset
+
+ returns the identifiers of all fields defined in a type 
+\begin_inset Formula $\mathtt{S}$
+\end_inset
+
+, and function 
+\begin_inset Formula $\mathcal{F}$
+\end_inset
+
+ returns the type of field 
+\begin_inset Formula $\mathtt{f}$
+\end_inset
+
+ in 
+\begin_inset Formula $\mathtt{S}$
+\end_inset
+
+.
+ Function 
+\begin_inset Formula $\mathcal{M}$
+\end_inset
+
+ returns method information for some method in 
+\begin_inset Formula $\mathtt{S}$
+\end_inset
+
+.
+ This is overloaded on both the method identifier and the type identifier
+ in order to handle class constructors, actor constructors, synchronous
+ methods (functions) and asynchronous methods (behaviours).
+ The result is a tuple of: the receiver type, the names and types of the
+ parameters, the body of the method, and the return type.
+\end_layout
+
+\begin_layout Standard
+The reference capability of the receiver and the return type can vary for
+ synchronous methods, but not for constructors or asynchronous methods.
+ Constructors always operate on a 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+ receiver, since the constructor must write to the new object's fields,
+ and return a 
+\begin_inset Formula $\mathtt{ref\circ}$
+\end_inset
+
+ result, since the new object is initially mutable but also unaliased, as
+ the constructor's reference to the receiver (
+\begin_inset Formula $\mathtt{this}$
+\end_inset
+
+) is discarded when the constructor returns.
+ This allows a constructor that is passed only sendable references as parameters
+ to be embedded in a 
+\begin_inset Formula $\mathtt{recover}$
+\end_inset
+
+ expression, which allows constructing an object with any reference capability.
+ 
+\end_layout
+
+\begin_layout Standard
+Asynchronous methods always operate on a 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+ receiver.
+ This is because the receiver of an asynchronous method is always an actor;
+ when the body is executed, a new stack with the receiver as the root actor
+ is created.
+ Since each actor executes the body of a single behaviour (or asynchronous
+ constructor) at any given time, every behaviour body can read from and
+ write to the receiver.
+ Since an asynchronous method cannot, by definition, perform any operations
+ at the call site to construct a return value before returning, the receiver
+ is returned to allow chaining method calls.
+\end_layout
+
+\begin_layout Section
+Actor model implementation
+\end_layout
+
+\begin_layout Standard
+This operational semantics is intended to conform to the design decisions
+ in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Language-Design-Decisions"
+
+\end_inset
+
+.
+ Actors as active objects, single node causality, and distributed pairwise
+ FIFO message ordering are directly provided by the operational semantics.
+\end_layout
+
+\begin_layout Standard
+However, many of the design goals cannot be provided for with the semantics
+ alone.
+ For example, logically atomic behaviours rely on the operational semantics
+ to order messages and run behaviours to completion without interleaving
+ other messages or allowing the message queue to be examined, but this is
+ insufficient.
+ Without a type system that can enforce that communication between actors
+ happens only via message passing, it remains possible for two actors to
+ exchange information by modifying fields of the same object, resulting
+ in behaviours that are no longer logically atomic.
 \end_layout
 
 \begin_layout Standard
