@@ -1,7 +1,9 @@
-#LyX 2.1 created this file. For more info see http://www.lyx.org/
-\lyxformat 474
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
 \begin_document
 \begin_header
+\save_transient_properties true
+\origin unavailable
 \textclass extreport
 \use_default_options true
 \begin_modules
@@ -14,16 +16,16 @@ theorems-ams-bytype
 \language_package default
 \inputencoding auto
 \fontencoding global
-\font_roman default
-\font_sans default
-\font_typewriter default
-\font_math auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
-\font_sf_scale 100
-\font_tt_scale 100
+\font_sf_scale 100 100
+\font_tt_scale 100 100
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -84,13 +86,3108 @@ name "chap:Actor-Collection"
 Actor Collection
 \end_layout
 
-\begin_layout Itemize
-Actor gc also adds the cycle detector
+\begin_layout Standard
+The disposal of dead actors (those no longer required for computation or
+ I/O) in actor-model languages is as important as disposal of unreachable
+ objects in object-oriented languages.
+ Actor-model languages must know when an actor has terminated in order to
+ free resources dedicated to the actor.
+ Most existing actor-model languages and libraries do not attempt to solve
+ this problem, instead requiring the programmer to explicitly manage every
+ actor's lifetime 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "armstrong2007history,haller2009scala,van2008ambient,varela2001programming,srinivasan2008kilim"
+
+\end_inset
+
+.
 \end_layout
 
-\begin_layout Itemize
-Use pseudocode to explain the actor gc algo, basing it on the object gc
- pseudocode.
+\begin_layout Standard
+The very problems that actor-model programming excels at addressing (including
+ concurrency, scalability, and simplicity) have made actor garbage collection
+ problematic, due to the difficulty of observing the global state of a program.
+ As a result, actor-model systems in applications which create many short-lived
+ actors become either more difficult to program (when they require manually
+ terminating actors) or encounter performance problems (when they have actor
+ garbage collection that is not fully concurrent).
+\end_layout
+
+\begin_layout Standard
+A language which does not provide garbage collection of actors will require
+ a facility to explicitly terminate actors.
+ This will also require the language to provide a default behaviour when
+ a message is sent to a terminated actor, the ability to distinguish at
+ runtime between terminated and non-terminated actors, and possibly notification
+ mechanisms for actor termination.
+\end_layout
+
+\begin_layout Standard
+Pony uses a novel technique for garbage collection of actors, called Message-bas
+ed Actor Collection (
+\emph on
+MAC
+\emph default
+), that satisfies the following goals:
+\end_layout
+
+\begin_layout Enumerate
+
+\emph on
+Soundness: 
+\emph default
+the technique collects only dead actors.
+\end_layout
+
+\begin_layout Enumerate
+
+\emph on
+Completeness: 
+\emph default
+the technique collects all dead actors eventually.
+\end_layout
+
+\begin_layout Enumerate
+
+\emph on
+Concurrency: 
+\emph default
+the technique does not require a stop-the-world step, thread coordination,
+ actor introspection, shared memory, read/write barriers or cache coherency.
+\end_layout
+
+\begin_layout Standard
+When an actor has completed local execution and has no pending messages
+ on its queue, it is 
+\emph on
+blocked
+\emph default
+.
+ An actor is 
+\emph on
+dead
+\emph default
+ if it is blocked and all actors that have a reference to it are blocked,
+ transitively.
+ Collection of dead actors depends on being able to collect closed cycles
+ of blocked actors.
+\end_layout
+
+\begin_layout Standard
+This approach is inspired by previous work on distributed garbage collection
+ of passive objects using distributed reference counting and a secondary
+ mechanism to collect cyclic garbage 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "dehne1994distributed,bacon2001concurrent,moreau2001construction,moreau2005birrell"
+
+\end_inset
+
+.
+ Detection of cycles of objects is based on their 
+\emph on
+topology, 
+\emph default
+which is essentially the number of incoming references and the identities
+ of all outgoing references.
+ As such, the topology of an actor consists of the number of incoming references
+ from actors, the set of outgoing references to actors, and a flag indicating
+ whether the actor is blocked.
+ A dedicated actor, called the 
+\emph on
+cycle detector
+\emph default
+, keeps track of the actor topology and detects any cycles.
+\end_layout
+
+\begin_layout Standard
+The core challenge is that the true topology of an actor is a concept distribute
+d across all of the actors: it changes not only when the actor mutates,
+ but also when other actors mutate.
+ An actor's view of its topology may be out of sync with the true topology,
+ and the cycle detector's view of an actor's topology may be out of sync
+ with the actor's view of its topology.
+ This differs radically from previous work on distributed object cycle detection
+, where objects must either be immutable or cycle detection must monitor
+ mutation 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "lins2003lazy,jones1993cyclic,de2007new"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+This technique uses the message passing paradigm at the heart of the actor-model
+: when an actor blocks, it sends a snapshot of its view of its topology
+ to the cycle detector.
+ The cycle detector in turn detects cycles based on its view of the topology
+ of blocked actors.
+ Because the cycle detector operates on its own view of the blocked actor
+ topology rather than stopping execution or monitoring mutation, cycles
+ may be detected based on a view of the topology that is out of date.
+ This is overcome with a confirmation protocol that allows the cycle detector
+ to determine whether or not its view of the blocked actor topology is the
+ same as the true topology, without stopping execution, monitoring mutation,
+ or examining any actor's state.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Background"
+
+\end_inset
+
+Background on Garbage Collection of Actors
+\end_layout
+
+\begin_layout Standard
+Existing actor-model languages and libraries use three approaches to garbage
+ collection of actors.
+\end_layout
+
+\begin_layout Standard
+The first approach is to require the programmer to manually terminate actors.
+ Many existing actor-model languages and libraries, such as Erlang 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "armstrong2007history"
+
+\end_inset
+
+, Scala 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "haller2009scala"
+
+\end_inset
+
+, AmbientTalk 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "van2008ambient"
+
+\end_inset
+
+, SALSA 2.0 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "varela2001programming"
+
+\end_inset
+
+, Kilim 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "srinivasan2008kilim"
+
+\end_inset
+
+, and Akka, do not garbage collect actors at all.
+ All of these except Kilim support actors on distributed nodes, although
+ only SALSA supports manual migration of actors to new nodes.
+ None support distributed scheduling or automatic migration.
+\end_layout
+
+\begin_layout Standard
+The second approach is to transform the actor graph into an object graph
+ and use a tracing garbage collector to collect actors 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "kafura,vardhan,n-colour"
+
+\end_inset
+
+, as done in ActorFoundry.
+ This requires shared memory, cache coherency, and a stop-the-world step.
+ This approach allows actors to be collected using the same collector used
+ for passive objects, but cannot be used across distributed nodes.
+\end_layout
+
+\begin_layout Standard
+The third approach, used in SALSA 1.0 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "wang2006distributed"
+
+\end_inset
+
+, uses reference listing (whereby an actor keeps a complete list of every
+ other actor that references it) and monitoring of actor mutation to build
+ conservative local snapshots which are assembled into a global snapshot.
+ This requires write barriers for actor mutation (which requires shared
+ memory and cache coherency), a global synchronisation agent, and coordination
+ of local snapshots within an overlapping time range.
+ These snapshots are used with the pseudo-root algorithm, which additionally
+ requires acknowledgement messages for all asynchronous messages, inverse
+ reference listing, and a multiple-message protocol for reference passing
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "wang2006non,wang2013conservative"
+
+\end_inset
+
+.
+ Like SALSA 2.0, SALSA 1.0 supports distributed nodes and manual actor migration.
+\end_layout
+
+\begin_layout Standard
+None of these approaches provides a fully concurrent method for garbage
+ collection of actors.
+\end_layout
+
+\begin_layout Subsection
+Distributed Passive Object Collection
+\end_layout
+
+\begin_layout Standard
+The literature on distributed passive object collection is vast, and so
+ only key differences will be briefly mentioned here.
+ Pony's 
+\emph on
+MAC
+\emph default
+ has been inspired not just by previous work in actor collection, but also
+ by work in concurrent cycle detection 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "bacon2001concurrent"
+
+\end_inset
+
+ and distributed reference counting 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "moreau2001construction,moreau2005birrell,jones1993cyclic,dehne1994distributed,lins2003lazy,de2007new"
+
+\end_inset
+
+ for passive object collection.
+ Some of these approaches do not address cyclic garbage 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "moreau2001construction,moreau2005birrell"
+
+\end_inset
+
+.
+ Others require either immutable passive objects or a synchronisation mechanism
+ between the cycle detector and the mutator, which makes them inapplicable
+ to actor collection 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "bacon2001concurrent,jones1993cyclic,dehne1994distributed,lins2003lazy,de2007new"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Differences From Existing Approaches
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+MAC
+\emph default
+ differs significantly from previous work.
+ Unlike distributed passive object collection, no restriction on actor mutation
+ or monitoring of mutation is required in order to detect cyclic garbage,
+ and no reference listing, indirection cells, or diffusion trees (a technique
+ whereby nodes keep a trail of object references they have passed, which
+ can lead to zombie nodes) are required.
+ Unlike the pseudo-root approach, acknowledgement messages are only required
+ when actors are actually collected, no reference listing is required, no
+ message round-trips are required, and no snapshot integration or time ranges
+ are required.
+ As a result, 
+\emph on
+MAC
+\emph default
+ requires significantly less overhead.
+ In addition, because 
+\emph on
+MAC
+\emph default
+ does not require thread coordination or cache coherency, it does not become
+ less efficient as core count increases.
+\end_layout
+
+\begin_layout Standard
+Some approaches to distributed passive object collection are fault-tolerant
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "plainfosse1995survey"
+
+\end_inset
+
+.
+ In order to make distributed garbage collection fault-tolerant, it is necessary
+ to detect and handle failure and often also to track a global view of time.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:The-Algorithm"
+
+\end_inset
+
+Message-based Actor Collection Algorithm
+\end_layout
+
+\begin_layout Standard
+The actor-model stipulates that an actor can 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "agha1986actors,agha1987concurrent"
+
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Enumerate
+Send a finite number of asynchronous, buffered messages to other actors,
+ with guaranteed delivery but no ordering or fairness guarantees.
+\end_layout
+
+\begin_layout Enumerate
+Select a behaviour to be executed in response to the next message.
+\end_layout
+
+\begin_layout Enumerate
+Create a finite number of new actors.
+\end_layout
+
+\begin_layout Standard
+Additionally, Pony requires that an actor's message queue is FIFO ordered,
+ and message delivery is 
+\emph on
+causal 
+\emph default
+on a single node.
+ Moreover, each actor has local state.
+ For 
+\emph on
+MAC
+\emph default
+, we are only concerned with references to other actors in an actor's local
+ state, but in general the local state also contains references to passive
+ objects, and actors have a stack while performing local execution, as defined
+ in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Syntax-and-Operational"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Application Messages
+\end_layout
+
+\begin_layout Standard
+Application-level messages are presented in examples as a single message
+ type (
+\emph on
+APP
+\emph default
+) that allows an actor 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ to send a set of actors 
+\begin_inset Formula $\iota s$
+\end_inset
+
+ to another actor 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+.
+ In fact, there are multiple application message types, which can contain
+ passive objects as well as actors.
+ However, since actor collection relies only on the topology of actors,
+ and not objects, the set of actors 
+\begin_inset Formula $\iota s$
+\end_inset
+
+ is used to present all explicit actor references contained in the message,
+ as well as all implicit actor references (i.e.
+ the allocating actors for any passive objects included in the message).
+\end_layout
+
+\begin_layout Standard
+This is done for convenience in examples, but the operational semantics
+ and associated definitions express actual messages and define reachability
+ fully.
+\end_layout
+
+\begin_layout Subsection
+Topology
+\end_layout
+
+\begin_layout Standard
+The 
+\emph on
+true topology 
+\emph default
+of the system is the directed graph of actor reachability.
+ Because actors execute concurrently, it is not possible to efficiently
+ track the true topology.
+ Instead, each actor maintains a view of its own topology, consisting of
+ a reference count (indicating the number of incoming graph edges) and an
+ 
+\emph on
+external map
+\emph default
+ of potentially reachable actors (the outgoing edges) to 
+\emph on
+foreign reference counts 
+\emph default
+for those actors.
+\end_layout
+
+\begin_layout Standard
+The actor's view can disagree with the true topology.
+ When an actor 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ sends a reference to itself to another actor 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+, it can immediately update its reference count, maintaining agreement with
+ the true topology.
+ However, if 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ drops its reference to 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ cannot directly mutate 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+'s reference count.
+ Now 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+'s reference count is out of sync.
+ To correct this, 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ sends a reference count decrement message (
+\emph on
+DEC
+\emph default
+) to 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+.
+ When 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ processes that message, it updates its view to restore agreement with the
+ true topology.
+\end_layout
+
+\begin_layout Standard
+Similarly, if 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ sends a reference to 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ to a third actor 
+\begin_inset Formula $\iota_{3}$
+\end_inset
+
+, it may first send a reference count increment message (
+\emph on
+INC
+\emph default
+) to 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+, allowing 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ to increase its foreign reference count, without requiring 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ to mutate any other actor's state or wait for a message in reply.
+\end_layout
+
+\begin_layout Standard
+These 
+\emph on
+INC
+\emph default
+ and 
+\emph on
+DEC
+\emph default
+ messages allow the actor's view of its topology to be eventually consistent
+ with the true topology.
+\end_layout
+
+\begin_layout Subsection
+Deferred Reference Counting
+\end_layout
+
+\begin_layout Standard
+The 
+\emph on
+external map
+\emph default
+ is an over-approximation of the set of actor references reachable from
+ some actor's local state.
+ It differs from the local state in order to allow reference counting to
+ be lazy.
+ Rather than tracking all references from 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ to 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+, a reference exists if 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ appears one or more times in 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+'s local state.
+ The external map contains all actors that have been in the actor's local
+ state or were received in a message since the last local garbage collection
+ pass.
+ When an actor performs local garbage collection, the external map is compacted
+ so as to contain only the actors still reachable from the local state.
+ Actors removed from the external map when it is compacted represent dropped
+ references, and are sent 
+\emph on
+DEC
+\emph default
+ messages.
+\end_layout
+
+\begin_layout Standard
+Similarly, when an actor 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ receives another actor 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ in a message, 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ adds 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ to its external map.
+ If 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ is not present in 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+'s external map, the reference held by the message is transferred to 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+, giving 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ a foreign reference count of 1 for 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+, and 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+'s view of its topology remains in agreement with the true topology.
+ If 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ is already present in 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+'s external map, 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ already has an outgoing edge to 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+.
+ To maintain the reference count invariant of 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+, 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ increments its foreign reference count for 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ by 1.
+\end_layout
+
+\begin_layout Standard
+This is based on, but differs from, deferred increments 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "baker1994minimizing"
+
+\end_inset
+
+, where ephemeral reference count updates can be skipped, and update coalescing,
+ where redundant reference count updates are combined for efficiency 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "levanoni2001fly"
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+In 
+\emph on
+MAC
+\emph default
+, reference counts are not updated when references are created or destroyed
+ on the stack or in the heap, but only when references are sent in messages
+ and when local garbage collection indicates no references to an actor are
+ reachable from actor's local state.
+ The messages act as the mechanism for deferring increments and the external
+ map, in combination with local garbage collection, acts as the mechanism
+ for coalescing updates.
+\end_layout
+
+\begin_layout Subsection
+Cycle Detection
+\end_layout
+
+\begin_layout Standard
+As in any reference counting system, cyclic garbage cannot be collected
+ by reference counting alone.
+ 
+\emph on
+MAC
+\emph default
+ uses a 
+\emph on
+cycle detector
+\emph default
+ that has a message queue like an actor, and can both send and receive messages.
+\end_layout
+
+\begin_layout Standard
+When an actor has no pending messages on its queue, it is 
+\emph on
+blocked
+\emph default
+.
+ When an actor blocks, it sends a block message (
+\emph on
+BLK
+\emph default
+) to the cycle detector containing the actor's view of its topology, i.e.
+ its reference count and its external map.
+ When a blocked actor processes a message, it becomes 
+\emph on
+unblocked
+\emph default
+ and sends an unblock message (
+\emph on
+UNB
+\emph default
+) to the cycle detector, informing the cycle detector that its view of that
+ actor's topology is invalid and that actor is no longer blocked.
+\end_layout
+
+\begin_layout Standard
+This allows the cycle detector to maintain a view of the topology of all
+ blocked actors that is eventually consistent with each actor's view of
+ its topology, which is in turn eventually consistent with the true topology.
+\end_layout
+
+\begin_layout Standard
+It would be possible but not efficient for application actors to perform
+ cycle detection when no messages are pending on their queue (i.e.
+ just before blocking): this would require every actor in the system to
+ maintain a view of every other actor's topology, which for 
+\begin_inset Formula $n$
+\end_inset
+
+ actors would require 
+\begin_inset Formula $n$
+\end_inset
+
+ messages upon each block and unblock and duplication of blocked actor topology
+ in every actor.
+ A separate cycle detector reduces this to one message upon block or unblock
+ regardless of the number of actors.
+\end_layout
+
+\begin_layout Subsection
+Dead Actors
+\end_layout
+
+\begin_layout Standard
+An actor is 
+\emph on
+dead
+\emph default
+ if it is blocked and all actors that have a reference to it are blocked,
+ transitively.
+ Because messaging is required to be causal on a single node, a blocked
+ actor with a reference count of zero is unreachable by any other actor
+ and is therefore dead (acyclic garbage).
+\end_layout
+
+\begin_layout Standard
+For cyclic garbage, the cycle detector uses a standard cycle detection algorithm
+ to find isolated cycles in its view of the topology of blocked actors.
+ However, the cycle detector's view of the topology may disagree with an
+ actor's view of its topology (when a 
+\emph on
+BLK
+\emph default
+ or 
+\emph on
+UNB
+\emph default
+ message is on the cycle detector's queue but as yet unprocessed), and the
+ actor's view of its topology may in turn disagree with the true topology
+ (when an 
+\emph on
+INC
+\emph default
+ or 
+\emph on
+DEC
+\emph default
+ message is on the actor's queue but as yet unprocessed).
+ If cyclic garbage is detected on the basis of a view of the topology that
+ disagrees with the true topology, that cycle must not be collected.
+ We call a cycle that has been detected a 
+\emph on
+perceived cycle 
+\emph default
+and a cycle that has been detected using a view of the topology that agrees
+ with the true topology a 
+\emph on
+true cycle.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide true
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename graphics/cycle.dot.png
+	scale 30
+	groupId diagrams
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Initial state, as in step 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:Given-three-actors"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset space \qquad{}
+\end_inset
+
+
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename graphics/cycle.dot.2.png
+	scale 30
+	groupId diagrams
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ blocks, as in step 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:-blocks,-sending"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename graphics/cycle.dot.3.png
+	scale 30
+	groupId diagrams
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ sends 
+\begin_inset Formula $\iota_{3}\leftarrow APP(\iota_{1})$
+\end_inset
+
+ and drops 
+\begin_inset Formula $\iota_{3}$
+\end_inset
+
+, as in step 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:-wishes-to"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset space \qquad{}
+\end_inset
+
+
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename graphics/cycle.dot.4.png
+	scale 30
+	groupId diagrams
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset Formula $\iota_{3}$
+\end_inset
+
+ processes 
+\begin_inset Formula $APP(\iota_{1})$
+\end_inset
+
+ and drops 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+, as in step 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:-processes-,-1"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename graphics/cycle.dot.5.png
+	scale 30
+	groupId diagrams
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ blocks, as in step 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:-processes-,-1"
+
+\end_inset
+
+.
+ The perceived cycle is incorrect due to 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+'s pending 
+\emph on
+INC
+\emph default
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Initial-PC"
+
+\end_inset
+
+Diagram of example 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "A-perceived-cycle"
+
+\end_inset
+
+.
+ Boxes display the reference count (
+\begin_inset Formula $\rho$
+\end_inset
+
+), and queue (Q) of actors, with round corners indicating unblocked and
+ square corners indicating blocked.
+ The arrows indicate references, e.g.
+ 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ references 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+, which implicitly shows the external map.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Example
+\begin_inset CommandInset label
+LatexCommand label
+name "A-perceived-cycle"
+
+\end_inset
+
+A perceived cycle that is not a true cycle.
+ This is shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Initial-PC"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:Given-three-actors"
+
+\end_inset
+
+Given three actors (
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ and 
+\begin_inset Formula $\iota_{3}$
+\end_inset
+
+), 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ reference each other and 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ and 
+\begin_inset Formula $\iota_{3}$
+\end_inset
+
+ reference each other, all with foreign reference counts of 1.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:-blocks,-sending"
+
+\end_inset
+
+
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ blocks, sending 
+\begin_inset Formula $\mathit{BLK}(\iota_{1},1,[\iota_{2}\mapsto1])$
+\end_inset
+
+ to the cycle detector.
+ When the cycle detector processes this, its view of the topology becomes
+ 
+\begin_inset Formula $[\iota_{1}\mapsto(1,[\iota_{2}\mapsto1])]$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:-wishes-to"
+
+\end_inset
+
+
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ wishes to send a reference to 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ to 
+\begin_inset Formula $\iota_{3}$
+\end_inset
+
+.
+ It sends 
+\begin_inset Formula $\mathit{INC(1)}$
+\end_inset
+
+ to 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ and then 
+\begin_inset Formula $APP(\iota_{1})$
+\end_inset
+
+ to 
+\begin_inset Formula $\iota_{3}$
+\end_inset
+
+.
+ 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ then drops its reference to 
+\begin_inset Formula $\iota_{3}$
+\end_inset
+
+ , collects garbage locally, and sends 
+\begin_inset Formula $\mathit{DEC(1)}$
+\end_inset
+
+ to 
+\begin_inset Formula $\iota_{3}$
+\end_inset
+
+.
+ The cycle detector's view of the topology does not change.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:-processes-,"
+
+\end_inset
+
+
+\begin_inset Formula $\iota_{3}$
+\end_inset
+
+ processes 
+\begin_inset Formula $APP(\iota_{1})$
+\end_inset
+
+, adding 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ to its external map.
+ 
+\begin_inset Formula $\iota_{3}$
+\end_inset
+
+ then drops its reference to 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ , collects garbage locally, and sends 
+\begin_inset Formula $\mathit{DEC(1)}$
+\end_inset
+
+ to 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+.
+ The cycle detector's view of the topology does not change.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:-processes-,-1"
+
+\end_inset
+
+
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ processes 
+\begin_inset Formula $\mathit{DEC(1)}$
+\end_inset
+
+, then blocks, sending 
+\begin_inset Formula $\mathit{BLK}(\iota_{2},1,[\iota_{1}\mapsto1])$
+\end_inset
+
+ to the cycle detector.
+ When the cycle detector processes this, its view of the topology becomes
+ 
+\begin_inset Formula $[\iota_{1}\mapsto(1,[\iota_{2}\mapsto1]),\iota_{2}\mapsto(1,[\iota_{1}\mapsto1])]$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:The-cycle-detector-1"
+
+\end_inset
+
+The cycle detector perceives a cycle 
+\begin_inset Formula $\{\iota_{1},\iota_{2}\}$
+\end_inset
+
+, even though 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ is reachable from 
+\begin_inset Formula $\iota_{3}$
+\end_inset
+
+.
+ This is because 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ has a pending 
+\begin_inset Formula $\mathit{INC(1)}$
+\end_inset
+
+ that it has not processed.
+\end_layout
+
+\begin_layout Subsection
+Conf-Ack Protocol
+\end_layout
+
+\begin_layout Standard
+When a perceived cycle is detected, the cycle detector must determine whether
+ or not the view of the topology used to detect the cycle agrees with the
+ true topology.
+ To do so, a 
+\emph on
+conf-ack
+\emph default
+ step is introduced to the protocol.
+ When the cycle detector detects a perceived cycle, it sends a confirm message
+ (
+\emph on
+CNF
+\emph default
+) with a token uniquely identifying the perceived cycle to each actor in
+ the cycle.
+ When an actor receives 
+\emph on
+CNF
+\emph default
+, it sends an acknowledgement message (
+\emph on
+ACK
+\emph default
+) with the token to the cycle detector without regard to the actor's view
+ of its topology.
+\end_layout
+
+\begin_layout Standard
+If the cycle detector receives 
+\emph on
+ACK
+\emph default
+ from an actor in a perceived cycle without receiving 
+\emph on
+UNB
+\emph default
+, then that actor did not unblock between blocking and the detection of
+ the perceived cycle.
+ This means that the actor's view of its topology when the perceived cycle
+ was detected was the same as the cycle detector's view of that actor's
+ topology used to detect the perceived cycle.
+ Such an actor is 
+\emph on
+confirmed.
+ 
+\emph default
+Conversely, if an actor in a cycle changes state, it will send 
+\emph on
+UNB
+\emph default
+ before it sends 
+\emph on
+ACK
+\emph default
+.
+ Because messaging is causal, the cycle detector will receive the 
+\emph on
+UNB
+\emph default
+ before it receives the 
+\emph on
+ACK
+\emph default
+.
+ When the cycle detector receives 
+\emph on
+UNB
+\emph default
+ for an actor, it cancels all perceived cycles containing the newly unblocked
+ actor, since they were detected with an incorrect view of that actor's
+ topology.
+\end_layout
+
+\begin_layout Standard
+Further, if all actors in a perceived cycle are confirmed, then, at the
+ time the cycle was detected, each actor in the cycle had a view of its
+ topology that agreed with the true topology.
+ As a result, the perceived cycle is a true cycle and can be collected.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename graphics/cycle.dot.6.png
+	scale 30
+	groupId diagrams
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Cycle detector sends 
+\emph on
+CNF
+\emph default
+, as in step 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:The-cycle-detector-1"
+
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset space \qquad{}
+\end_inset
+
+
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename graphics/cycle.dot.7.png
+	scale 30
+	groupId diagrams
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ unblocks, as in step 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:-processes-the"
+
+\end_inset
+
+.
+ The perceived cycle is correctly cancelled, as in step 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:-processes--1"
+
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Conf-PC"
+
+\end_inset
+
+Diagram of example 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Expanding-example-"
+
+\end_inset
+
+.
+ Boxes display the reference count (
+\begin_inset Formula $\rho$
+\end_inset
+
+), and queue (Q) of actors, with round corners indicating unblocked and
+ square corners indicating blocked.
+ The arrows indicate references, eg.
+ 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ references 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+, which implicitly shows the external set.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Example
+\begin_inset CommandInset label
+LatexCommand label
+name "Expanding-example-"
+
+\end_inset
+
+Expanding example 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "A-perceived-cycle"
+
+\end_inset
+
+ with the conf-ack protocol.
+ This is shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Conf-PC"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:The-cycle-detector"
+
+\end_inset
+
+The cycle detector sends 
+\begin_inset Formula $\mathit{CNF}(\tau)$
+\end_inset
+
+ to 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+, where 
+\begin_inset Formula $\tau$
+\end_inset
+
+ is a token uniquely identifying this perceived cycle.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:-processes-the"
+
+\end_inset
+
+
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ processes the pending 
+\begin_inset Formula $\mathit{INC}$
+\end_inset
+
+ from example 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "A-perceived-cycle"
+
+\end_inset
+
+ before 
+\begin_inset Formula $\mathit{CNF}(\tau)$
+\end_inset
+
+, due to causal messaging, and sends 
+\begin_inset Formula $\mathit{UNB}(\iota_{1})$
+\end_inset
+
+ to 
+\begin_inset Formula $\kappa$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:-processes--1"
+
+\end_inset
+
+
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ processes 
+\begin_inset Formula $\mathit{CNF}(\tau)$
+\end_inset
+
+ and sends 
+\begin_inset Formula $\mathit{ACK}(\iota_{1},\tau)$
+\end_inset
+
+ to the cycle detector.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:-processes-"
+
+\end_inset
+
+
+\begin_inset Formula $\kappa$
+\end_inset
+
+ processes 
+\begin_inset Formula $\mathit{UNB}(\iota_{1})$
+\end_inset
+
+ before 
+\begin_inset Formula $\mathit{ACK}(\iota_{1},\tau)$
+\end_inset
+
+, due to causal messaging, and correctly cancels the perceived cycle.
+\end_layout
+
+\begin_layout Standard
+The conf-ack protocol works by providing the cycle detector with confirmation
+ that the view of the topology used to detect a cycle (which was sent to
+ the cycle detector as a snapshot of each actor's view of its topology)
+ agreed with the true topology when the cycle was detected.
+ This approach allows the cycle detector to work concurrently with other
+ actors, without shared memory, locks, read/write barriers, cache coherency,
+ or any other form of thread coordination.
+\end_layout
+
+\begin_layout Subsection
+Causal Messaging
+\end_layout
+
+\begin_layout Standard
+In order to maintain the actor's reference count invariant, message delivery
+ must be 
+\emph on
+causal.
+
+\emph default
+ When an actor 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ sends 
+\emph on
+INC
+\emph default
+ to an actor 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ before including it in a message to an actor 
+\begin_inset Formula $\iota_{3}$
+\end_inset
+
+, 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ must process that 
+\emph on
+INC
+\emph default
+ before any 
+\emph on
+DEC
+\emph default
+ message sent by 
+\begin_inset Formula $\iota_{3}$
+\end_inset
+
+.
+ Each message is an 
+\emph on
+effect, 
+\emph default
+and every message the sending actor has previously sent or received is a
+ 
+\emph on
+cause 
+\emph default
+of that effect.
+ Messaging
+\emph on
+ 
+\emph default
+is causal if every cause is enqueued before the effect
+\emph on
+.
+ 
+\emph default
+Causality propagates forward: the causes of an effect are also causes for
+ any secondary effect.
+\end_layout
+
+\begin_layout Example
+Causal messaging.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ sends 
+\begin_inset Formula $\mu_{1}$
+\end_inset
+
+ to 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ sends 
+\begin_inset Formula $\mu_{2}$
+\end_inset
+
+ to 
+\begin_inset Formula $\iota_{3}$
+\end_inset
+
+ .
+\end_layout
+
+\begin_layout Enumerate
+After receiving 
+\begin_inset Formula $\mu_{2}$
+\end_inset
+
+, 
+\begin_inset Formula $\iota_{3}$
+\end_inset
+
+ sends 
+\begin_inset Formula $\mu_{3}$
+\end_inset
+
+ to 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+To preserve causality, 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+ must receive 
+\begin_inset Formula $\mu_{1}$
+\end_inset
+
+ before 
+\begin_inset Formula $\mu_{3}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Causality is easy and efficient to achieve on a single node, even in a many-core
+ setting.
+ Sending a message and enqueuing it at the destination can be done with
+ a single atomic operation.
+ As a result, causality is a natural consequence of lock-free, wait-free
+ FIFO message queues, and has no overhead.
+\end_layout
+
+\begin_layout Subsection
+Consistency Model
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+MAC 
+\emph default
+requires only weak memory consistency.
+ In particular, when a message is sent, all writes to the contents of the
+ message must be visible to the receiver of the message.
+ This can be implemented with a release barrier on message send.
+ On the x86 architecture, this release barrier is implicit on all writes,
+ so no fence is required.
+ Moreover, because 
+\emph on
+MAC
+\emph default
+ requires no shared memory other than the contents of messages, no consistency
+ model is necessary for other writes, e.g.
+ when the cycle detector updates its view of blocked actor topology.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Small-Step-Operational-Semantics"
+
+\end_inset
+
+Formal Model
+\end_layout
+
+\begin_layout Standard
+The formal model is expressed as an operational semantics for 
+\emph on
+MAC
+\emph default
+.
+ Types and identifier conventions are presented in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Runtime-entities-for-actor-GC"
+
+\end_inset
+
+, and the steps that rewrite the configuration are presented in figures
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:actor-execution"
+
+\end_inset
+
+ to 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:cd-messages"
+
+\end_inset
+
+.
+ The operational semantics extends the runtime entities in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Runtime-entities"
+
+\end_inset
+
+ and the semantics in figures 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Local-execution"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Global-execution."
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide true
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\[
+\begin{array}{rclcl}
+ &  & \mathit{Actor} & = & \mathit{ActorID\times(FieldID\rightarrow Value)}\\
+ &  &  & \times & \mathit{\overline{Message}}\times Stack\times Expr\\
+ &  &  & \times & (\mathit{ActorID}\rightarrow\overline{Message})\\
+ &  &  & \times & \mathit{RefCount}\times\mathit{ExMap}\times\mathit{Blocked}\\
+\mu & \in & \mathit{Message} & = & (\mathit{MethodID\times\overline{Value}})\\
+ &  &  & | & INC(\mathit{Integer})\,|\,DEC(\mathit{Integer})\\
+ &  &  & | & BLK(\mathit{ActorAddr},\mathit{RefCount},\mathit{ExMap})\\
+ &  &  & | & UNB(\mathit{ActorAddr})\\
+ &  &  & | & CNF(\mathit{Token})\,|\,ACK(\mathit{ActorAddr},\mathit{Token})\\
+CD & \in & \mathit{CycleDetector} & = & PerceivedTopo\times PerceivedCycles\times Token\\
+PT & \in & \mathit{PerceivedTopo} & = & \mathit{ActorAddr}\rightarrow(\mathit{RefCount}\times\mathit{ExMap})\\
+PC & \in & \mathit{PerceivedCycles} & = & \mathit{Token}\rightarrow(\mathit{ActorAddr}\rightarrow\mathit{Boolean})\\
+\xi & \in & \mathit{ExMap} & = & \mathit{ActorAddr}\rightarrow\mathit{Integer}\\
+\rho & \in & \mathit{RefCount} & = & \mathit{Integer}\\
+\beta & \in & \mathit{Blocked} & = & \mathit{Boolean}\\
+\tau & \in & \mathit{Token} & = & \mathit{Integer}
+\end{array}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Runtime-entities-for-actor-GC"
+
+\end_inset
+
+Runtime entities for actor GC
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Actors are extended with a local reference count, an external set, and a
+ blocked flag.
+ Messages are extended with a collection of garbage collection messages
+ that are not available to the programming language.
+\end_layout
+
+\begin_layout Standard
+The cycle detector is modelled as an actor whose local state is composed
+ of the cycle detector's view of the blocked actor topology (
+\emph on
+PT
+\emph default
+), the set of perceived cycles that are awaiting confirmation (
+\emph on
+PC
+\emph default
+), and the next token that will be used to identify a perceived cycle (
+\begin_inset Formula $\tau$
+\end_inset
+
+).
+ The cycle detector's identifier is 
+\begin_inset Formula $\alpha_{CD}$
+\end_inset
+
+, which is instantiated when a program begins as 
+\begin_inset Formula $([],[],0)$
+\end_inset
+
+, is globally accessible, but is not available to expressions in the operational
+ semantics in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Syntax-and-Operational"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Reference Count Invariant
+\end_layout
+
+\begin_layout Subsection
+Ownership
+\end_layout
+
+\begin_layout Standard
+In Pony, each actor is responsible for garbage collecting any objects it
+ has allocated.
+ The runtime provides a mapping of 
+\begin_inset Formula $Addr\rightarrow ActorAddr$
+\end_inset
+
+ that returns the allocating actor for an object address, or returns the
+ actor itself for an actor address.
+ This is the 
+\begin_inset Formula $\mathit{Owner}$
+\end_inset
+
+ function.
+ The implementation of the 
+\begin_inset Formula $\mathit{Owner}$
+\end_inset
+
+ function is described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Page-Map"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Reachability
+\end_layout
+
+\begin_layout Standard
+In the operational semantics for garbage collection, it is necessary to
+ determine which addresses are 
+\emph on
+reachable
+\emph default
+ from some initial address in the heap.
+ To do so requires not just the heap and the address, but also a 
+\emph on
+reference capability
+\emph default
+.
+ This is because a 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ is an opaque reference capability, so the fields of an object seen as a
+ 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ are not reachable.
+\end_layout
+
+\begin_layout Standard
+However, for garbage collection purposes, the 
+\begin_inset Formula $\mathit{Owner}$
+\end_inset
+
+ of an address is implicitly reachable if the address is reachable.
+ This is because an actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ must not be prematurely garbage collected if some other actor 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ can reach an object allocated by 
+\begin_inset Formula $\alpha$
+\end_inset
+
+, as otherwise such an object would either never be garbage collected (since
+ the allocating actor is responsible for collection) or would itself be
+ prematurely collected.
+\end_layout
+
+\begin_layout Definition
+Reachability
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $\begin{array}{lcl}
+\mathit{Reach}(\chi,\mathit{null},\kappa) & = & \{\}\\
+\mathit{Reach}(\chi,\iota,\mathtt{tag}) & = & \{\iota,\mathit{Owner(\iota)}\}\\
+\mathit{Reach}(\chi,\iota,\kappa) & = & \{\iota,\mathit{Owner}(\iota)\}\\
+ & \cup & \forall\mathtt{f}\in\mathcal{F}s(\chi(\iota)\downarrow_{1}).\mathcal{F}(\chi(\iota)\downarrow_{1},\mathtt{f})=\mathtt{S\,\kappa'}.\\
+ &  & \mathit{Reach}(\chi,\chi(\iota,\mathtt{f}),\kappa')\\
+\mathit{Reach}(\chi,\overline{v},\overline{\kappa}) & = & \bigcup_{i\in1..|\overline{v}|}\mathit{Reach}(\chi,v_{i},\kappa_{i})
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Sending a Reference
+\end_layout
+
+\begin_layout Standard
+When an actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ sends a reference to an actor 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ to some actor 
+\begin_inset Formula $\alpha''$
+\end_inset
+
+, the sending actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ must change either its reference count or its external map to reflect that
+ the the resulting message has an implicit reference count of 1 for 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+.
+ This is the case even when some of these actors are the same actor.
+\end_layout
+
+\begin_layout Standard
+When 
+\begin_inset Formula $\alpha=\alpha'$
+\end_inset
+
+, 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ must increment its reference count by 1.
+ This balances the implicit reference count the message has, maintaining
+ the reference count invariant.
+\end_layout
+
+\begin_layout Standard
+When 
+\begin_inset Formula $\alpha\neq\alpha'$
+\end_inset
+
+, 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ must decrement its external map reference count for 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ by 1, effectively 
+\emph on
+moving
+\emph default
+ a reference from 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ to the message.
+ In order to do so, 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ must have a reference count for 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ that is greater than 1, since there is no guarantee that the local state
+ of 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ no longer contains a reference to 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+, and we do not wish to require examining all local state when sending a
+ message.
+\end_layout
+
+\begin_layout Standard
+If 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ has a reference count of 1 for 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ (it cannot be 0 or less, since 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ must be accessible to 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ in order for 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ to be included in a message), then 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ cannot execute the 
+\noun on
+Ator 
+\noun default
+or 
+\noun on
+Async
+\noun default
+ rule.
+ Instead, the 
+\noun on
+Acquire
+\noun default
+ rule must be executed first.
+ Note that the 
+\noun on
+Acquire 
+\noun default
+rule allows 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ to increase its reference count for 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ without thread coordination or requiring a message in response.
+\end_layout
+
+\begin_layout Standard
+This is expressed in the definition of 
+\begin_inset Formula $\mathit{Adj}$
+\end_inset
+
+, the rule for adjusting reference counts, in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Auxiliary-definitions-for-actor-gc"
+
+\end_inset
+
+, which requires that 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ have a reference count greater than 
+\begin_inset Formula $-n$
+\end_inset
+
+ for 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+.
+ The definition of 
+\begin_inset Formula $\mathit{Send}$
+\end_inset
+
+ uses 
+\begin_inset Formula $-1$
+\end_inset
+
+ for 
+\begin_inset Formula $n$
+\end_inset
+
+, establishing this requirement.
+\end_layout
+
+\begin_layout Definition
+Sending a reference
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $\begin{array}{lcl}
+\mathit{Send}(\chi,\alpha,\{v\}\cup vs) & = & \mathit{Send}(\mathit{Send}(\chi,\alpha,v),\alpha,vs)\\
+\mathit{Send}(\chi,\alpha,\{\}) & = & \chi\\
+\mathit{Send}(\chi,\alpha,\mathit{null}) & = & \chi\\
+\mathit{Send}(\chi,\alpha,\omega) & = & \chi\\
+\mathit{Send}(\chi,\alpha,\alpha') & = & \chi[\alpha\mapsto\mathit{Adj}(\chi,\alpha,\alpha',-1)]
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Receiving a Reference
+\end_layout
+
+\begin_layout Standard
+When an actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ received a reference to an actor 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+, the receiving actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ must change either its reference count or its external map to reflect that
+ the message no longer exists, and its implicit reference counts have been
+ 
+\emph on
+moved 
+\emph default
+to 
+\begin_inset Formula $\alpha$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+When 
+\begin_inset Formula $\alpha=\alpha'$
+\end_inset
+
+ , 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ must decrement its reference count by 1.
+ The implicit reference in the message has been destroyed, so the actor's
+ reference count is decremented to maintain the reference count invariant.
+\end_layout
+
+\begin_layout Standard
+When 
+\begin_inset Formula $\alpha\neq\alpha'$
+\end_inset
+
+, 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ must increment its external map reference count for 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ by 1, effectively 
+\emph on
+moving 
+\emph default
+the message's implicit reference count to 
+\begin_inset Formula $\alpha$
+\end_inset
+
+.
+ The definition of 
+\begin_inset Formula $\mathit{Recv}$
+\end_inset
+
+ uses 
+\begin_inset Formula $1$
+\end_inset
+
+ for 
+\begin_inset Formula $n$
+\end_inset
+
+, which is a simpler case than 
+\begin_inset Formula $\mathit{Send}$
+\end_inset
+
+, as 
+\begin_inset Formula $\mathit{Adj}$
+\end_inset
+
+ will always be possible.
+ No adjusting messages are ever required when receiving a message.
+\end_layout
+
+\begin_layout Definition
+Receiving a reference
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $\begin{array}{lcl}
+\mathit{Recv}(\chi,\alpha,\{v\}\cup vs) & = & \mathit{Recv}(\mathit{Recv}(\chi,\alpha,v),\alpha,vs)\\
+\mathit{Recv}(\chi,\alpha,\{\}) & = & \chi\\
+\mathit{Recv}(\chi,\alpha,\mathit{null}) & = & \chi\\
+\mathit{Recv}(\chi,\alpha,\omega) & = & \chi\\
+\mathit{Recv}(\chi,\alpha,\alpha') & = & \chi[\alpha\mapsto\mathit{Adj}(\chi,\alpha,\alpha',1)]
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Closed Cycles
+\end_layout
+
+\begin_layout Standard
+A set of actors is considered a 
+\emph on
+closed set
+\emph default
+ by the cycle detector when the cycle detector's perceived topology indicates
+ that all references to actors in the set are accounted for by other actors
+ in the set.
+\end_layout
+
+\begin_layout Definition
+Closed cycles
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $\begin{array}{lcl}
+\mathit{Closed}(\chi,\alpha_{CD},\alpha s) & \mathit{iff} & \mathit{PT}=\chi(\alpha_{CD},\mathtt{f_{1}})\wedge\\
+ &  & \forall\alpha\in\alpha s.\\
+ &  & \sum_{\alpha'\in\alpha s}\mathit{PT}(\alpha')\downarrow_{2}(\alpha)=\mathit{PT}(\alpha)\downarrow_{1}
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Actor Local Execution
+\end_layout
+
+\begin_layout Standard
+The extended small-step operational semantics in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:actor-execution"
+
+\end_inset
+
+ describe the effects of actor local execution that includes garbage collection
+ of actors.
+ Rules from figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Local-execution"
+
+\end_inset
+
+ that are not listed remain unchanged.
+ As usual in concurrency, execution is non-deterministic.
+ The identifier 
+\begin_inset Formula $n$
+\end_inset
+
+ is used to represent an arbitrary integer.
+ This is used when an actor is created with some initial reference count,
+ or when an actor creates additional reference count for another actor by
+ sending an 
+\emph on
+INC
+\emph default
+ message.
+ The value of 
+\begin_inset Formula $n$
+\end_inset
+
+ could vary, or the implementation could use a fixed value.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide true
+sideways false
+status open
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+makebox[
+\backslash
+textwidth][c]{
+\end_layout
+
+\end_inset
+
+
+\size default
+
+\begin_inset Formula 
+\[
+\begin{array}{ccc}
+\dfrac{\begin{array}{c}
+(\alpha',\chi')=\mathit{New}(\chi,\mathtt{\alpha,A},\mathtt{k},\varphi(\overline{\mathtt{y}}))\\
+\mathtt{t}\notin\varphi\quad\varphi'=\varphi[\mathtt{t}\mapsto\alpha]
+\end{array}}{\chi,\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{A.k(\overline{y})}\rightsquigarrow\chi',\alpha\cdot\overline{\varphi}\cdot\varphi',\mathtt{t}}\;\textrm{\textsc{Ator}} &  & \dfrac{\begin{array}{c}
+\alpha'=\varphi(\mathtt{z})\\
+\mathcal{M}(\chi(\alpha')\downarrow_{1},\mathtt{n})=\mathtt{(\_,\overline{x}:\overline{S\,\kappa},\_,\_)}\\
+\chi'=\mathit{Send}(\chi,\alpha,\mathit{Reach}(\chi,\varphi(\overline{\mathtt{y}}),\overline{\kappa}))\\
+\chi''=\chi'[\alpha,\alpha'++(\mathtt{b},\varphi(\mathtt{\overline{y}})]
+\end{array}}{\chi,\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{z.b(\overline{y})}\rightsquigarrow\chi'',\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{z}}\;\textrm{\textsc{Async}}\\
+\\
+\dfrac{\begin{array}{c}
+\mathtt{A}=\chi(\alpha)\downarrow_{1}\quad\neg\chi(\alpha)\downarrow_{9}\\
+(\mathtt{n},\overline{v})\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
+\mathcal{M}(\mathtt{A,n})=\mathtt{(\_,\overline{x}:\overline{S\,\kappa},e,\_)}\\
+\chi'=\mathit{Recv}(\chi,\alpha,\mathit{Reach}(\chi,\overline{v},\overline{\kappa}))\\
+\varphi=(\mathtt{n},[\mathtt{this}\mapsto\alpha,\mathtt{\overline{x}}\mapsto\overline{v}],\cdot)
+\end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\overline{\mu}],\alpha\cdot\varphi,\mathtt{e}}\;\textrm{\textsc{Behave}} &  & \dfrac{\begin{array}{c}
+\mathit{CNF}(\tau)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
+\chi'=\chi[\alpha,\alpha_{CD}++\mathit{ACK}(\alpha,\tau)]
+\end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\overline{\mu}],\alpha,\varepsilon}\;\textrm{\textsc{Cnf}}\\
+\\
+\dfrac{\begin{array}{c}
+\mathit{INC}(\rho)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
+\chi'=\chi[\alpha\mapsto\mathit{Adj}(\chi,\alpha,\alpha,-\rho)]
+\end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\overline{\mu}],\alpha,\varepsilon}\;\textrm{\textsc{Inc}} &  & \dfrac{\begin{array}{c}
+\mathit{DEC}(\rho)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
+\chi'=\chi[\alpha\mapsto\mathit{Adj}(\chi,\alpha,\alpha,\rho)]
+\end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\overline{\mu}],\alpha,\varepsilon}\;\textrm{\textsc{Dec}}\\
+\\
+\dfrac{\begin{array}{c}
+\neg\chi(\alpha)\downarrow_{9}\quad()=\chi(\alpha)\downarrow_{3}\\
+\mu=\mathit{BLK}(\alpha,\chi(\alpha)\downarrow_{7},\chi(\alpha)\downarrow_{8})\\
+\chi'=\chi[\alpha,\alpha_{CD}++\mu]
+\end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\mathit{true}],\alpha,\varepsilon}\;\textrm{\textsc{Block}} &  & \dfrac{\begin{array}{c}
+\chi(\alpha)\downarrow_{9}\\
+\mu\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\quad\mu\neq\mathit{CNF}(\tau)\\
+\chi'=\chi[\alpha,\alpha_{CD}++\mathit{UNB}(\alpha)]
+\end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\mathit{false}],\alpha,\varepsilon}\;\textrm{\textsc{Unblock}}\\
+\\
+\dfrac{\begin{array}{c}
+\neg\chi(\alpha)\downarrow_{9}\quad\alpha\neq\alpha'\\
+\chi(\alpha)\downarrow_{8}(\alpha')>0\\
+\chi'=\chi[\alpha,\alpha'++\mathit{INC}(n)]\\
+\chi''=\chi'[\alpha\mapsto\mathit{Adj}(\chi',\alpha,\alpha',n)]
+\end{array}}{\chi,\alpha\cdot\overline{\varphi},\mathtt{e}\rightsquigarrow\chi'',\alpha\cdot\overline{\varphi},\mathtt{e}}\;\textrm{\textsc{Acquire}} &  & \dfrac{\begin{array}{c}
+\alpha\neq\alpha'\quad\alpha'\notin\mathit{Reach}(\chi,\alpha,\mathtt{ref})\\
+\chi(\alpha)\downarrow_{8}(\alpha')>0\\
+\chi'=\chi[\alpha,\alpha'++\mathit{DEC}(\chi(\alpha)\downarrow_{8}(\alpha'))]\\
+\chi''=\chi'[\alpha\mapsto\mathit{Rel}(\chi',\alpha,\alpha')]
+\end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'',\alpha,\varepsilon}\;\textrm{\textsc{Release}}
+\end{array}
+\]
+
+\end_inset
+
+
+\size small
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+\size small
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:actor-execution"
+
+\end_inset
+
+Operational semantics of actor GC
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Formula $\begin{array}{lcl}
+\mathit{New}(\chi,\alpha,\mathtt{A},\mathtt{k},\overline{v}) & = & (\alpha',\chi'')\,\mathit{where}\\
+ &  & \quad\alpha'\not\in\mathit{dom}(\chi)\wedge\\
+ &  & \quad\mathcal{M}(\mathtt{A},\mathtt{k})=\mathtt{(\_,\overline{x}:\overline{S\,\kappa},\_,\_)}\wedge\\
+ &  & \quad\chi'=\mathit{Send}(\chi,\alpha,\mathit{Reach}(\chi,\overline{v},\overline{\kappa}))\wedge\\
+ &  & \quad\chi''=\chi'[\alpha\mapsto\mathit{Inc}(\chi,\alpha,\alpha',n),\\
+ &  & \quad\quad\alpha'\mapsto(\mathtt{A},\mathtt{{\cal F}s(\mathtt{A})}\mapsto\mathit{null},(\mathtt{k},\overline{v}),\alpha,\varepsilon,[],n,[],\mathit{false})]\\
+\mathit{Adj}(\chi,\alpha,\alpha',n) & = & (\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
+ &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
+ &  & \quad\chi(\alpha)\downarrow_{8}[\alpha'\mapsto(\chi(\alpha)\downarrow_{8}(\alpha')+n)],\\
+ &  & \quad\chi(\alpha)\downarrow_{9})\,\mathit{if}\,\alpha\neq\alpha'\wedge\chi(\alpha)\downarrow_{8}(\alpha')>-n\\
+ &  & (\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
+ &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7}-n,\\
+ &  & \quad\chi(\alpha)\downarrow_{8},\chi(\alpha)\downarrow_{9})\,\mathit{if}\,\alpha=\alpha'\\
+\mathit{Rel}(\chi,\alpha,\alpha') & = & (\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
+ &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
+ &  & \quad\chi(\alpha)\downarrow_{8}[\alpha'\mapsto0],\chi(\alpha)\downarrow_{9})\\
+\chi[\alpha\mapsto\beta] & = & (\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
+ &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
+ &  & \quad\chi(\alpha)\downarrow_{8},\beta)
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Auxiliary-definitions-for-actor-gc"
+
+\end_inset
+
+Auxiliary definitions for actor GC
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+TODO: explain each rule
+\end_layout
+
+\begin_layout Subsection
+Cycle Detector Execution
+\end_layout
+
+\begin_layout Standard
+The rules in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:opsem-cycle-detection"
+
+\end_inset
+
+ describe local execution of the cycle detector 
+\begin_inset Formula $\alpha_{CD}$
+\end_inset
+
+.
+ Note that the cycle detector is never sent application level messages,
+ so the rules from figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Local-execution"
+
+\end_inset
+
+ do not apply to it.
+ These rules model the perceived topology as field 
+\begin_inset Formula $\mathtt{f_{1}}$
+\end_inset
+
+, the perceived cycles as field 
+\begin_inset Formula $\mathtt{f2}$
+\end_inset
+
+, and the next token as field 
+\begin_inset Formula $\mathtt{f_{3}}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide true
+sideways false
+status open
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+makebox[
+\backslash
+textwidth][c]{
+\end_layout
+
+\end_inset
+
+
+\size default
+
+\begin_inset Formula 
+\[
+\begin{array}{ccc}
+\dfrac{\begin{array}{c}
+\mathit{BLK}(\alpha,\rho,\xi)\cdot\overline{\mu}=\chi(\alpha_{CD})\downarrow_{3}\\
+\chi'=\chi[\alpha_{CD},\alpha\mapsto(\rho,\xi)]
+\end{array}}{\chi,\alpha_{CD},\varepsilon\rightsquigarrow\chi'[\alpha_{CD}\mapsto\overline{\mu}],\alpha_{CD},\varepsilon}\;\textrm{\textsc{Blk}} &  & \dfrac{\begin{array}{c}
+\mathit{UNB}(\alpha)\cdot\overline{\mu}=\chi(\alpha_{CD})\downarrow_{3}\\
+\chi'=\chi[\alpha_{CD}\backslash\{\alpha\}]
+\end{array}}{\chi,\alpha_{CD},\varepsilon\rightsquigarrow\chi'[\alpha_{CD}\mapsto\overline{\mu}],\alpha_{CD},\varepsilon}\;\textrm{\textsc{Unb}}\\
+\\
+\dfrac{\begin{array}{c}
+\mathit{ACK}(\alpha,\tau)\cdot\overline{\mu}=\chi(\alpha_{CD})\downarrow_{3}\\
+\tau\in\chi(\alpha_{CD},\mathtt{f_{2}})\\
+\chi'=\chi[\alpha_{CD},\tau,\alpha\mapsto\mathit{true}]
+\end{array}}{\chi,\alpha_{CD},\varepsilon\rightsquigarrow\chi'[\alpha_{CD}\mapsto\overline{\mu}],\alpha_{CD},\varepsilon}\;\textrm{\textsc{Ack}} &  & \dfrac{\begin{array}{c}
+\mathit{ACK}(\alpha,\tau)\cdot\overline{\mu}=\chi(\alpha_{CD})\downarrow_{3}\\
+\tau\notin\chi(\alpha_{CD},\mathtt{f_{2}})
+\end{array}}{\chi,\alpha_{CD},\varepsilon\rightsquigarrow\chi[\alpha_{CD}\mapsto\overline{\mu}],\alpha_{CD},\varepsilon}\;\textrm{\textsc{NoAck}}\\
+\\
+\dfrac{\begin{array}{c}
+\mathit{Closed}(\chi,\alpha_{CD}\alpha s)\quad\tau=\chi(\alpha,\mathtt{f_{3}})\\
+\chi'=\chi[\alpha_{CD},\tau,\alpha s\mapsto\mathit{false}]\\
+\chi''=\chi'[\alpha_{CD},\mathtt{f_{3}}\mapsto\tau+1]\\
+\chi'''=\chi''[\alpha_{CD},\alpha s++\mathit{CNF}(\tau)]
+\end{array}}{\chi,\alpha_{CD},\varepsilon\rightsquigarrow\chi''',\alpha_{CD},\varepsilon}\;\textrm{\textsc{Detect}} &  & \dfrac{\begin{array}{c}
+\alpha s=\chi(\alpha_{CD},\mathtt{f_{2}})(\tau)\\
+\forall\alpha\in\alpha s.\chi(\alpha_{CD},\mathtt{f_{2}})(\tau)(\alpha)\\
+\chi'=\mathit{Rel}(\chi,\alpha s)\\
+\chi''=\chi'[\alpha_{CD}\backslash\alpha s]\backslash\alpha s
+\end{array}}{\chi,\alpha_{CD},\varepsilon\rightsquigarrow\chi''[\alpha_{CD}\mapsto\overline{\mu}],\alpha_{CD},\varepsilon}\;\textrm{\textsc{Collect}}
+\end{array}
+\]
+
+\end_inset
+
+
+\size small
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+\size small
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:opsem-cycle-detection"
+
+\end_inset
+
+Operational semantics of cycle detection
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Formula $\begin{array}{lcl}
+\chi[\alpha_{CD},\alpha\mapsto(\rho,\xi)] & = & \chi[\alpha_{CD},\mathtt{f_{1}}\mapsto\chi(\alpha_{CD},\mathtt{f_{1}})[\alpha\mapsto(\rho,\xi)]]\\
+\chi[\alpha_{CD}\backslash\alpha s] & = & \chi[\alpha_{CD},\mathtt{f_{1}}\mapsto\chi(\alpha_{CD},\mathtt{f_{1}})\backslash\alpha s,\\
+ &  & \quad\alpha_{CD},\mathtt{f_{2}}\backslash\{\tau\,|\,\alpha\in\alpha s\wedge\alpha\in\chi(\alpha_{CD},\mathtt{f_{2}})(\tau)\}]\\
+\chi[\alpha_{CD},\tau,\alpha\mapsto\beta] & = & \chi[\alpha_{CD},\mathtt{f_{2}}\mapsto\chi(\alpha_{CD},\mathtt{f_{2}})(\tau)[\alpha\mapsto\beta]]\\
+\chi[\alpha_{CD},\tau,\{\alpha\}\cup\alpha s\mapsto\beta] & = & \chi[\alpha_{CD},\mathtt{f_{2}}\mapsto\chi(\alpha_{CD},\mathtt{f_{2}})(\tau)[\alpha\mapsto\beta]][\alpha,\alpha s\mapsto\beta]\\
+\chi[\alpha_{CD},\{\alpha\}\cup\alpha s++\mu] & = & \chi[\alpha_{CD},\alpha++\mu][\alpha_{CD},\alpha s++\mu]\\
+\\
+\mathit{Rel}(\chi,\{\alpha\}\cup\alpha s) & = & \mathit{Rel}(\chi,\alpha)\\
+\mathit{Rel}(\chi,\alpha) & = & \mathit{Rel}(\chi,\alpha,\mathit{Reach}(\chi,\alpha,\mathtt{ref}))\\
+\mathit{Rel}(\chi,\alpha,\{\alpha'\}\cup\iota s) & = & \mathit{Rel}(\chi,\alpha,\alpha')
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Auxiliary-definitions-for-cycle-detection"
+
+\end_inset
+
+Auxiliary definitions for cycle detection
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+TODO: explain each rule
+\end_layout
+
+\begin_layout Subsection
+TODO: Completeness
+\end_layout
+
+\begin_layout Standard
+If a cycle of blocked actors exists, each actor will have sent 
+\emph on
+BLK
+\emph default
+ to the cycle detector.
+ The cycle detector will eventually execute 
+\noun on
+RecvBlk
+\noun default
+ for each blocked actor, and will eventually execute 
+\noun on
+Detect 
+\noun default
+and begin a confirmation process that will result in executing 
+\noun on
+Collect
+\noun default
+.
+ This process is non-deterministic, but it is theoretically possible to
+ detect a cycle as soon as it appears.
+ If all actors are blocked, the system will find all cycles.
+\end_layout
+
+\begin_layout Standard
+The program terminates when it is not possible to apply any rule.
+ This occurs when no actors are executing (preventing any actor local execution
+ rules from being applied), the queue is empty (preventing any actor or
+ cycle detector message receipt rules from being applied), and no cycles
+ are detected (preventing any cycle detector local execution rules from
+ being applied).
+\end_layout
+
+\begin_layout Subsection
+TODO: Robustness
+\end_layout
+
+\begin_layout Standard
+As presented, 
+\emph on
+MAC
+\emph default
+ is sound and does not have exceptional conditions.
+ However, the protocol is robust even if failure is introduced.
+ If the cycle detector fails, cycles of dead actors will not be collected,
+ but no live actor will be collected.
+\end_layout
+
+\begin_layout Standard
+If an actor fails, the result depends on whether or not the cycle detector's
+ view of the failed actor's topology is in agreement with the failed actor's
+ view of its own topology.
+ If it is, the failed actor can be considered blocked, and the system will
+ function normally.
+ If the cycle detector's view of the failed actor's topology is not in sync,
+ then there is no way to determine what other actors the failed actor referenced.
+ As a result, actors the failed actor held a reference to will not receive
+ 
+\emph on
+DEC
+\emph default
+ messages for those references and will not be collected.
+ However, it remains the case that the cycle detector will continue to collect
+ other dead cycles, and no live actor will be collected.
+\end_layout
+
+\begin_layout Standard
+Moreover, failure of actors or the cycle detector does not jeopardise terminatio
+n of the overall system.
+ Namely, collection of all actors is not required in order to reach a quiescent
+ state where no rules can be applied.
+ This allows the program to terminate even when some dead actors have not
+ been collected.
+ As a result, failure results in uncollected dead actors but does not impact
+ soundness or robustness.
+\end_layout
+
+\begin_layout Standard
+Failure of individual messages, where a message is sent but not received
+ while future messages from the same sender are successful, impacts the
+ system differently depending on the message type.
+ A failed 
+\emph on
+DEC
+\emph default
+ results in an actor with an excess reference count that will not be collected.
+ A failed 
+\emph on
+CNF
+\emph default
+ or 
+\emph on
+ACK
+\emph default
+ message that pertains to a dead cycle results in the failure to collect
+ that dead cycle, but if the message pertains to a live cycle, there is
+ no impact on the system.
+ A failed 
+\emph on
+BLK
+\emph default
+ message results in an actor never being collected if the actor is blocked
+ from that point on, but has no impact on the system if the actor ever unblocks.
+ A failed 
+\emph on
+APP
+\emph default
+ message will result in excess reference counts for actors in the message,
+ with the result that those actors will not be collected.
+\end_layout
+
+\begin_layout Standard
+The two messages that can impact soundness on failure are 
+\emph on
+INC
+\emph default
+ and 
+\emph on
+UNB
+\emph default
+.
+ A failed 
+\emph on
+INC
+\emph default
+ message results in an actor that has a reference count that is too low.
+ As a result, the cycle detector may find perceived cycles that are smaller
+ than the true cycle.
+ If the actors in the perceived cycle are all blocked, the cycle may be
+ collected while an unblocked actor retains a reference to a collected actor.
+ A failed 
+\emph on
+UNB
+\emph default
+ message for an actor in a perceived cycle can cause the cycle to be incorrectly
+ collected if all other actors in the cycle are blocked.
+ The sender of the failed 
+\emph on
+UNB
+\emph default
+ message will now respond with an 
+\emph on
+ACK
+\emph default
+ without having unblocked, and the cycle detector will incorrectly perceive
+ it as having confirmed.
+\end_layout
+
+\begin_layout Standard
+However, the actor-model requires guaranteed message delivery 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "agha-thesis"
+
+\end_inset
+
+.
+ Failure of an individual message that cannot be corrected with buffering,
+ retries, or other techniques, can thus be treated as failure of the sending
+ actor.
+ If a failed message results in all future messages from the sender also
+ failing, no form of failure impacts either soundness or robustness.
 \end_layout
 
 \end_body

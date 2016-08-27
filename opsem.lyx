@@ -78,6 +78,12 @@ theorems-ams-bytype
 
 \begin_layout Chapter
 \noindent
+\begin_inset CommandInset label
+LatexCommand label
+name "chap:Syntax-and-Operational"
+
+\end_inset
+
 Syntax and Operational Semantics
 \end_layout
 
@@ -378,15 +384,15 @@ status open
 \chi & \in & \mathit{Heap} & = & \mathit{Addr\rightarrow(Actor\vee Object)}\\
 \sigma & \in & \mathit{Stack} & = & \mathit{ActorAddr\cdot\overline{Frame}}\\
 \varphi & \in & \mathit{Frame} & = & \mathit{MethodID\times(LocalID\rightarrow Value)}\\
- &  &  &  & \times\mathit{ExprHole}\\
+ &  &  & \times & \mathit{ExprHole}\\
  &  & \mathit{LocalID} & = & \mathit{SourceID}\cup\mathit{TempID}\\
 v & \in & \mathit{Value} & = & \mathit{Addr\cup\{null\}}\\
 \iota & \in & \mathit{Addr} & = & \mathit{ActorAddr\cup ObjectAddr}\\
 \alpha & \in & \mathit{ActorAddr}\\
 \omega & \in & \mathit{ObjectAddr}\\
  &  & \mathit{Actor} & = & \mathit{ActorID\times(FieldID\rightarrow Value)}\\
- &  &  &  & \mathit{\times\overline{Message}}\times Stack\times Expr\\
- &  &  &  & \times(\mathit{ActorID}\rightarrow\overline{Message})\\
+ &  &  & \times & \mathit{\overline{Message}}\times Stack\times Expr\\
+ &  &  & \times & (\mathit{ActorID}\rightarrow\overline{Message})\\
  &  & \mathit{Object} & = & \mathit{ClassID\times(FieldID\rightarrow Value)}\\
 \mu & \in & \mathit{Message} & = & \mathit{MethodID\times\overline{Value}}
 \end{array}$
@@ -462,23 +468,21 @@ textwidth][c]{
 \end{array}}{\chi,\sigma\cdot\varphi\cdot\varphi',\mathtt{z}\rightsquigarrow\chi,\sigma\cdot\varphi'',\mathtt{E[t]}}\;\textrm{\textsc{Return}}\\
 \\
 \dfrac{\begin{array}{c}
-\alpha=\varphi(\mathtt{z})\quad\chi(\alpha)\downarrow_{6}(\alpha')=\overline{\mu}\\
-\chi'=\chi[\alpha,\alpha'\mapsto\overline{\mu}\cdot(\mathtt{b},\varphi(\mathtt{\overline{y}})]
-\end{array}}{\chi,\alpha'\cdot\overline{\varphi}\cdot\varphi,\mathtt{z.b(\overline{y})}\rightsquigarrow\chi',\alpha'\cdot\overline{\varphi}\cdot\varphi,\mathtt{z}}\;\textrm{\textsc{Async}} &  & \dfrac{\begin{array}{c}
+\alpha'=\varphi(\mathtt{z})\\
+\chi'=\chi[\alpha,\alpha'++(\mathtt{b},\varphi(\mathtt{\overline{y}})]
+\end{array}}{\chi,\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{z.b(\overline{y})}\rightsquigarrow\chi',\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{z}}\;\textrm{\textsc{Async}} &  & \dfrac{\begin{array}{c}
 \mathtt{A}=\chi(\alpha)\downarrow_{1}\quad(\mathtt{n},\overline{v})\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
 \mathcal{M}(\mathtt{A,n})=\mathtt{(\_,\overline{x}:\_,e,\_)}\\
 \varphi=(\mathtt{n},[\mathtt{this}\mapsto\alpha,\mathtt{\overline{x}}\mapsto\overline{v}],\cdot)
 \end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi[\alpha\mapsto\overline{\mu}],\alpha\cdot\varphi,\mathtt{e}}\;\textrm{\textsc{Behave}}\\
 \\
 \dfrac{\begin{array}{c}
-\omega\not\in\mathit{dom}(\chi)\quad\mathtt{\overline{f}}={\cal F}s(\mathtt{C})\\
+(\omega,\chi')=\mathit{New}(\chi,\mathtt{C})\\
 \mathcal{M}(\mathtt{C,k})=\mathtt{(\_,\overline{x}:\_,e,\_)}\\
-\chi'=\chi[\omega\mapsto(\mathtt{C},\mathtt{\overline{f}}\mapsto\mathit{null})]\\
 \varphi'=(\mathtt{k},[\mathtt{this}\mapsto\omega,\mathtt{\overline{x}}\mapsto\varphi(\mathtt{\overline{y}})],\mathtt{E[\cdot]})
 \end{array}}{\chi,\sigma\cdot\varphi,\mathtt{E[C.k(\overline{y})]}\rightsquigarrow\chi',\sigma\cdot\varphi\cdot\varphi',\mathtt{e}}\;\textrm{\textsc{Ctor}} &  & \dfrac{\begin{array}{c}
-\alpha\not\in\mathit{dom}(\chi)\quad\mathtt{\overline{f}}={\cal F}s(\mathtt{A})\\
-\mathtt{t}\notin\varphi\quad\varphi'=\varphi[\mathtt{t}\mapsto\alpha]\\
-\chi'=\chi[\alpha\mapsto(\mathtt{A},\mathtt{\overline{f}}\mapsto\mathit{null},(\mathtt{k},\varphi(\mathtt{\overline{y}}),\alpha,\varepsilon)]
+(\alpha,\chi')=\mathit{New}(\chi,\mathtt{A},\mathtt{k},\varphi(\overline{\mathtt{y}}))\\
+\mathtt{t}\notin\varphi\quad\varphi'=\varphi[\mathtt{t}\mapsto\alpha]
 \end{array}}{\chi,\sigma\cdot\varphi,\mathtt{A.k(\overline{y})}\rightsquigarrow\chi',\sigma\cdot\varphi',\mathtt{t}}\;\textrm{\textsc{Ator}}\\
 \\
 \dfrac{\mathtt{t}\notin\varphi\quad\varphi'=\varphi[\mathtt{t}\mapsto\varphi(\mathtt{x})]\backslash\mathtt{x}}{\chi,\sigma\cdot\varphi,\mathtt{consume\,x}\rightsquigarrow\chi,\sigma\cdot\varphi',\mathtt{t}}\;\textrm{\textsc{Consume}} &  & \dfrac{\mathtt{t}\notin\varphi\quad\varphi'=\varphi[\mathtt{t}\mapsto\varphi(\mathtt{z})]}{\chi,\sigma,\mathtt{recover\,z}\rightsquigarrow\chi,\sigma,\mathtt{t}}\;\textrm{\textsc{Recover}}
@@ -562,10 +566,6 @@ Global execution.
 
 \end_layout
 
-\begin_layout Plain Layout
-
-\end_layout
-
 \end_inset
 
 
@@ -622,14 +622,28 @@ status open
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\chi[\alpha\mapsto(\sigma,\mathtt{e})]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\sigma,\mathtt{e}]$
+\begin_inset Formula $\chi[\alpha\mapsto(\sigma,\mathtt{e})]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\sigma,\mathtt{e},\chi(\alpha)\downarrow_{6})]$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\chi[\alpha,\alpha'\mapsto\overline{\mu}]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6}[\alpha'\mapsto\overline{\mu}])$
+\begin_inset Formula $\chi[\alpha,\alpha'++\overline{\mu}]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6}[\alpha'\mapsto\chi(\alpha)\downarrow_{6}\cdot\mu])$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathit{New}(\chi,\mathtt{C})=(\omega,\chi')\,\mathit{where}\,\omega\not\in\mathit{dom}(\chi)\wedge\chi'=\chi[\omega\mapsto(\mathtt{C},{\cal F}s(\mathtt{C})\mapsto\mathit{null})]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathit{New}(\chi,\mathtt{A},\mathtt{k},\overline{v})=(\alpha,\chi')\,\mathit{where}\,\alpha\not\in\mathit{dom}(\chi)\wedge\chi'=\chi[\alpha\mapsto(\mathtt{A},{\cal F}s(\mathtt{A})\mapsto\mathit{null},(\mathtt{k},\overline{v}),\alpha,\varepsilon,[])]$
 \end_inset
 
 

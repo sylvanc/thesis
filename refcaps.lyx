@@ -3887,18 +3887,5 @@ Thus, through a combination of aliasing and unaliasing, we can obtain unique
 .
 \end_layout
 
-\begin_layout Section
-Capabilities Security
-\end_layout
-
-\begin_layout Standard
-Pony is both an object capability
-\emph on
- 
-\emph default
-and reference capability secure language.
- TODO:
-\end_layout
-
 \end_body
 \end_document
