@@ -121,7 +121,6 @@ Syntax
 
 \begin_layout Standard
 
-\size footnotesize
 \begin_inset Float figure
 wide false
 sideways false
@@ -156,7 +155,6 @@ status open
 
 \begin_layout Plain Layout
 
-\size footnotesize
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
@@ -181,7 +179,6 @@ Syntax
 
 \begin_layout Standard
 
-\size footnotesize
 \begin_inset Float figure
 wide false
 sideways false
@@ -203,7 +200,6 @@ status open
 
 \begin_layout Plain Layout
 
-\size footnotesize
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
@@ -433,7 +429,6 @@ status open
 \begin_layout Plain Layout
 \align center
 
-\size small
 \begin_inset ERT
 status open
 
@@ -495,7 +490,6 @@ status open
 
 \begin_layout Plain Layout
 
-\size small
 }
 \end_layout
 
@@ -573,7 +567,6 @@ Global execution.
 
 \begin_layout Standard
 
-\size scriptsize
 \begin_inset Float figure
 wide false
 sideways false
@@ -1126,7 +1119,6 @@ Lookup Functions
 
 \begin_layout Standard
 
-\size scriptsize
 \begin_inset Float figure
 wide false
 sideways false
@@ -1170,7 +1162,6 @@ status open
 
 \begin_layout Plain Layout
 
-\size scriptsize
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout

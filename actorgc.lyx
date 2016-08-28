@@ -2822,25 +2822,7 @@ sideways false
 status open
 
 \begin_layout Plain Layout
-
-\size small
-\begin_inset ERT
-status open
-
-\begin_layout Plain Layout
-
-
-\backslash
-makebox[
-\backslash
-textwidth][c]{
-\end_layout
-
-\end_inset
-
-
-\size default
-
+\align center
 \begin_inset Formula 
 \[
 \begin{array}{ccc}
@@ -2893,20 +2875,6 @@ textwidth][c]{
 \end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'',\alpha,\varepsilon}\;\textrm{\textsc{Release}}
 \end{array}
 \]
-
-\end_inset
-
-
-\size small
-
-\begin_inset ERT
-status open
-
-\begin_layout Plain Layout
-
-\size small
-}
-\end_layout
 
 \end_inset
 
@@ -3045,25 +3013,7 @@ sideways false
 status open
 
 \begin_layout Plain Layout
-
-\size small
-\begin_inset ERT
-status open
-
-\begin_layout Plain Layout
-
-
-\backslash
-makebox[
-\backslash
-textwidth][c]{
-\end_layout
-
-\end_inset
-
-
-\size default
-
+\align center
 \begin_inset Formula 
 \[
 \begin{array}{ccc}
@@ -3097,20 +3047,6 @@ textwidth][c]{
 \end{array}}{\chi,\alpha_{CD},\varepsilon\rightsquigarrow\chi''[\alpha_{CD}\mapsto\overline{\mu}],\alpha_{CD},\varepsilon}\;\textrm{\textsc{Collect}}
 \end{array}
 \]
-
-\end_inset
-
-
-\size small
-
-\begin_inset ERT
-status open
-
-\begin_layout Plain Layout
-
-\size small
-}
-\end_layout
 
 \end_inset
 
