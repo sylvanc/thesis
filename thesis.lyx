@@ -237,7 +237,7 @@ filename "typesystem.lyx"
 \begin_layout Standard
 \begin_inset CommandInset include
 LatexCommand include
-filename "objectgc.lyx"
+filename "actorgc.lyx"
 
 \end_inset
 
@@ -247,7 +247,7 @@ filename "objectgc.lyx"
 \begin_layout Standard
 \begin_inset CommandInset include
 LatexCommand include
-filename "actorgc.lyx"
+filename "objectgc.lyx"
 
 \end_inset
 

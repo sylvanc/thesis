@@ -476,14 +476,13 @@ causal
 \emph default
 on a single node.
  Moreover, each actor has local state.
- For 
+ 
 \emph on
 MAC
 \emph default
-, we are only concerned with references to other actors in an actor's local
- state, but in general the local state also contains references to passive
- objects, and actors have a stack while performing local execution, as defined
- in chapter 
+ is concerned only with references to other actors in an actor's local state,
+ but in general the local state also contains references to passive objects,
+ as defined in chapter 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "chap:Syntax-and-Operational"
@@ -918,12 +917,12 @@ DEC
  message is on the actor's queue but as yet unprocessed).
  If cyclic garbage is detected on the basis of a view of the topology that
  disagrees with the true topology, that cycle must not be collected.
- We call a cycle that has been detected a 
+ A cycle that has been detected is termed a 
 \emph on
-perceived cycle 
+perceived cycle
 \emph default
-and a cycle that has been detected using a view of the topology that agrees
- with the true topology a 
+, and a cycle that has been detected using a view of the topology that agrees
+ with the true topology is termed a 
 \emph on
 true cycle.
 \end_layout
@@ -2162,10 +2161,6 @@ reference "chap:Syntax-and-Operational"
 \end_layout
 
 \begin_layout Subsection
-Reference Count Invariant
-\end_layout
-
-\begin_layout Subsection
 Ownership
 \end_layout
 
@@ -2226,7 +2221,7 @@ reference capability
 \end_layout
 
 \begin_layout Standard
-However, for garbage collection purposes, the 
+For garbage collection purposes, the 
 \begin_inset Formula $\mathit{Owner}$
 \end_inset
 
@@ -2259,14 +2254,186 @@ Reachability
 \mathit{Reach}(\chi,\iota,\kappa) & = & \{\iota,\mathit{Owner}(\iota)\}\\
  & \cup & \forall\mathtt{f}\in\mathcal{F}s(\chi(\iota)\downarrow_{1}).\mathcal{F}(\chi(\iota)\downarrow_{1},\mathtt{f})=\mathtt{S\,\kappa'}.\\
  &  & \mathit{Reach}(\chi,\chi(\iota,\mathtt{f}),\kappa')\\
-\mathit{Reach}(\chi,\overline{v},\overline{\kappa}) & = & \bigcup_{i\in1..|\overline{v}|}\mathit{Reach}(\chi,v_{i},\kappa_{i})
+\mathit{Reach}(\chi,\overline{v},\overline{\kappa}) & = & \bigcup_{i\in1..|\overline{v}|}\mathit{Reach}(\chi,v_{i},\kappa_{i})\\
+\mathit{Reach}(\chi,\alpha,(\mathtt{n},\overline{v})) & = & \mathit{Reach}(\chi,\overline{v},\overline{\kappa})\,\mathit{where}\,\mathcal{M}(\chi(\alpha)\downarrow_{1},\mathtt{n})=\mathtt{(\_,\overline{x}:\overline{S\,\kappa},e,\_)}
 \end{array}$
 \end_inset
 
 
 \end_layout
 
+\begin_layout Standard
+Here, the reachable set is defined as all actors and objects that can be
+ 
+\emph on
+read
+\emph default
+ from some starting point (including the starting point), plus the owners
+ of all reachable objects.
+\end_layout
+
 \begin_layout Subsection
+Reference Count Invariant
+\end_layout
+
+\begin_layout Standard
+To ensure that no actor is prematurely collected, but all actors are eventually
+ collected, a reference count invariant is maintained.
+ This invariant has the form 
+\begin_inset Formula $\mathit{LRC}(\alpha)+\mathit{INC}(\alpha)+\mathit{AMC}(\alpha)=\mathit{FRC}(\alpha)+\mathit{DEC}(\alpha)$
+\end_inset
+
+, all evaluated in the context of some heap 
+\begin_inset Formula $\chi$
+\end_inset
+
+.
+ This states that the actor's local reference count, 
+\emph on
+LRC
+\emph default
+, plus the sum of the values of all increment messages for that actor, 
+\emph on
+INC
+\emph default
+, plus the number of application messages that can reach that actor, 
+\emph on
+AMC
+\emph default
+, is always equal to the sum of all foreign reference counts for the actor,
+ 
+\emph on
+FRC
+\emph default
+, plus the sum of the values of all decrement messages for that actor, 
+\emph on
+DEC
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+In order to track all messages bound for some actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+, 
+\begin_inset Formula $Q(\chi,\alpha)$
+\end_inset
+
+ is defined to be the set of all message queues that will be delivered to
+ 
+\begin_inset Formula $\alpha$
+\end_inset
+
+, including the already enqueued messages and the FIFO queue from all other
+ actors that have not yet been enqueued for 
+\begin_inset Formula $\alpha$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Definition
+Queues for 
+\begin_inset Formula $\alpha$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $Q(\chi,\alpha)=\{\chi(\alpha)\downarrow_{3}\}\cup\{\overline{\mu}\,|\,\alpha'\in\mathit{dom}(\chi)\wedge\overline{\mu}=\chi(\alpha')\downarrow_{6}(\alpha)\}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In the concurrent setting, where enqueuing messages is atomic, only the
+ actor's message queue will contain messages.
+ However, in the distributed setting, where causality is not enforced, the
+ FIFO queues may also contain messages.
+ Note that without causality, 
+\emph on
+MAC 
+\emph default
+does not hold without modification.
+ This is discussed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:distributed-actor-GC"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Definition
+Reference count invariant components
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $\begin{array}{lcl}
+\mathit{LRC}(\alpha) & = & \chi(\alpha)\downarrow_{7}\\
+\mathit{INC}(\alpha) & = & \sum_{\forall\overline{\mu}\in Q(\chi,\alpha)}\begin{cases}
+\rho & \mathit{if}\,\mu_{i}=\mathit{INC}(\rho)\\
+0 & \mathit{otherwise}
+\end{cases}\\
+\mathit{AMC}(\alpha) & = & \sum_{\forall\alpha'\in\mathit{dom}(\chi).\forall\overline{\mu}\in Q(\chi,\alpha')}\begin{cases}
+1 & \mathit{if}\,\alpha\in\mathit{Reach}(\chi,\alpha',\mu_{i})\\
+0 & \mathit{otherwise}
+\end{cases}\\
+\mathit{FRC}(\alpha) & = & \sum_{\alpha'\in\mathit{dom}(\chi)}\chi(\alpha')\downarrow_{8}(\alpha)\\
+\mathit{DEC}(\alpha) & = & \sum_{\forall\overline{\mu}\in Q(\chi,\alpha)}\begin{cases}
+\rho & \mathit{if}\,\mu_{i}=\mathit{DEC}(\rho)\\
+0 & \mathit{otherwise}
+\end{cases}
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The reference count invariant is maintained because reference counts (or,
+ more properly, reference count weights) are 
+\emph on
+created
+\emph default
+ when an actor sends a reference to itself, 
+\emph on
+destroyed
+\emph default
+ when an actor received a reference to itself, and 
+\emph on
+moved
+\emph default
+ when an actor sends a reference to another actor.
+ This is detailed in sections 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Sending-a-Reference"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Receiving-a-Reference"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Sending-a-Reference"
+
+\end_inset
+
 Sending a Reference
 \end_layout
 
@@ -2349,8 +2516,8 @@ moving
 \begin_inset Formula $\alpha'$
 \end_inset
 
-, and we do not wish to require examining all local state when sending a
- message.
+, and it is important to not require examining all local state when sending
+ a message.
 \end_layout
 
 \begin_layout Standard
@@ -2465,6 +2632,12 @@ Sending a reference
 \end_layout
 
 \begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Receiving-a-Reference"
+
+\end_inset
+
 Receiving a Reference
 \end_layout
 
@@ -2676,16 +2849,13 @@ textwidth][c]{
 \mathtt{t}\notin\varphi\quad\varphi'=\varphi[\mathtt{t}\mapsto\alpha]
 \end{array}}{\chi,\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{A.k(\overline{y})}\rightsquigarrow\chi',\alpha\cdot\overline{\varphi}\cdot\varphi',\mathtt{t}}\;\textrm{\textsc{Ator}} &  & \dfrac{\begin{array}{c}
 \alpha'=\varphi(\mathtt{z})\\
-\mathcal{M}(\chi(\alpha')\downarrow_{1},\mathtt{n})=\mathtt{(\_,\overline{x}:\overline{S\,\kappa},\_,\_)}\\
-\chi'=\mathit{Send}(\chi,\alpha,\mathit{Reach}(\chi,\varphi(\overline{\mathtt{y}}),\overline{\kappa}))\\
+\chi'=\mathit{Send}(\chi,\alpha,\mathit{Reach}(\chi,\alpha',(\mathtt{n},\varphi(\overline{\mathtt{y}}))))\\
 \chi''=\chi'[\alpha,\alpha'++(\mathtt{b},\varphi(\mathtt{\overline{y}})]
 \end{array}}{\chi,\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{z.b(\overline{y})}\rightsquigarrow\chi'',\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{z}}\;\textrm{\textsc{Async}}\\
 \\
 \dfrac{\begin{array}{c}
-\mathtt{A}=\chi(\alpha)\downarrow_{1}\quad\neg\chi(\alpha)\downarrow_{9}\\
-(\mathtt{n},\overline{v})\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
-\mathcal{M}(\mathtt{A,n})=\mathtt{(\_,\overline{x}:\overline{S\,\kappa},e,\_)}\\
-\chi'=\mathit{Recv}(\chi,\alpha,\mathit{Reach}(\chi,\overline{v},\overline{\kappa}))\\
+\neg\chi(\alpha)\downarrow_{9}\quad(\mathtt{n},\overline{v})\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
+\chi'=\mathit{Recv}(\chi,\alpha,\mathit{Reach}(\chi,\alpha,(\mathtt{n},\overline{v})))\\
 \varphi=(\mathtt{n},[\mathtt{this}\mapsto\alpha,\mathtt{\overline{x}}\mapsto\overline{v}],\cdot)
 \end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\overline{\mu}],\alpha\cdot\varphi,\mathtt{e}}\;\textrm{\textsc{Behave}} &  & \dfrac{\begin{array}{c}
 \mathit{CNF}(\tau)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
@@ -3022,8 +3192,8 @@ Auxiliary definitions for cycle detection
 TODO: explain each rule
 \end_layout
 
-\begin_layout Subsection
-TODO: Completeness
+\begin_layout Section
+Completeness
 \end_layout
 
 \begin_layout Standard
@@ -3034,7 +3204,7 @@ BLK
  to the cycle detector.
  The cycle detector will eventually execute 
 \noun on
-RecvBlk
+Blk
 \noun default
  for each blocked actor, and will eventually execute 
 \noun on
@@ -3059,8 +3229,39 @@ The program terminates when it is not possible to apply any rule.
  being applied).
 \end_layout
 
+\begin_layout Standard
+In practice, early termination can be achieved by detecting 
+\emph on
+quiescence
+\emph default
+, without waiting for the cycle detector to collect all actors.
+ Similarly, it is possible for an actor with 
+\begin_inset Formula $\mathit{LRC}(\alpha)=0$
+\end_inset
+
+ and an empty queue to collect itself, without waiting for the cycle detector,
+ as this indicates that no other actor can send a message to 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ and 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ has no pending work.
+ In this circumstance, 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ will never have pending work, as 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ must be executing in order to send a message to itself.
+\end_layout
+
 \begin_layout Subsection
-TODO: Robustness
+Robustness
 \end_layout
 
 \begin_layout Standard
@@ -3095,7 +3296,10 @@ DEC
 \begin_layout Standard
 Moreover, failure of actors or the cycle detector does not jeopardise terminatio
 n of the overall system.
- Namely, collection of all actors is not required in order to reach a quiescent
+ Namely, collection of all actors is not required in order to reach a 
+\emph on
+quiescent
+\emph default
  state where no rules can be applied.
  This allows the program to terminate even when some dead actors have not
  been collected.
@@ -3188,6 +3392,35 @@ key "agha-thesis"
  actor.
  If a failed message results in all future messages from the sender also
  failing, no form of failure impacts either soundness or robustness.
+\end_layout
+
+\begin_layout Standard
+In Pony, neither message nor actor failure occurs in a running program.
+ The program itself may fail (due to, for example, a bug in the runtime
+ implementation, or a class of bug that Pony cannot guarantee against, such
+ as running out of memory), but individual actors and messages will not.
+\end_layout
+
+\begin_layout Standard
+This does not hold true in the distributed setting, which will be discussed
+ in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:distributed-actor-GC"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:distributed-actor-GC"
+
+\end_inset
+
+TODO: Distributed Actor GC
 \end_layout
 
 \end_body

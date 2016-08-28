@@ -371,7 +371,7 @@ key "boyland2001alias"
 \end_inset
 
 .
- As a part of this, we introduce 
+ As a part of this, the type system supports 
 \emph on
 unaliased types
 \emph default
@@ -868,11 +868,11 @@ Rather than indicate which operations are allowed on a reference
 status collapsed
 
 \begin_layout Plain Layout
-We use the term 
+The term 
 \emph on
 reference 
 \emph default
-to mean the path currently being considered, and 
+is used to mean the path currently being considered, and 
 \emph on
 alias
 \emph default
@@ -1157,19 +1157,19 @@ actor Dataflow
 \end_layout
 
 \begin_layout Standard
-We use the keyword 
+The keyword 
 \begin_inset Formula $\mathtt{actor}$
 \end_inset
 
- to indicate a class that can have 
+ is used to indicate a class that can have 
 \emph on
 behaviours
 \emph default
- (asynchronous methods), and we use the keyword 
+ (asynchronous methods), and the keyword 
 \begin_inset Formula $\mathtt{be}$
 \end_inset
 
- to define behaviours.
+ is used to define behaviours.
  A behaviour is executed asynchronously by the receiving actor, and a given
  actor executes only one behaviour at a time, making behaviours 
 \emph on
@@ -1479,12 +1479,12 @@ values for which an alias has been removed.
 \end_layout
 
 \begin_layout Standard
-We distinguish between aliases which outlive the execution of an expression,
- and 
+Aliases which outlive the execution of an expression are treated differently
+ from 
 \emph on
 temporary identifiers
 \emph default
- which do not.
+, which do not.
  The use of 
 \emph on
 temporary identifiers
@@ -1736,8 +1736,7 @@ Here
 status collapsed
 
 \begin_layout Plain Layout
-In this example, we are using generic types and default reference capabilities
- (
+In this example, generic types and default reference capabilities (
 \begin_inset Formula $\mathtt{ref}$
 \end_inset
 
@@ -1745,9 +1744,8 @@ In this example, we are using generic types and default reference capabilities
 \begin_inset Formula $\mathtt{tag}$
 \end_inset
 
- for actors).
- While the full Pony language supports these, we will not formalise them
- here.
+ for actors) are used.
+ While the full Pony language supports these, they are not formalised here.
 \end_layout
 
 \end_inset
@@ -3278,7 +3276,7 @@ When reading a field
 \end_inset
 
  sees the field.
- We express this through the operator 
+ This is expressed through the operator 
 \begin_inset Formula $\triangleright$
 \end_inset
 
@@ -3400,7 +3398,8 @@ The evaluation of an expression which has access only to sendable variables
 \begin_inset Formula $\mathtt{tag}$
 \end_inset
 
-) will return a sendable type.
+) can return a sendable type, even if the result of the expression would
+ otherwise not be sendable.
  This is an extension of previous work on 
 \emph on
 recovery
@@ -3424,7 +3423,7 @@ key "haller2010capabilities"
 \end_inset
 
 .
- We introduce such expressions through the 
+ Such expressions are introduced using the 
 \begin_inset Formula $\mathtt{recover}$
 \end_inset
 
@@ -3617,7 +3616,7 @@ AsnField
 \end_inset
 
 ).
- We indicate this through the unaliased annotation 
+ This is indicated through the unaliased annotation 
 \begin_inset Formula $\circ$
 \end_inset
 
@@ -3638,12 +3637,12 @@ y is
 \begin_inset Formula $\mathtt{ref}$
 \end_inset
 
-, we have defined the unaliasing operation 
+, the unaliasing operation 
 \begin_inset Formula $\mathcal{U}$
 \end_inset
 
-, which takes a type and returns an extended type, as seen in definition
- 
+ is defined, which takes a type and returns an extended type, as seen in
+ definition 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "def:Aliasing-and-unaliasing."
@@ -3673,8 +3672,8 @@ T-Ctor
 Some operations introduce stable aliases (eg.
  assignment), while others introduce only unstable ones (eg.
  field read).
- We express the distinction in the type system through the difference between
- the type judgments 
+ The distinction is expressed in the type system through the difference
+ between the type judgments 
 \begin_inset Formula $\Gamma\vdash\mathtt{e:ET}$
 \end_inset
 
@@ -3833,8 +3832,8 @@ Aliasing and unaliasing.
 
 \end_deeper
 \begin_layout Standard
-Thus, through a combination of aliasing and unaliasing, we can obtain unique
- types when needed.
+Thus, through a combination of aliasing and unaliasing, the programmer can
+ obtain unique types when needed.
  For example, for 
 \begin_inset Formula $\mathtt{x}$
 \end_inset
@@ -3885,6 +3884,10 @@ Thus, through a combination of aliasing and unaliasing, we can obtain unique
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Section
+TODO: WFV? Soundness? from OOPSLA15 attempt
 \end_layout
 
 \end_body

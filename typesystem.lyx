@@ -86,8 +86,8 @@ name "chap:Type-System"
 Type System
 \end_layout
 
-\begin_layout Itemize
-Cover the type judgements
+\begin_layout Standard
+TODO: remove this chapter?
 \end_layout
 
 \begin_layout Itemize
