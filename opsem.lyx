@@ -529,13 +529,11 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Formula 
-\[
-\begin{array}{c}
+$\begin{array}{c}
 \dfrac{\chi,\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5}\rightsquigarrow\chi',\sigma,\mathtt{e}}{\chi\rightarrow\chi'[\alpha\mapsto(\sigma,\mathtt{e})]}\;\textrm{\textsc{Global}}\\
 \\
 \dfrac{\chi(\alpha)\downarrow_{3}=\overline{\mu}\quad\exists\alpha'.\chi(\alpha)\downarrow_{6}(\alpha')=\mu\cdot\overline{\mu'}}{\chi\rightarrow\chi[\alpha\mapsto\overline{\mu}\cdot\mu]}\;\textrm{\textsc{Deliver}}
-\end{array}
-\]
+\end{array}$
 
 \end_inset
 

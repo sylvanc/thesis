@@ -2069,9 +2069,7 @@ sideways false
 status open
 
 \begin_layout Plain Layout
-\begin_inset Formula 
-\[
-\begin{array}{rclcl}
+\begin_inset Formula $\begin{array}{rclcl}
  &  & \mathit{Actor} & = & \mathit{ActorID\times(FieldID\rightarrow Value)}\\
  &  &  & \times & \mathit{\overline{Message}}\times Stack\times Expr\\
  &  &  & \times & (\mathit{ActorID}\rightarrow\overline{Message})\\
@@ -2088,9 +2086,7 @@ PC & \in & \mathit{PerceivedCycles} & = & \mathit{Token}\rightarrow(\mathit{Acto
 \rho & \in & \mathit{RefCount} & = & \mathit{Integer}\\
 \beta & \in & \mathit{Blocked} & = & \mathit{Boolean}\\
 \tau & \in & \mathit{Token} & = & \mathit{Integer}
-\end{array}
-\]
-
+\end{array}$
 \end_inset
 
 
@@ -2817,15 +2813,28 @@ INC
 
 \begin_layout Standard
 \begin_inset Float figure
-wide true
+wide false
 sideways false
 status open
 
 \begin_layout Plain Layout
 \align center
-\begin_inset Formula 
-\[
-\begin{array}{ccc}
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+makebox[
+\backslash
+textwidth][c]{
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $\begin{array}{ccc}
 \dfrac{\begin{array}{c}
 (\alpha',\chi')=\mathit{New}(\chi,\mathtt{\alpha,A},\mathtt{k},\varphi(\overline{\mathtt{y}}))\\
 \mathtt{t}\notin\varphi\quad\varphi'=\varphi[\mathtt{t}\mapsto\alpha]
@@ -2873,8 +2882,17 @@ status open
 \chi'=\chi[\alpha,\alpha'++\mathit{DEC}(\chi(\alpha)\downarrow_{8}(\alpha'))]\\
 \chi''=\chi'[\alpha\mapsto\mathit{Rel}(\chi',\alpha,\alpha')]
 \end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'',\alpha,\varepsilon}\;\textrm{\textsc{Release}}
-\end{array}
-\]
+\end{array}$
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
 
 \end_inset
 
@@ -3008,15 +3026,28 @@ reference "fig:Local-execution"
 
 \begin_layout Standard
 \begin_inset Float figure
-wide true
+wide false
 sideways false
 status open
 
 \begin_layout Plain Layout
 \align center
-\begin_inset Formula 
-\[
-\begin{array}{ccc}
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+makebox[
+\backslash
+textwidth][c]{
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $\begin{array}{ccc}
 \dfrac{\begin{array}{c}
 \mathit{BLK}(\alpha,\rho,\xi)\cdot\overline{\mu}=\chi(\alpha_{CD})\downarrow_{3}\\
 \chi'=\chi[\alpha_{CD},\alpha\mapsto(\rho,\xi)]
@@ -3045,8 +3076,17 @@ status open
 \chi'=\mathit{Rel}(\chi,\alpha s)\\
 \chi''=\chi'[\alpha_{CD}\backslash\alpha s]\backslash\alpha s
 \end{array}}{\chi,\alpha_{CD},\varepsilon\rightsquigarrow\chi''[\alpha_{CD}\mapsto\overline{\mu}],\alpha_{CD},\varepsilon}\;\textrm{\textsc{Collect}}
-\end{array}
-\]
+\end{array}$
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
 
 \end_inset
 
