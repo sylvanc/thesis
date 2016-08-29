@@ -2980,7 +2980,238 @@ Auxiliary definitions for actor GC
 \end_layout
 
 \begin_layout Standard
-TODO: explain each rule
+The 
+\noun on
+Ator
+\noun default
+ rule is modified such that the creating actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ begins with a foreign reference count that balances the initial local reference
+ count of 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The 
+\noun on
+Async
+\noun default
+ rule is modified such that the reachable contents of the message 
+\begin_inset Formula $\mu$
+\end_inset
+
+ have their reference counts adjusted to account for the implicit references
+ held by 
+\begin_inset Formula $\mu$
+\end_inset
+
+.
+ Note that if it is not possible to execute this rule, due to the sending
+ actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ holding a foreign reference count of 1 for some actor 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ referenced in 
+\begin_inset Formula $\mu$
+\end_inset
+
+, the 
+\noun on
+Acquire
+\noun default
+ rule can be executed to add weight to the foreign reference count 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ holds for 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ before 
+\begin_inset Formula $\mu$
+\end_inset
+
+ is sent.
+\end_layout
+
+\begin_layout Standard
+In 
+\noun on
+Behave
+\noun default
+, reference count adjustment is also accounted for, moving the implicit
+ references held by the received message 
+\begin_inset Formula $\mu$
+\end_inset
+
+ to the receiving actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The 
+\noun on
+Cnf 
+\noun default
+rule shows how an actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ that receives 
+\begin_inset Formula $\mathit{CNF}(\tau)$
+\end_inset
+
+ simply echoes 
+\begin_inset Formula $\mathit{ACK}(\alpha,\tau)$
+\end_inset
+
+ to the cycle detector, without needing to examine its own state or track
+ any state transitions.
+\end_layout
+
+\begin_layout Standard
+In 
+\noun on
+Inc 
+\noun default
+and 
+\noun on
+Dec
+\noun default
+, the receiving actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ adjusts its own local reference count to account for changes in foreign
+ reference counts due to weight being added to allow sending a reference
+ to 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ (producing 
+\emph on
+INC
+\emph default
+) or 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ no longer being reachable in some other actors local state (producing 
+\emph on
+DEC
+\emph default
+).
+\end_layout
+
+\begin_layout Standard
+
+\noun on
+Block
+\noun default
+ is executed when an actor in currently 
+\emph on
+unblocked
+\emph default
+ and it has an empty queue.
+ The cycle detector is notified of the actor's view of its own topology
+ and the actor is marked as 
+\emph on
+blocked
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+When 
+\emph on
+blocked
+\emph default
+, an actor that has a non-empty queue must execute 
+\noun on
+Unblock
+\noun default
+ before it can process any messages on its queue.
+ This notifies the cycle detector that the actor is no longer blocked and
+ its previous view of its own topology is now invalid.
+\end_layout
+
+\begin_layout Standard
+The 
+\noun on
+Acquire 
+\noun default
+rule allows an actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ to add weight to its foreign reference count for some other actor 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+.
+ The semantics allows this rule to be executed non-deterministically, but
+ it is strictly required in order to send a reference to 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ in a message if 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ holds a foreign reference count of 1 for 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ .
+\end_layout
+
+\begin_layout Standard
+The converse of 
+\noun on
+Acquire
+\noun default
+ is the 
+\noun on
+Release
+\noun default
+ rule, which is executed when an actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ cannot reach some other actor 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ in its local state, but holds a foreign reference count for 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+.
+ This is a garbage collection rule, allowing 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ to return that weight to 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ in the form of a 
+\emph on
+DEC
+\emph default
+ message.
 \end_layout
 
 \begin_layout Subsection
@@ -3165,7 +3396,109 @@ Auxiliary definitions for cycle detection
 \end_layout
 
 \begin_layout Standard
-TODO: explain each rule
+The 
+\noun on
+Blk
+\noun default
+ rule updates the cycle detector's view of the topology of some actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ upon receipt of a 
+\emph on
+BLK
+\emph default
+ message.
+ Similarly, the 
+\noun on
+Unb
+\noun default
+ rule invalidates the cycle detector's view of the topology of some actor
+ 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ upon receipt of an 
+\emph on
+UNB
+\emph default
+ message.
+ It also invalidates all perceived cycles that 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ is a member of, as those perceived cycles were detected using an out of
+ date view of the topology of 
+\begin_inset Formula $\alpha$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The 
+\noun on
+Ack 
+\noun default
+rule updates a perceived cycle to indicate that some actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ has acknowledged the confirmation message it was sent.
+ If the cycle detector receives an 
+\emph on
+ACK
+\emph default
+ message for an invalidate perceived cycle, the 
+\noun on
+NoAck
+\noun default
+ rule is executed instead, discarding the message.
+\end_layout
+
+\begin_layout Standard
+In 
+\noun on
+Detect
+\noun default
+, the cycle detector finds a close cycles of blocked actors and sends a
+ 
+\emph on
+CNF
+\emph default
+ message to each actor in the cycle.
+ The cycle is recorded as a perceived cycle, and no further action is taken
+ until the cycle is either acknowledged by all members of the cycle, or
+ the cycle is invalidated by an 
+\emph on
+UNB
+\emph default
+ message from some member of the cycle.
+\end_layout
+
+\begin_layout Standard
+The 
+\noun on
+Collect
+\noun default
+ rule is executed when a perceived cycle is fully acknowledged.
+ Any remaining foreign reference counts held by actors in the cycle are
+ released, generating 
+\emph on
+DEC
+\emph default
+ messages, and the actors in the cycle are removed from the heap.
+ The generated 
+\emph on
+DEC
+\emph default
+ messages are important when a closed cycle holds references to actors outside
+ that cycle.
+ If the 
+\emph on
+DEC
+\emph default
+ messages were not sent, such actors could not be collected in the future.
 \end_layout
 
 \begin_layout Section
