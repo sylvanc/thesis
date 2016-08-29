@@ -2423,6 +2423,37 @@ reference "subsec:Receiving-a-Reference"
 .
 \end_layout
 
+\begin_layout Standard
+Additionally, each actor maintains another invariant: if an actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ can reach another actor 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ in its local state, then 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ will hold a foreign reference count for 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ of 1 or more.
+\end_layout
+
+\begin_layout Definition
+Reachability reference count invariant
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $\alpha'\in\mathit{Reach}(\chi,\alpha,\mathtt{ref})\Rightarrow\chi(\alpha)\downarrow_{8}(\alpha')>0$
+\end_inset
+
+
+\end_layout
+
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
@@ -3729,7 +3760,633 @@ name "sec:distributed-actor-GC"
 
 \end_inset
 
-TODO: Distributed Actor GC
+Distributed Actor GC
+\end_layout
+
+\begin_layout Standard
+In the distributed setting, the 
+\noun on
+Deliver 
+\noun default
+rule need not be executed immediately after 
+\noun on
+Async
+\noun default
+.
+ This breaks causal ordering of messages, but maintains FIFO ordering of
+ messages between pairs of actors.
+ Under these conditions, 
+\emph on
+MAC
+\emph default
+ as described is not sound, as a 
+\emph on
+DEC 
+\emph default
+message may overtake an 
+\emph on
+INC
+\emph default
+ message, resulting in premature collection of an actor.
+\end_layout
+
+\begin_layout Standard
+However, a small change to the protocol allows 
+\emph on
+MAC
+\emph default
+ to function without causal ordering of messages.
+ This change will be described briefly and informally, leaving a a complete
+ and formal development of the protocol change for future work.
+\end_layout
+
+\begin_layout Subsection
+Additional Runtime Entities
+\end_layout
+
+\begin_layout Standard
+Nodes in the distributed system are referred to with the identifier 
+\begin_inset Formula $\mathcal{N}$
+\end_inset
+
+.
+ An actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ that is referenced by a node 
+\begin_inset Formula $\mathcal{N}$
+\end_inset
+
+, but is executing on a different node 
+\begin_inset Formula $\mathcal{N}'$
+\end_inset
+
+, has a 
+\emph on
+proxy actor
+\emph default
+ on 
+\begin_inset Formula $\mathcal{N}$
+\end_inset
+
+, referred to as 
+\begin_inset Formula $\alpha:\mathcal{N}$
+\end_inset
+
+.
+ The proxy actor 
+\begin_inset Formula $\alpha:\mathcal{N}$
+\end_inset
+
+ is used as the destination address for messages to 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ sent by actors on 
+\begin_inset Formula $\mathcal{N}'$
+\end_inset
+
+.
+ Such messages are forwarded to 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ on 
+\begin_inset Formula $\mathcal{N}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Each node in the distributed system runs its own cycle detector.
+ Each actor keeps track of an additional value: a per-node 
+\emph on
+distributed reference count
+\emph default
+, which is an approximation of 
+\emph on
+distributed weight
+\emph default
+, in the same way the 
+\emph on
+local reference count
+\emph default
+ is an approximation of weight on a single node.
+ This distributed reference count is sent to the cycle detector, along with
+ the local reference count and the external map, when an actor blocks.
+\end_layout
+
+\begin_layout Standard
+Proxy actors keep a per-node 
+\emph on
+proxy reference count
+\emph default
+, which is the counter-balance to the distributed reference count, in the
+ same way the 
+\emph on
+foreign reference count
+\emph default
+ is the counter-balance to the local reference count on a single node.
+ Note that both the distributed reference count and the proxy reference
+ count are maps (
+\begin_inset Formula $\mathit{Node}\rightarrow\mathit{RefCount}$
+\end_inset
+
+) rather than scalar values.
+\end_layout
+
+\begin_layout Subsection
+Sending a Local Reference Locally
+\end_layout
+
+\begin_layout Standard
+No change to the protocol is necessary when an actor sends a reference to
+ a local actor (i.e.
+ an actor running on the same node as the sender) to a local receiver, nor
+ when an actor receives a reference to a local actor from a local sender.
+\end_layout
+
+\begin_layout Subsection
+Sending a Local Reference Remotely
+\end_layout
+
+\begin_layout Standard
+When an actor 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ on node 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+ sends a reference to a local actor 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ to another actor 
+\begin_inset Formula $\alpha_{3}$
+\end_inset
+
+ on a remote node 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+, 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ also sends a message to 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ telling it to increment its distributed reference count for 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+.
+ When 
+\begin_inset Formula $\alpha_{3}$
+\end_inset
+
+ receives the reference to the remote actor 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ (remote from the perspective of 
+\begin_inset Formula $\alpha_{3}$
+\end_inset
+
+), it sends a message to the local proxy
+\emph on
+ 
+\emph default
+
+\begin_inset Formula $\alpha_{2}:\mathcal{N}_{2}$
+\end_inset
+
+, telling it to increment its proxy reference count for 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Sending a Remote Reference Locally
+\end_layout
+
+\begin_layout Standard
+Expanding on the example above, when 
+\begin_inset Formula $\alpha_{3}$
+\end_inset
+
+ sends a reference to 
+\begin_inset Formula $\alpha_{2}:\mathcal{N}_{2}$
+\end_inset
+
+ to another actor 
+\begin_inset Formula $\alpha_{4}$
+\end_inset
+
+ on the local node 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+, the reference to 
+\begin_inset Formula $\alpha_{2}:\mathcal{N}_{2}$
+\end_inset
+
+ is treated exactly as if it were a local actor.
+ Effectively, the proxy reference count is the node's approximation of its
+ distributed weight, and so it is not altered when references to the remote
+ actor are sent in local messages.
+\end_layout
+
+\begin_layout Subsection
+Sending a Remote Reference Remotely
+\end_layout
+
+\begin_layout Standard
+Expanding further on the example, when 
+\begin_inset Formula $\alpha_{3}$
+\end_inset
+
+ sends a reference to 
+\begin_inset Formula $\alpha_{2}:\mathcal{N}_{2}$
+\end_inset
+
+ to another actor 
+\begin_inset Formula $\alpha_{5}$
+\end_inset
+
+ on the remote node 
+\begin_inset Formula $\mathcal{N}_{3}$
+\end_inset
+
+, 
+\begin_inset Formula $\alpha_{3}$
+\end_inset
+
+ also sends a message to the local proxy 
+\begin_inset Formula $\alpha_{2}:\mathcal{N}_{2}$
+\end_inset
+
+ telling it to 
+\emph on
+decrement
+\emph default
+ its proxy reference count for 
+\begin_inset Formula $\mathcal{N}_{3}$
+\end_inset
+
+.
+ Thus the proxy 
+\begin_inset Formula $\alpha_{2}:\mathcal{N}_{2}$
+\end_inset
+
+ will have a 
+\emph on
+negative
+\emph default
+ proxy reference count for 
+\begin_inset Formula $\mathcal{N}_{3}$
+\end_inset
+
+.
+ When 
+\begin_inset Formula $\alpha_{5}$
+\end_inset
+
+ receives the reference to the remote actor 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+, it sends a message to the local proxy 
+\begin_inset Formula $\alpha_{2}:\mathcal{N}_{3}$
+\end_inset
+
+, telling it to increment its proxy reference count for 
+\begin_inset Formula $\mathcal{N}_{3}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Releasing Remote References
+\end_layout
+
+\begin_layout Standard
+When no references to 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ remain in the local state of any actor on 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+, the proxy actor 
+\begin_inset Formula $\alpha_{2}:\mathcal{N}_{2}$
+\end_inset
+
+ can be collected.
+ When it is collected, its proxy reference count map is sent to 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ on 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+.
+ When this is received, it is subtracted from the distributed reference
+ count of 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+.
+ In this example, 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ has a distributed reference count of 
+\begin_inset Formula $[\mathcal{N}_{2}\rightarrow1]$
+\end_inset
+
+ and subtracts the proxy reference count 
+\begin_inset Formula $[\mathcal{N}_{2}\rightarrow1,\mathcal{N}_{3}\rightarrow-1]$
+\end_inset
+
+, resulting in a distributed reference count of 
+\begin_inset Formula $[\mathcal{N}_{2}\rightarrow0,\mathcal{N}_{3}\rightarrow1]$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+To ensure that 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ is not prematurely collected when another node may still be able to send
+ it a message, it is sufficient for the cycle detector on 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+ not to collect 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ if it has a non-zero distributed reference count for any node.
+ Allowing 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ to keep a negative proxy reference count for 
+\begin_inset Formula $\mathcal{N}_{3}$
+\end_inset
+
+ in 
+\begin_inset Formula $\alpha_{2}:\mathcal{N}_{2}$
+\end_inset
+
+ is sufficient to protect 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ from collection.
+\end_layout
+
+\begin_layout Standard
+For example, if 
+\begin_inset Formula $\mathcal{N}_{3}$
+\end_inset
+
+ release 
+\begin_inset Formula $\alpha_{2}:\mathcal{N}_{3}$
+\end_inset
+
+ first, it would send the proxy reference count 
+\begin_inset Formula $[\mathcal{N}_{3}\rightarrow1]$
+\end_inset
+
+ to 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+, resulting in a distributed reference count of 
+\begin_inset Formula $[\mathcal{N}_{2}\rightarrow1,\mathcal{N}_{3}\rightarrow-1]$
+\end_inset
+
+.
+ Later, when 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ released 
+\begin_inset Formula $\alpha_{2}:\mathcal{N}_{2}$
+\end_inset
+
+ and sent a proxy reference count of 
+\begin_inset Formula $[\mathcal{N}_{2}\rightarrow1,\mathcal{N}_{3}\rightarrow-1]$
+\end_inset
+
+, the distributed reference count for 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ would be adjusted to 
+\begin_inset Formula $[\mathcal{N}_{2}\rightarrow0,\mathcal{N}_{3}\rightarrow0]$
+\end_inset
+
+ and collection would be allowed (assuming 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ was no longer referenced locally on 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+).
+ 
+\end_layout
+
+\begin_layout Standard
+Note that no additional network messages are required for this protocol
+ extension.
+ Additional local messages are required, but such messages are relatively
+ inexpensive.
+ For example, in the Pony runtime, such a message is a single atomic operation.
+\end_layout
+
+\begin_layout Subsection
+Distributed Cycle Detection
+\end_layout
+
+\begin_layout Standard
+As described, this protocol extension will only successfully collect closed
+ cycles of actors that are non-cyclic across nodes.
+ That is, if actors in the cycle on node 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+ (possibly cyclic amongst themselves) reference actors in the cycle on node
+ 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ (also possibly cyclic amongst themselves), the cycle can still be collected,
+ but it cannot if any of the actors on node 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ reference any of the actors on 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The solution is to extend the cycle detection phase to allow cycle detectors
+ on a collection of nodes to cooperate.
+ To do so, each cycle detector independently detects perceived cycles, without
+ accounting for distributed reference counts.
+ Once a perceived cycle 
+\begin_inset Formula $PC_{1}$
+\end_inset
+
+ is confirmed on node 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+, it can be immediately collected if all distributed reference counts are
+ zero.
+ If they are not, 
+\begin_inset Formula $\mathit{PC}_{1}$
+\end_inset
+
+ is sent to each node that any actor in 
+\begin_inset Formula $\mathit{PC}_{1}$
+\end_inset
+
+ references.
+\end_layout
+
+\begin_layout Standard
+In the two node example, 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+ sends 
+\begin_inset Formula $\mathit{PC}_{1}$
+\end_inset
+
+ to 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ sends 
+\begin_inset Formula $\mathit{PC_{2}}$
+\end_inset
+
+ to 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+.
+ When 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ receives 
+\begin_inset Formula $\mathit{PC}_{1}$
+\end_inset
+
+ , the cycle detector on 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ extends 
+\begin_inset Formula $\mathit{PC}_{2}$
+\end_inset
+
+ with the information from 
+\begin_inset Formula $\mathit{PC}_{1}$
+\end_inset
+
+.
+ The resulting extended perceived cycle 
+\begin_inset Formula $\mathit{PC}_{2}'$
+\end_inset
+
+ is collected if all distributed reference counts can be accounted for via
+ the proxy reference counts contained in 
+\begin_inset Formula $\mathit{PC}_{2}'$
+\end_inset
+
+.
+ Otherwise, the extended cycle 
+\begin_inset Formula $\mathit{PC}_{2}'$
+\end_inset
+
+ is again sent to each node that any actor in 
+\begin_inset Formula $\mathit{PC}_{2}'$
+\end_inset
+
+ references.
+\end_layout
+
+\begin_layout Standard
+In this simple two node example, the cycles are collected after being extended
+ once.
+ In a more complicated multi-node example, it may be necessary to forward
+ extended cycles several times, but the information will eventually propagate
+ to all nodes and allow each actor to be collected by the cycle detector
+ on its host node.
+ If, during this process, any actor unblocks, that will cause the relevant
+ perceived cycles on the local node to be discarded, preventing the cycle
+ from being prematurely collected.
+\end_layout
+
+\begin_layout Standard
+This is effectively a form of 
+\emph on
+gossip protocol
+\emph default
+ that allows cycle detection across the distributed system to be eventually
+ consistent, without any actor being prematurely collected.
+\end_layout
+
+\begin_layout Subsection
+Distributed Node Failure
+\end_layout
+
+\begin_layout Standard
+In the event of node failure, no actor will be prematurely collected, but
+ some actors will never be collected, due to distributed reference counts
+ that can no longer be accounted for.
+ While any distributed reference count attributable to a failed node can
+ be safely discarded, the failed node may hold negative proxy reference
+ counts for other nodes.
+\end_layout
+
+\begin_layout Standard
+To reduce the risk of node failure resulting in a set of actors that cannot
+ be collected, nodes can periodically clear negative proxy reference counts
+ for other nodes by sending distributed reference count increment messages
+ to host nodes.
+ This does not eliminate the risk, as even if such messages were sent before
+ sending a remote reference to a remote node it would be possible for the
+ decrement message not to arrive due to network failure, even if the remote
+ node was able to receive the remote reference.
 \end_layout
 
 \end_body

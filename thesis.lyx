@@ -17,6 +17,7 @@
 fixltx2e
 fix-cm
 theorems-ams-bytype
+theorems-chap-bytype
 \end_modules
 \maintain_unincluded_children false
 \language british
