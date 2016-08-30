@@ -1,7 +1,9 @@
-#LyX 2.1 created this file. For more info see http://www.lyx.org/
-\lyxformat 474
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
 \begin_document
 \begin_header
+\save_transient_properties true
+\origin unavailable
 \textclass extreport
 \use_default_options true
 \begin_modules
@@ -14,16 +16,16 @@ theorems-ams-bytype
 \language_package default
 \inputencoding auto
 \fontencoding global
-\font_roman default
-\font_sans default
-\font_typewriter default
-\font_math auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
-\font_sf_scale 100
-\font_tt_scale 100
+\font_sf_scale 100 100
+\font_tt_scale 100 100
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -84,13 +86,294 @@ name "chap:Object-Collection"
 Object Collection
 \end_layout
 
-\begin_layout Itemize
-Object gc adds cross-actor gc info to actors in configuration
+\begin_layout Section
+Formal Model
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide true
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Formula $\begin{array}{rclcl}
+\mu & \in & \mathit{Message} & = & (\mathit{MethodID\times\overline{Value}})\\
+ &  &  & | & INC(\mathit{ExMap})\,|\,DEC(\mathit{ExMap})\\
+ &  &  & | & BLK(\mathit{ActorAddr},\mathit{RefCount},\mathit{ExMap})\\
+ &  &  & | & UNB(\mathit{ActorAddr})\\
+ &  &  & | & CNF(\mathit{Token})\,|\,ACK(\mathit{ActorAddr},\mathit{Token})
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Runtime-entities-for-object-GC"
+
+\end_inset
+
+Runtime entities for object GC
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Reference Count Invariant
+\end_layout
+
+\begin_layout Definition
+Reference count invariant components
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $\begin{array}{lcl}
+\mathit{LRC}(\omega) & = & \chi(\mathcal{O}(\omega))\downarrow_{8}(\omega)\\
+\mathit{INC}(\omega) & = & \sum_{\forall\overline{\mu}\in Q(\chi,\mathcal{O}(\omega))}\begin{cases}
+\rho & \mathit{if}\,\mu_{i}=\mathit{INC}(\xi)\wedge\xi(\omega)=\rho\\
+0 & \mathit{otherwise}
+\end{cases}\\
+\mathit{AMC}(\omega) & = & \sum_{\forall\alpha\in\mathit{dom}(\chi).\forall\overline{\mu}\in Q(\chi,\alpha)}\begin{cases}
+1 & \mathit{if}\,\omega\in\mathit{Reach}(\chi,\alpha,\mu_{i})\\
+0 & \mathit{otherwise}
+\end{cases}\\
+\mathit{FRC}(\omega) & = & \sum_{\alpha\neq\mathcal{O}(\omega)}\chi(\alpha)\downarrow_{8}(\omega)\\
+\mathit{DEC}(\omega) & = & \sum_{\forall\overline{\mu}\in Q(\chi,\mathcal{O}(\omega))}\begin{cases}
+\rho & \mathit{if}\,\mu_{i}=\mathit{DEC}(\xi)\wedge\xi(\omega)=\rho\\
+0 & \mathit{otherwise}
+\end{cases}
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+TODO:
+\end_layout
+
+\begin_layout Definition
+Reachability reference count invariant
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $\forall\alpha\neq\mathcal{O}(\omega).\omega\in\mathit{Reach}(\chi,\alpha,\mathtt{ref})\Rightarrow\chi(\mathcal{O}(\omega))\downarrow_{8}(\omega)>0\wedge\chi(\alpha)\downarrow_{8}(\omega)>0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Sending a Reference
+\end_layout
+
+\begin_layout Definition
+Sending a reference
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $\begin{array}{lcl}
+\mathit{Send}(\chi,\alpha,\omega) & = & \mathit{Adj}(\chi,\alpha,\omega,-1)\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Receiving a Reference
+\end_layout
+
+\begin_layout Definition
+Receiving a reference
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $\begin{array}{lcl}
+\mathit{Recv}(\chi,\alpha,\omega) & = & \mathit{Adj}(\chi,\alpha,\omega,1)\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Actor Local Execution
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+makebox[
+\backslash
+textwidth][c]{
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $\begin{array}{ccc}
+\dfrac{\begin{array}{c}
+\mathit{INC}(\xi)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
+\chi'=\mathit{Adj}(\chi,\alpha,-\xi)
+\end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\overline{\mu}],\alpha,\varepsilon}\;\textrm{\textsc{Inc}} &  & \dfrac{\begin{array}{c}
+\mathit{DEC}(\xi)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
+\chi'=\mathit{Adj}(\chi,\alpha,\xi)
+\end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\overline{\mu}],\alpha,\varepsilon}\;\textrm{\textsc{Dec}}\\
+\\
+\dfrac{\begin{array}{c}
+\neg\chi(\alpha)\downarrow_{9}\quad\alpha\neq\alpha'\\
+\iota s\subseteq\mathit{dom}(\chi(\alpha)\downarrow_{8})\\
+\forall\iota\in\iota s.\mathcal{O}(\iota)=\alpha'\wedge\chi(\alpha)\downarrow_{8}(\iota)>0\\
+\xi=[\iota\mapsto n\,|\,\iota\in\iota s]\\
+\chi'=\chi[\alpha,\alpha'++\mathit{INC}(\xi)]\\
+\chi''=\mathit{Adj}(\chi',\alpha,\xi)
+\end{array}}{\chi,\alpha\cdot\overline{\varphi},\mathtt{e}\rightsquigarrow\chi'',\alpha\cdot\overline{\varphi},\mathtt{e}}\;\textrm{\textsc{Acquire}} &  & \dfrac{\begin{array}{c}
+\neg\chi(\alpha)\downarrow_{9}\quad\alpha\neq\alpha'\\
+\iota s\notin\mathit{Reach}(\chi,\alpha,\mathtt{ref})\\
+\forall\iota\in\iota s.\mathcal{O}(\iota)=\alpha'\wedge\chi(\alpha)\downarrow_{8}(\iota)>0\\
+\xi=[\iota\mapsto\chi(\alpha)\downarrow_{8}(\iota)\,|\,\iota\in\iota s]\\
+\chi'=\chi[\alpha,\alpha'++\mathit{DEC}(\xi)]\\
+\chi''=\mathit{Rel}(\chi',\alpha,\iota s)
+\end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'',\alpha,\varepsilon}\;\textrm{\textsc{Release}}
+\end{array}$
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset VSpace bigskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Formula $\dfrac{\begin{array}{c}
+\omega s\subset\mathit{dom}(\chi)\quad\omega s\notin\mathit{Reach}(\chi,\alpha,\mathtt{ref})\\
+\forall\omega\in\omega s.\mathcal{O}(\omega)=\alpha\wedge\chi(\alpha)\downarrow_{8}(\omega)\not>0
+\end{array}}{\chi,\alpha\cdot\overline{\varphi},\mathtt{e}\rightsquigarrow\chi\backslash\omega s,\alpha\cdot\overline{\varphi},\mathtt{e}}\;\textrm{\textsc{Collect}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:opsem-for-object-GC"
+
+\end_inset
+
+Operational semantics of object GC
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Formula $\begin{array}{lcl}
+\mathit{Adj}(\chi,\alpha,\xi) & = & \iota\in\mathit{dom}(\xi).\mathit{Adj}(\mathit{Adj}(\chi,\alpha,\iota,\xi(\iota)),\alpha,\xi\backslash\iota)\\
+\mathit{Adj}(\chi,\alpha,[]) & = & \chi\\
+\mathit{Adj}(\chi,\alpha,\omega,n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
+ &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
+ &  & \quad\chi(\alpha)\downarrow_{8}[\omega\mapsto(\chi(\alpha)\downarrow_{8}(\omega)+n)],\\
+ &  & \quad\chi(\alpha)\downarrow_{9})]\,\mathit{if}\,\alpha\neq\mathcal{O}(\omega)\wedge\chi(\alpha)\downarrow_{8}(\alpha')>-n\\
+\mathit{Adj}(\chi,\alpha,\omega,n) &  & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
+ &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
+ &  & \quad\chi(\alpha)\downarrow_{8}[\omega\mapsto(\chi(\alpha)\downarrow_{8}(\iota)-n)],\\
+ &  & \quad\chi(\alpha)\downarrow_{9})]\,\mathit{if}\,\alpha=\mathcal{O}(\omega)\\
+-\xi & = & [\iota\mapsto-\rho\,|\,\xi(\iota)=\rho]
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Auxiliary-definitions-for-object-gc"
+
+\end_inset
+
+Auxiliary definitions for object GC
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+TODO:
 \end_layout
 
 \begin_layout Itemize
-Don't use the language opsem to explain GC.
- GC has no impact on language semantics.
+Object gc adds cross-actor gc info to actors in configuration
 \end_layout
 
 \begin_layout Itemize

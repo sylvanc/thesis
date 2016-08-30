@@ -2069,6 +2069,7 @@ sideways false
 status open
 
 \begin_layout Plain Layout
+\align center
 \begin_inset Formula $\begin{array}{rclcl}
  &  & \mathit{Actor} & = & \mathit{ActorID\times(FieldID\rightarrow Value)}\\
  &  &  & \times & \mathit{\overline{Message}}\times Stack\times Expr\\
@@ -2082,7 +2083,7 @@ status open
 CD & \in & \mathit{CycleDetector} & = & PerceivedTopo\times PerceivedCycles\times Token\\
 PT & \in & \mathit{PerceivedTopo} & = & \mathit{ActorAddr}\rightarrow(\mathit{RefCount}\times\mathit{ExMap})\\
 PC & \in & \mathit{PerceivedCycles} & = & \mathit{Token}\rightarrow(\mathit{ActorAddr}\rightarrow\mathit{Boolean})\\
-\xi & \in & \mathit{ExMap} & = & \mathit{ActorAddr}\rightarrow\mathit{Integer}\\
+\xi & \in & \mathit{ExMap} & = & \mathit{Addr}\rightarrow\mathit{Integer}\\
 \rho & \in & \mathit{RefCount} & = & \mathit{Integer}\\
 \beta & \in & \mathit{Blocked} & = & \mathit{Boolean}\\
 \tau & \in & \mathit{Token} & = & \mathit{Integer}
@@ -2169,16 +2170,12 @@ In Pony, each actor is responsible for garbage collecting any objects it
 
  that returns the allocating actor for an object address, or returns the
  actor itself for an actor address.
- This is the 
-\begin_inset Formula $\mathit{Owner}$
+ This owner function is referred to as 
+\begin_inset Formula $\mathcal{O}$
 \end_inset
 
- function.
- The implementation of the 
-\begin_inset Formula $\mathit{Owner}$
-\end_inset
-
- function is described in section 
+.
+ The implementation of the owner function is described in section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "subsec:Page-Map"
@@ -2217,11 +2214,8 @@ reference capability
 \end_layout
 
 \begin_layout Standard
-For garbage collection purposes, the 
-\begin_inset Formula $\mathit{Owner}$
-\end_inset
-
- of an address is implicitly reachable if the address is reachable.
+For garbage collection purposes, the owner of an address is implicitly reachable
+ if the address is reachable.
  This is because an actor 
 \begin_inset Formula $\alpha$
 \end_inset
@@ -2246,8 +2240,8 @@ Reachability
 \begin_layout Definition
 \begin_inset Formula $\begin{array}{lcl}
 \mathit{Reach}(\chi,\mathit{null},\kappa) & = & \{\}\\
-\mathit{Reach}(\chi,\iota,\mathtt{tag}) & = & \{\iota,\mathit{Owner(\iota)}\}\\
-\mathit{Reach}(\chi,\iota,\kappa) & = & \{\iota,\mathit{Owner}(\iota)\}\\
+\mathit{Reach}(\chi,\iota,\mathtt{tag}) & = & \{\iota,\mathcal{O}(\iota)\}\\
+\mathit{Reach}(\chi,\iota,\kappa) & = & \{\iota,\mathcal{O}(\iota)\}\\
  & \cup & \forall\mathtt{f}\in\mathcal{F}s(\chi(\iota)\downarrow_{1}).\mathcal{F}(\chi(\iota)\downarrow_{1},\mathtt{f})=\mathtt{S\,\kappa'}.\\
  &  & \mathit{Reach}(\chi,\chi(\iota,\mathtt{f}),\kappa')\\
 \mathit{Reach}(\chi,\overline{v},\overline{\kappa}) & = & \bigcup_{i\in1..|\overline{v}|}\mathit{Reach}(\chi,v_{i},\kappa_{i})\\
@@ -2651,7 +2645,7 @@ Sending a reference
 \mathit{Send}(\chi,\alpha,\{\}) & = & \chi\\
 \mathit{Send}(\chi,\alpha,\mathit{null}) & = & \chi\\
 \mathit{Send}(\chi,\alpha,\omega) & = & \chi\\
-\mathit{Send}(\chi,\alpha,\alpha') & = & \chi[\alpha\mapsto\mathit{Adj}(\chi,\alpha,\alpha',-1)]
+\mathit{Send}(\chi,\alpha,\alpha') & = & \mathit{Adj}(\chi,\alpha,\alpha',-1)
 \end{array}$
 \end_inset
 
@@ -2764,7 +2758,7 @@ Receiving a reference
 \mathit{Recv}(\chi,\alpha,\{\}) & = & \chi\\
 \mathit{Recv}(\chi,\alpha,\mathit{null}) & = & \chi\\
 \mathit{Recv}(\chi,\alpha,\omega) & = & \chi\\
-\mathit{Recv}(\chi,\alpha,\alpha') & = & \chi[\alpha\mapsto\mathit{Adj}(\chi,\alpha,\alpha',1)]
+\mathit{Recv}(\chi,\alpha,\alpha') & = & \mathit{Adj}(\chi,\alpha,\alpha',1)
 \end{array}$
 \end_inset
 
@@ -2885,11 +2879,11 @@ textwidth][c]{
 \end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\overline{\mu}],\alpha,\varepsilon}\;\textrm{\textsc{Cnf}}\\
 \\
 \dfrac{\begin{array}{c}
-\mathit{INC}(\rho)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
-\chi'=\chi[\alpha\mapsto\mathit{Adj}(\chi,\alpha,\alpha,-\rho)]
+\neg\chi(\alpha)\downarrow_{9}\quad\mathit{INC}(\rho)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
+\chi'=\mathit{Adj}(\chi,\alpha,\alpha,-\rho)
 \end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\overline{\mu}],\alpha,\varepsilon}\;\textrm{\textsc{Inc}} &  & \dfrac{\begin{array}{c}
-\mathit{DEC}(\rho)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
-\chi'=\chi[\alpha\mapsto\mathit{Adj}(\chi,\alpha,\alpha,\rho)]
+\neg\chi(\alpha)\downarrow_{9}\quad\mathit{DEC}(\rho)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
+\chi'=\mathit{Adj}(\chi,\alpha,\alpha,\rho)
 \end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\overline{\mu}],\alpha,\varepsilon}\;\textrm{\textsc{Dec}}\\
 \\
 \dfrac{\begin{array}{c}
@@ -2906,12 +2900,13 @@ textwidth][c]{
 \neg\chi(\alpha)\downarrow_{9}\quad\alpha\neq\alpha'\\
 \chi(\alpha)\downarrow_{8}(\alpha')>0\\
 \chi'=\chi[\alpha,\alpha'++\mathit{INC}(n)]\\
-\chi''=\chi'[\alpha\mapsto\mathit{Adj}(\chi',\alpha,\alpha',n)]
+\chi''=\mathit{Adj}(\chi',\alpha,\alpha',n)
 \end{array}}{\chi,\alpha\cdot\overline{\varphi},\mathtt{e}\rightsquigarrow\chi'',\alpha\cdot\overline{\varphi},\mathtt{e}}\;\textrm{\textsc{Acquire}} &  & \dfrac{\begin{array}{c}
-\alpha\neq\alpha'\quad\alpha'\notin\mathit{Reach}(\chi,\alpha,\mathtt{ref})\\
+\neg\chi(\alpha)\downarrow_{9}\quad\alpha\neq\alpha'\\
 \chi(\alpha)\downarrow_{8}(\alpha')>0\\
+\alpha'\notin\mathit{Reach}(\chi,\alpha,\mathtt{ref})\\
 \chi'=\chi[\alpha,\alpha'++\mathit{DEC}(\chi(\alpha)\downarrow_{8}(\alpha'))]\\
-\chi''=\chi'[\alpha\mapsto\mathit{Rel}(\chi',\alpha,\alpha')]
+\chi''=\mathit{Rel}(\chi',\alpha,\alpha')
 \end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'',\alpha,\varepsilon}\;\textrm{\textsc{Release}}
 \end{array}$
 \end_inset
@@ -2968,19 +2963,19 @@ status open
  &  & \quad\chi'=\mathit{Send}(\chi,\alpha,\mathit{Reach}(\chi,\overline{v},\overline{\kappa}))\wedge\\
  &  & \quad\chi''=\chi'[\alpha\mapsto\mathit{Inc}(\chi,\alpha,\alpha',n),\\
  &  & \quad\quad\alpha'\mapsto(\mathtt{A},\mathtt{{\cal F}s(\mathtt{A})}\mapsto\mathit{null},(\mathtt{k},\overline{v}),\alpha,\varepsilon,[],n,[],\mathit{false})]\\
-\mathit{Adj}(\chi,\alpha,\alpha',n) & = & (\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
+\mathit{Adj}(\chi,\alpha,\alpha',n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
  &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
  &  & \quad\chi(\alpha)\downarrow_{8}[\alpha'\mapsto(\chi(\alpha)\downarrow_{8}(\alpha')+n)],\\
- &  & \quad\chi(\alpha)\downarrow_{9})\,\mathit{if}\,\alpha\neq\alpha'\wedge\chi(\alpha)\downarrow_{8}(\alpha')>-n\\
- &  & (\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
+ &  & \quad\chi(\alpha)\downarrow_{9})]\,\mathit{if}\,\alpha\neq\alpha'\wedge\chi(\alpha)\downarrow_{8}(\alpha')>-n\\
+\mathit{Adj}(\chi,\alpha,\alpha',n) &  & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
  &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7}-n,\\
- &  & \quad\chi(\alpha)\downarrow_{8},\chi(\alpha)\downarrow_{9})\,\mathit{if}\,\alpha=\alpha'\\
-\mathit{Rel}(\chi,\alpha,\alpha') & = & (\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
+ &  & \quad\chi(\alpha)\downarrow_{8},\chi(\alpha)\downarrow_{9})]\,\mathit{if}\,\alpha=\alpha'\\
+\mathit{Rel}(\chi,\alpha,\iota) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
  &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
- &  & \quad\chi(\alpha)\downarrow_{8}[\alpha'\mapsto0],\chi(\alpha)\downarrow_{9})\\
-\chi[\alpha\mapsto\beta] & = & (\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
+ &  & \quad\chi(\alpha)\downarrow_{8}[\iota\mapsto0],\chi(\alpha)\downarrow_{9})]\\
+\chi[\alpha\mapsto\beta] & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
  &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
- &  & \quad\chi(\alpha)\downarrow_{8},\beta)
+ &  & \quad\chi(\alpha)\downarrow_{8},\beta)]
 \end{array}$
 \end_inset
 
@@ -3396,7 +3391,7 @@ status open
 \\
 \mathit{Rel}(\chi,\{\alpha\}\cup\alpha s) & = & \mathit{Rel}(\chi,\alpha)\\
 \mathit{Rel}(\chi,\alpha) & = & \mathit{Rel}(\chi,\alpha,\mathit{Reach}(\chi,\alpha,\mathtt{ref}))\\
-\mathit{Rel}(\chi,\alpha,\{\alpha'\}\cup\iota s) & = & \mathit{Rel}(\chi,\alpha,\alpha')
+\mathit{Rel}(\chi,\alpha,\{\iota\}\cup\iota s) & = & \mathit{Rel}(\chi,\alpha,\iota)
 \end{array}$
 \end_inset
 
