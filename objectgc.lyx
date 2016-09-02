@@ -86,8 +86,416 @@ name "chap:Object-Collection"
 Object Collection
 \end_layout
 
+\begin_layout Standard
+Many actor-model languages have non-actor entities, in the form of passive
+ objects or other non-actor data structures.
+ Such objects can be passed between actors in messages.
+ Garbage collecting such objects in an actor-model language face similar
+ problems to garbage collecting actors themselves.
+ The inability to examine the global state of the program without pausing
+ the program results in existing approaches to object garbage collection
+ suffering performance problems, particularly when stop-the-world phases
+ cause the program to become unresponsive.
+\end_layout
+
+\begin_layout Standard
+Existing approaches to reducing stop-the-world pauses in garbage collection
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "click2005pauseless,tene2011c4"
+
+\end_inset
+
+ significantly reduce such program pauses.
+ However, such general approaches cannot leverage the properties of an actor-mod
+el language, particularly the isolation of state within actors.
+ As a result, they rely on techniques such as 
+\emph on
+read barriers
+\emph default
+, which adversely affect mutator thread performance, in order to reduce
+ pause times.
+\end_layout
+
+\begin_layout Standard
+Erlang achieves fully concurrent passive object garbage collection by copying
+ passive objects sent in messages to the 
+\emph on
+process-local heap
+\emph default
+ of the destination.
+ This comes at a cost: copying the passive objects can be expensive when
+ large data structures are passed between actors, both when the message
+ is sent (due to the time taken to copy the message) and over time (due
+ to the resulting increased memory usage).
+ Copying message contents also means that 
+\emph on
+object identity
+\emph default
+ must be encoded in the data structure by the programmer, rather than being
+ implicitly derived from the object's memory address.
+ While this is less important for a functional language such as Erlang,
+ it is important for an 
+\emph on
+object capability
+\emph default
+ language such as Pony.
+\end_layout
+
+\begin_layout Standard
+In Pony, a novel technique for passive object collection has been developed
+ based on Message-based Actor Collection (
+\emph on
+MAC
+\emph default
+), described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Actor-Collection"
+
+\end_inset
+
+.
+ This approach, termed Ownership and Reference Counting for Actors (
+\emph on
+ORCA
+\emph default
+) extends 
+\emph on
+MAC
+\emph default
+ to allow synchronous objects allocated by some actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ and subsequently shared with other actors to be efficiently and safely
+ garbage collected by the allocating actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ without requiring any synchronisation mechanism other than message passing.
+ This combines 
+\emph on
+actor-local heaps
+\emph default
+ with an 
+\emph on
+ownership
+\emph default
+ model wherein an actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ may be able to reach an object 
+\begin_inset Formula $\omega$
+\end_inset
+
+ in the heap of another actor 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+, but the allocating actor 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ (i.e.
+ the owner) remains responsible for garbage collecting 
+\begin_inset Formula $\omega$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Background on Actor-Model Object GC
+\end_layout
+
+\begin_layout Standard
+Existing approaches to collecting passive objects in actor-model languages
+ and libraries fall into four basic categories:
+\end_layout
+
+\begin_layout Enumerate
+
+\emph on
+Manual actor termination with global heap tracing.
+
+\emph default
+ This approach relies on the programmer manually terminating actors and
+ leverages an existing garbage collection mechanism, such as is present
+ on the JVM or the CLR, as is done in Scala 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "haller2009scala"
+
+\end_inset
+
+, Akka, Kilim 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "srinivasan2008kilim"
+
+\end_inset
+
+, AmbientTalk 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "van2008ambient"
+
+\end_inset
+
+, and SALSA 2.0 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "varela2001programming"
+
+\end_inset
+
+.
+ Garbage collection in such systems does not leverage actor isolation, but
+ can leverage existing well-known garbage collection techniques for non-actor
+ languages.
+\end_layout
+
+\begin_layout Enumerate
+
+\emph on
+Manual actor termination with local heap tracing.
+ 
+\emph default
+This approach also relies on the programmer manually terminating actors,
+ but the tracing mechanism takes advantage of actor isolation to provide
+ local heaps.
+ To preserve heap locality, messages are copied into the heap of the receiving
+ actor.
+ This approach is taken by BEAM-based languages such as Erlang 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "armstrong2007history"
+
+\end_inset
+
+ and Elixir.
+ By accepting the costs of message copying, this technique allows garbage
+ collection to be fully concurrent.
+\end_layout
+
+\begin_layout Enumerate
+
+\emph on
+Actor graph transformation with global heap tracing
+\emph default
+.
+ By transforming the actor graph into a passive object graph and using a
+ tracing collector for both actors and objects 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "vardhan2002using,wang2010actor"
+
+\end_inset
+
+, this approach allows actors themselves to be garbage collected.
+ ActorFoundry uses this technique.
+ While this approach requires significant stop-the-world pauses, it is also
+ the first approach to allow actors themselves to be garbage collected.
+\end_layout
+
+\begin_layout Enumerate
+
+\emph on
+Snapshots and reference listing with global heap tracing
+\emph default
+.
+ This technique, used in SALSA 1.0 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "wang2006distributed,wang2006non,wang2013conservative"
+
+\end_inset
+
+, is able to collect both local and distributed actors.
+ While the approach is heavyweight and was removed in SALSA 2.0, it provided
+ a mechanism for collecting actors that did not rely on transforming the
+ actor graph to a passive object graph.
+ This approach uses an existing garbage collecting runtime, in this case
+ the JVM, to collect passive objects.
+\end_layout
+
+\begin_layout Standard
+The purpose of 
+\emph on
+ORCA 
+\emph default
+is to provide an approach that combines garbage collected actors with local
+ heap tracing while not requiring messages to be copied to the destination
+ heap.
+\end_layout
+
+\begin_layout Section
+Ownership and Reference Counting for Actors Algorithm
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+ORCA
+\emph default
+ extends 
+\emph on
+MAC
+\emph default
+ by tracking object references in external maps as well as actor references.
+ To do so, the operational semantics are altered to perform reference count
+ adjustments for passive objects as well as for actor references when sending
+ and receiving messages.
+ Similarly, actors can acquire and release reference counts for objects
+ owned by other actors.
+ To account for that,
+\emph on
+ INC 
+\emph default
+and 
+\emph on
+DEC
+\emph default
+ messages are changed to carry a map of address to reference count (that
+ is, an 
+\begin_inset Formula $\mathit{ExMap}$
+\end_inset
+
+) instead of a scalar reference count.
+\end_layout
+
+\begin_layout Subsection
+Local Heap Tracing
+\end_layout
+
+\begin_layout Standard
+The model for 
+\emph on
+ORCA
+\emph default
+ does not require a specific method of tracing a local heap.
+ In Pony, a mark-and-don't-sweep collector is used, as described in section
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Actor-GC"
+
+\end_inset
+
+.
+ However, alternate mechanisms for collecting a local heap, such as an increment
+al garbage collector, or even a concurrent collector that examines a single
+ actor's local state and local heap at any given time, could be used.
+ The operational semantics accounts for this with a high level description
+ of when objects are unreachable by an actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ and so eligible either for releasing any foreign reference count held by
+ 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ if they are not owned by 
+\begin_inset Formula $\alpha$
+\end_inset
+
+, or for collection if they are owned by 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ and have a local reference count of zero (or have never had a local reference
+ count).
+\end_layout
+
+\begin_layout Subsection
+Cyclic Passive Object Garbage
+\end_layout
+
+\begin_layout Standard
+Importantly, 
+\emph on
+ORCA
+\emph default
+ does not require a cycle detector to collect passive objects.
+ This is because of the 
+\emph on
+ownership
+\emph default
+ model, wherein only actors hold reference counts for passive objects.
+ The topology of an object graph, that is, the number of paths by which
+ an object is reachable, does not affect the local or foreign reference
+ count for an object.
+ As such, a cyclic graph of passive objects does not result in reference
+ counts that will never reach zero.
+\end_layout
+
+\begin_layout Subsection
+Local Heap Collection
+\end_layout
+
+\begin_layout Standard
+The 
+\emph on
+ownership
+\emph default
+ model results in local heaps that are independently traceable and collectable,
+ without synchronisation.
+ Effectively, passive objects for which the owning (i.e.
+ allocating) actor maintains a positive local reference count are added
+ to the reachable set, preventing premature collection.
+\end_layout
+
+\begin_layout Standard
+This local heap collection takes place without synchronisation, even though
+ the algorithm uses message passing to increment and decrement deferred
+ distributed weighted reference counts.
+ Importantly, none of the 
+\emph on
+ORCA 
+\emph default
+messages requires a reply, so there is never a situation in which an actor
+ 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ must wait for another actor 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ to make progress before 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ can itself make progress.
+\end_layout
+
 \begin_layout Section
 Formal Model
+\end_layout
+
+\begin_layout Standard
+The formal model for 
+\emph on
+ORCA
+\emph default
+ is expressed as an extension of the model for message-based actor collection
+ (
+\emph on
+MAC
+\emph default
+) presented in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Actor-Collection"
+
+\end_inset
+
+.
+ Where a rule or a definition is not changed, it is used unmodified.
 \end_layout
 
 \begin_layout Standard
@@ -99,11 +507,11 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Formula $\begin{array}{rclcl}
-\mu & \in & \mathit{Message} & = & (\mathit{MethodID\times\overline{Value}})\\
+\mu & \in & \mathit{Message} & = & {\color{gray}(\mathit{MethodID\times\overline{Value}})}\\
  &  &  & | & INC(\mathit{ExMap})\,|\,DEC(\mathit{ExMap})\\
- &  &  & | & BLK(\mathit{ActorAddr},\mathit{RefCount},\mathit{ExMap})\\
- &  &  & | & UNB(\mathit{ActorAddr})\\
- &  &  & | & CNF(\mathit{Token})\,|\,ACK(\mathit{ActorAddr},\mathit{Token})
+ &  &  & | & {\color{gray}BLK(\mathit{ActorAddr},\mathit{RefCount},\mathit{ExMap})}\\
+ &  &  & | & {\color{gray}UNB(\mathit{ActorAddr})}\\
+ &  &  & | & {\color{gray}CNF(\mathit{Token})\,|\,ACK(\mathit{ActorAddr},\mathit{Token})}
 \end{array}$
 \end_inset
 
@@ -120,11 +528,22 @@ name "fig:Runtime-entities-for-object-GC"
 
 \end_inset
 
+
+\begin_inset Argument 1
+status open
+
+\begin_layout Plain Layout
 Runtime entities for object GC
 \end_layout
 
 \end_inset
 
+Runtime entities for object GC.
+ Elements that are unchanged are greyed out.
+\end_layout
+
+\end_inset
+
 
 \end_layout
 
@@ -133,8 +552,80 @@ Runtime entities for object GC
 
 \end_layout
 
+\begin_layout Standard
+The only change in the runtime entities is a modification in the information
+ carried by 
+\emph on
+INC 
+\emph default
+and 
+\emph on
+DEC
+\emph default
+ messages.
+ Instead of a scalar reference count, those messages now carry a mapping
+ of address to reference count.
+ This allows a single message to communicate reference count changes for
+ a collection of objects allocated by some actor, and possibly the actor
+ itself.
+\end_layout
+
+\begin_layout Subsection
+Reachability
+\end_layout
+
+\begin_layout Standard
+The rules for reachability remain unchanged from those delineated for 
+\emph on
+MAC
+\emph default
+ in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Reachability"
+
+\end_inset
+
+.
+ Because 
+\emph on
+MAC
+\emph default
+ must find actor references anywhere in a passive object graph, the same
+ rules can be used to allow 
+\emph on
+ORCA
+\emph default
+ to find passive object references in the same graph.
+ Just as 
+\emph on
+MAC
+\emph default
+ does not have to determine global liveness for actor collection, 
+\emph on
+ORCA 
+\emph default
+does not need to determine global liveness for object collection.
+\end_layout
+
 \begin_layout Subsection
 Reference Count Invariant
+\end_layout
+
+\begin_layout Standard
+The reference count invariant for passive objects takes the same form as
+ the invariant for actors, and so can be stated for both as 
+\begin_inset Formula $\mathit{LRC}(\iota)+\mathit{INC}(\iota)=\mathit{AMC}(\iota)+\mathit{FRC}(\iota)+\mathit{DEC}(\iota)$
+\end_inset
+
+, all evaluated in the context of some heap 
+\begin_inset Formula $\chi$
+\end_inset
+
+.
+ The reference count components for passive objects are effectively the
+ same as for actors, but use the external map exclusively for tracking reference
+ counts, without using the owning actor's local reference count.
 \end_layout
 
 \begin_layout Definition
@@ -148,15 +639,15 @@ Reference count invariant components
 \rho & \mathit{if}\,\mu_{i}=\mathit{INC}(\xi)\wedge\xi(\omega)=\rho\\
 0 & \mathit{otherwise}
 \end{cases}\\
+\mathit{DEC}(\omega) & = & \sum_{\forall\overline{\mu}\in Q(\chi,\mathcal{O}(\omega))}\begin{cases}
+\rho & \mathit{if}\,\mu_{i}=\mathit{DEC}(\xi)\wedge\xi(\omega)=\rho\\
+0 & \mathit{otherwise}
+\end{cases}\\
 \mathit{AMC}(\omega) & = & \sum_{\forall\alpha\in\mathit{dom}(\chi).\forall\overline{\mu}\in Q(\chi,\alpha)}\begin{cases}
 1 & \mathit{if}\,\omega\in\mathit{Reach}(\chi,\alpha,\mu_{i})\\
 0 & \mathit{otherwise}
 \end{cases}\\
-\mathit{FRC}(\omega) & = & \sum_{\alpha\neq\mathcal{O}(\omega)}\chi(\alpha)\downarrow_{8}(\omega)\\
-\mathit{DEC}(\omega) & = & \sum_{\forall\overline{\mu}\in Q(\chi,\mathcal{O}(\omega))}\begin{cases}
-\rho & \mathit{if}\,\mu_{i}=\mathit{DEC}(\xi)\wedge\xi(\omega)=\rho\\
-0 & \mathit{otherwise}
-\end{cases}
+\mathit{FRC}(\omega) & = & \sum_{\alpha\neq\mathcal{O}(\omega)}\chi(\alpha)\downarrow_{8}(\omega)
 \end{array}$
 \end_inset
 
@@ -164,7 +655,10 @@ Reference count invariant components
 \end_layout
 
 \begin_layout Standard
-TODO:
+The reference count invariant is maintained in the same way for passive
+ objects as for actors.
+ The reachability reference count invariant differs from the actor reachability
+ reference count invariant only in using ownership and the external map.
 \end_layout
 
 \begin_layout Definition
@@ -172,7 +666,7 @@ Reachability reference count invariant
 \end_layout
 
 \begin_layout Definition
-\begin_inset Formula $\forall\alpha\neq\mathcal{O}(\omega).\omega\in\mathit{Reach}(\chi,\alpha,\mathtt{ref})\Rightarrow\chi(\mathcal{O}(\omega))\downarrow_{8}(\omega)>0\wedge\chi(\alpha)\downarrow_{8}(\omega)>0$
+\begin_inset Formula $\forall\alpha,\omega.\alpha\neq\mathcal{O}(\omega)\wedge\omega\in\mathit{Reach}(\chi,\alpha,\mathtt{ref})\Rightarrow\chi(\mathcal{O}(\omega))\downarrow_{8}(\omega)>0\wedge\chi(\alpha)\downarrow_{8}(\omega)>0$
 \end_inset
 
 
@@ -180,6 +674,41 @@ Reachability reference count invariant
 
 \begin_layout Subsection
 Sending a Reference
+\end_layout
+
+\begin_layout Standard
+When a sending a message that can reach some object 
+\begin_inset Formula $\omega$
+\end_inset
+
+, 
+\emph on
+ORCA
+\emph default
+ must perform a reference count adjustment.
+ This is accounted for by changing the definition of 
+\begin_inset Formula $\mathit{Send}$
+\end_inset
+
+ when a passive object is being sent (previously defined in definition 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Sending-a-reference"
+
+\end_inset
+
+) to perform reference a reference count adjustment, as defined by 
+\begin_inset Formula $\mathit{Adj}$
+\end_inset
+
+ in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Auxiliary-definitions-for-object-gc"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Definition
@@ -198,6 +727,35 @@ Sending a reference
 Receiving a Reference
 \end_layout
 
+\begin_layout Standard
+As with sending a reference to an object, when receiving a reference to
+ some object 
+\begin_inset Formula $\omega$
+\end_inset
+
+, 
+\emph on
+ORCA
+\emph default
+ must also perform a reference count adjustment.
+ The definition of 
+\begin_inset Formula $\mathit{Recv}$
+\end_inset
+
+, previously defined in definition 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Receiving-a-reference"
+
+\end_inset
+
+, is altered in the same way as 
+\begin_inset Formula $\mathit{Send}$
+\end_inset
+
+, performing a reference count adjustment for passive objects.
+\end_layout
+
 \begin_layout Definition
 Receiving a reference
 \end_layout
@@ -210,8 +768,36 @@ Receiving a reference
 
 \end_layout
 
-\begin_layout Section
+\begin_layout Subsection
 Actor Local Execution
+\end_layout
+
+\begin_layout Standard
+The operational semantics in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:opsem-for-object-GC"
+
+\end_inset
+
+ extends the semantics presented in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:opsem-for-actor-GC"
+
+\end_inset
+
+.
+ Rules from figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:opsem-for-actor-GC"
+
+\end_inset
+
+ that are not listed remain unchanged from 
+\emph on
+MAC.
 \end_layout
 
 \begin_layout Standard
@@ -239,10 +825,10 @@ textwidth][c]{
 
 \begin_inset Formula $\begin{array}{ccc}
 \dfrac{\begin{array}{c}
-\mathit{INC}(\xi)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
+\neg\chi(\alpha)\downarrow_{9}\quad\mathit{INC}(\xi)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
 \chi'=\mathit{Adj}(\chi,\alpha,-\xi)
 \end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\overline{\mu}],\alpha,\varepsilon}\;\textrm{\textsc{Inc}} &  & \dfrac{\begin{array}{c}
-\mathit{DEC}(\xi)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
+\neg\chi(\alpha)\downarrow_{9}\quad\mathit{DEC}(\xi)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
 \chi'=\mathit{Adj}(\chi,\alpha,\xi)
 \end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\overline{\mu}],\alpha,\varepsilon}\;\textrm{\textsc{Dec}}\\
 \\
@@ -288,7 +874,7 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Formula $\dfrac{\begin{array}{c}
-\omega s\subset\mathit{dom}(\chi)\quad\omega s\notin\mathit{Reach}(\chi,\alpha,\mathtt{ref})\\
+\omega s\subseteq\mathit{dom}(\chi)\quad\omega s\notin\mathit{Reach}(\chi,\alpha,\mathtt{ref})\\
 \forall\omega\in\omega s.\mathcal{O}(\omega)=\alpha\wedge\chi(\alpha)\downarrow_{8}(\omega)\not>0
 \end{array}}{\chi,\alpha\cdot\overline{\varphi},\mathtt{e}\rightsquigarrow\chi\backslash\omega s,\alpha\cdot\overline{\varphi},\mathtt{e}}\;\textrm{\textsc{Collect}}$
 \end_inset
@@ -329,16 +915,17 @@ status open
 \align center
 \begin_inset Formula $\begin{array}{lcl}
 \mathit{Adj}(\chi,\alpha,\xi) & = & \iota\in\mathit{dom}(\xi).\mathit{Adj}(\mathit{Adj}(\chi,\alpha,\iota,\xi(\iota)),\alpha,\xi\backslash\iota)\\
-\mathit{Adj}(\chi,\alpha,[]) & = & \chi\\
+\mathit{Adj}(\chi,\alpha,\emptyset) & = & \chi\\
 \mathit{Adj}(\chi,\alpha,\omega,n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
  &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
- &  & \quad\chi(\alpha)\downarrow_{8}[\omega\mapsto(\chi(\alpha)\downarrow_{8}(\omega)+n)],\\
- &  & \quad\chi(\alpha)\downarrow_{9})]\,\mathit{if}\,\alpha\neq\mathcal{O}(\omega)\wedge\chi(\alpha)\downarrow_{8}(\alpha')>-n\\
-\mathit{Adj}(\chi,\alpha,\omega,n) &  & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
+ &  & \quad\chi(\alpha)\downarrow_{8}[\omega\mapsto(\chi(\alpha)\downarrow_{8}(\omega)+n)],\chi(\alpha)\downarrow_{9})]\\
+ &  & \quad\mathit{if}\,\alpha\neq\mathcal{O}(\omega)\wedge\chi(\alpha)\downarrow_{8}(\alpha')>-n\\
+\mathit{Adj}(\chi,\alpha,\omega,n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
  &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
- &  & \quad\chi(\alpha)\downarrow_{8}[\omega\mapsto(\chi(\alpha)\downarrow_{8}(\iota)-n)],\\
- &  & \quad\chi(\alpha)\downarrow_{9})]\,\mathit{if}\,\alpha=\mathcal{O}(\omega)\\
--\xi & = & [\iota\mapsto-\rho\,|\,\xi(\iota)=\rho]
+ &  & \quad\chi(\alpha)\downarrow_{8}[\omega\mapsto(\chi(\alpha)\downarrow_{8}(\iota)-n)],\chi(\alpha)\downarrow_{9})]\\
+ &  & \quad\mathit{if}\,\alpha=\mathcal{O}(\omega)\\
+-\xi & = & [\iota\mapsto-\rho\,|\,\xi(\iota)=\rho]\\
+\chi(\alpha)\downarrow_{8}(\omega)\not>0 & \mathit{iff} & \omega\notin\mathit{dom}(\chi(\alpha)\downarrow_{8})\vee\chi(\alpha)\downarrow_{8}(\omega)=0
 \end{array}$
 \end_inset
 
@@ -368,18 +955,147 @@ Auxiliary definitions for object GC
 
 \end_layout
 
+\begin_layout Standard
+The 
+\noun on
+Inc
+\noun default
+ and 
+\noun on
+Dec 
+\noun default
+rules are modified such that the message carries an 
+\begin_inset Formula $\mathit{ExMap}$
+\end_inset
+
+, a mapping of address to reference count, rather than a scalar value.
+ This allows an 
+\emph on
+INC 
+\emph default
+or 
+\emph on
+DEC 
+\emph default
+message to carry reference count adjustment information for a collection
+ of addresses.
+ In practice, this is some set of passive objects owned all owned by the
+ same actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+, and possible 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ itself.
+\end_layout
+
+\begin_layout Standard
+The 
+\noun on
+Acquire 
+\noun default
+and 
+\noun on
+Release 
+\noun default
+rules are modified to allow the executing actor to acquire and release reference
+ count weight for passive objects as well as actors.
+ Each rule allows generating a single message (
+\emph on
+INC
+\emph default
+ and 
+\emph on
+DEC
+\emph default
+, respectively) to a single destination.
+ As such, only the destination actor and passive objects owned by the destinatio
+n actor are considered.
+ As with 
+\emph on
+MAC
+\emph default
+, the executing actor must hold a foreign reference count of 1 or more for
+ an address in order to acquire more reference count weight, and must both
+ hold a foreign reference count weight and not be able to reach the address
+ in order to release that weight.
+\end_layout
+
+\begin_layout Standard
+The 
+\noun on
+Collect
+\noun default
+ rule allows for removal of passive objects from the heap when the objects
+ are not reachable from the owning actor and the owning actor holds no local
+ reference count weight for the objects.
+ This allows local heap collection by the owning actor using any mechanism
+ for local heap tracing.
+\end_layout
+
 \begin_layout Section
-TODO:
+Completeness
 \end_layout
 
-\begin_layout Itemize
-Object gc adds cross-actor gc info to actors in configuration
+\begin_layout Section
+Robustness
 \end_layout
 
-\begin_layout Itemize
-Well-formedness and soundness: history based argument in actor-gc paper,
- simple statement in object-gc paper.
- State the invariant, leave the proof to Juliana.
+\begin_layout Section
+Distributed Object GC
+\end_layout
+
+\begin_layout Section
+Using 
+\emph on
+ORCA
+\emph default
+ in Other Actor-Model Languages
+\end_layout
+
+\begin_layout Standard
+As an extension of 
+\emph on
+MAC
+\emph default
+, using 
+\emph on
+ORCA
+\emph default
+ in another actor-model language would be possible with the same caveats
+ described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Using-MAC-in"
+
+\end_inset
+
+.
+ Additionally, 
+\emph on
+ORCA
+\emph default
+ requires that the 
+\emph on
+introduction requirement
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "agha1986actors"
+
+\end_inset
+
+ of the actor model, described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Single-Model-for"
+
+\end_inset
+
+, not be violated.
 \end_layout
 
 \end_body

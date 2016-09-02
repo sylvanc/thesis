@@ -91,28 +91,15 @@ Syntax and Operational Semantics
 The syntax and operational semantics of Pony is presented here as a small-step
  operational semantics that expresses a simplified subset of the full Pony
  language.
- In this subset, tuples are modelled as classes, whereas in the full language
- they are not.
- In addition, control structures such as conditional, loops, and exception
- handling, have been not been covered in this semantics, nor have the semantics
- of boolean and machine word types been addressed.
-\end_layout
-
-\begin_layout Standard
-In addition, the full language has 
-\emph on
-primitive 
-\emph default
-types (stateless singleton types similar to parameterised modules), 
-\emph on
-struct 
-\emph default
-types for C ABI compatibility, single-assignment fields and variables, embedded
- fields, nominal and structural subtyping, intersection and union types,
- object literals, lambdas, partial application, pattern matching, case functions
-, and most importantly generic types and methods.
- Various forms of syntactic sugar are also used to allow for more succinct
- code.
+ Additional features in the full language can be encoded in this subset,
+ including control structures, exception handling, algebraic data types
+ (tuples, unions, and intersections), machine word types, singleton types,
+ C ABI compatible structures, single-assignment fields and variables, embedded
+ fields, nominal and structural subtyping via traits and interfaces, object
+ literals, lambdas, partial application, pattern matching, case functions,
+ and generic types and methods.
+ Various forms of syntactic sugar are also used in the full language to
+ allow for more succinct code.
 \end_layout
 
 \begin_layout Section
@@ -613,7 +600,7 @@ status open
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\chi[\alpha,\alpha'++\overline{\mu}]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6}[\alpha'\mapsto\chi(\alpha)\downarrow_{6}\cdot\mu])$
+\begin_inset Formula $\chi[\alpha,\alpha'++\mu]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6}[\alpha'\mapsto\chi(\alpha)\downarrow_{6}\cdot\mu])$
 \end_inset
 
 
@@ -674,8 +661,8 @@ The operational semantics has the shape
 \end_inset
 
  to their actor identifier, their fields, their message queue, their stack,
- the next expression to execute, and a logical pairwise FIFO queue of messages
- sent by other actors to this actor that have not yet been delivered.
+ the next expression to execute, and a logical pairwise (actor-to-actor)
+ FIFO queue of messages by this actor that have not yet been delivered.
  These runtime entities are defined in figure 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -1139,7 +1126,7 @@ status open
 \\
 \dfrac{\mathcal{P}(\mathtt{C})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}}\quad\mathtt{(new\,k(\overline{x}:\overline{T})\Rightarrow e)}\in\mathtt{\overline{K}}}{\mathcal{M}(\mathtt{C,k})=\mathtt{(C\,ref,\overline{x}:\overline{T},e,C\,ref\circ)}}\\
 \\
-\dfrac{\mathcal{P}(\mathtt{A})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\quad\mathtt{(new\,k(\overline{x}:\overline{T})\Rightarrow e)}\in\mathtt{\overline{K}}}{\mathcal{M}(\mathtt{A,k})=\mathtt{(A\,var,\overline{x}:\overline{T},e,A\,tag)}}\\
+\dfrac{\mathcal{P}(\mathtt{A})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\quad\mathtt{(new\,k(\overline{x}:\overline{T})\Rightarrow e)}\in\mathtt{\overline{K}}}{\mathcal{M}(\mathtt{A,k})=\mathtt{(A\,ref,\overline{x}:\overline{T},e,A\,tag)}}\\
 \\
 \dfrac{\mathcal{P}(\mathtt{S})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\quad\mathtt{(fun\,\kappa\,m(\overline{x}:\overline{T}):ET\Rightarrow e)}\in\mathtt{\overline{M}}}{\mathcal{M}(\mathtt{S,m})=\mathtt{(S\,\kappa,\overline{x}:\overline{T},e,ET)}}\\
 \\
@@ -1265,243 +1252,27 @@ Function
 \end_layout
 
 \begin_layout Standard
-The reference capability of the receiver and the return type can vary for
- synchronous methods, but not for constructors or asynchronous methods.
- Constructors always operate on a 
+The lookup functions mention both types and 
+\emph on
+reference capabilities
+\emph default
+, such as 
 \begin_inset Formula $\mathtt{ref}$
 \end_inset
 
- receiver, since the constructor must write to the new object's fields,
- and return a 
+, 
 \begin_inset Formula $\mathtt{ref\circ}$
 \end_inset
 
- result, since the new object is initially mutable but also unaliased, as
- the constructor's reference to the receiver (
-\begin_inset Formula $\mathtt{this}$
-\end_inset
-
-) is discarded when the constructor returns.
- This allows a constructor that is passed only sendable references as parameters
- to be embedded in a 
-\begin_inset Formula $\mathtt{recover}$
-\end_inset
-
- expression, which allows constructing an object with any reference capability.
- 
-\end_layout
-
-\begin_layout Standard
-Asynchronous methods always operate on a 
-\begin_inset Formula $\mathtt{ref}$
-\end_inset
-
- receiver.
- This is because the receiver of an asynchronous method is always an actor;
- when the body is executed, a new stack with the receiver as the root actor
- is created.
- Since each actor executes the body of a single behaviour (or asynchronous
- constructor) at any given time, every behaviour body can read from and
- write to the receiver.
- Since an asynchronous method cannot, by definition, perform any operations
- at the call site to construct a return value before returning, the receiver
- is returned to allow chaining method calls.
-\end_layout
-
-\begin_layout Section
-Well-Formedness
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-\align center
-\begin_inset Formula $\begin{array}{c}
-\dfrac{\mathtt{\forall S\in P.\vdash S\diamond}}{\vdash\mathtt{P}\diamond}\;\textrm{\textsc{WF-Program}}\\
-\\
-\dfrac{\begin{array}{c}
-\mathcal{P}(\mathtt{S})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\\
-\forall\mathtt{var\,f:S\,\kappa}\in\mathtt{\overline{F}}.\vdash\mathtt{S}\diamond\quad\forall\mathtt{K}\in\mathtt{\overline{K}}.\mathtt{S}\vdash\mathtt{K}\diamond\\
-\forall\mathtt{M}\in\mathtt{\overline{M}}.\mathtt{S}\vdash\mathtt{M}\diamond\quad\forall\mathtt{B}\in\mathtt{\overline{B}}.\mathtt{S}\vdash\mathtt{B}\diamond
-\end{array}}{\vdash\mathtt{S}\diamond}\;\textrm{\textsc{WF-Type}}\\
-\\
-\dfrac{[\mathtt{this\mapsto C\,var,\overline{x}\mapsto\overline{T}]}\vdash\mathtt{e:C\,ref\circ}}{\mathtt{C}\vdash\mathtt{new\,k(\overline{x}:\overline{T})\Rightarrow e}\diamond}\;\textrm{\textsc{WF-Ctor}}\\
-\\
-\dfrac{[\mathtt{this\mapsto S\kappa_{r},\overline{x}\mapsto\overline{T}]}\vdash\mathtt{e:ET}}{\mathtt{S}\vdash\mathtt{fun\,\kappa\,m(\overline{x}:\overline{T}):ET\Rightarrow e}\diamond}\;\textrm{\textsc{WF-Sync}}\\
-\\
-\dfrac{\begin{array}{c}
-Sendable(\mathtt{T_{i}})\\
-\mathtt{[this\mapsto A\,var,\overline{x}\mapsto\overline{T}]}\vdash\mathtt{e:A\,tag}
-\end{array}}{\mathtt{A}\vdash\mathtt{new\,k(\overline{x}:\overline{T})\Rightarrow e}\diamond}\;\textrm{\textsc{WF-Ator}}\\
-\\
-\dfrac{\begin{array}{c}
-Sendable(\mathtt{T_{i}})\\
-\mathtt{[this\mapsto A\,var,\overline{x}\mapsto\overline{T}]}\vdash\mathtt{e:A\,tag}
-\end{array}}{\mathtt{A}\vdash\mathtt{be\,b(\overline{x}:\overline{T})\Rightarrow e}\diamond}\;\textrm{\textsc{WF-Async}}
-\end{array}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption Standard
-
-\begin_layout Plain Layout
-\begin_inset CommandInset label
-LatexCommand label
-name "fig:Well-formed-programs"
-
-\end_inset
-
-Well-formed programs
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Itemize
-\begin_inset Formula $\mathtt{z}\in\varphi$
-\end_inset
-
- iff 
-\begin_inset Formula $\mathtt{z}\in dom(\varphi\downarrow_{2})$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\alpha\in\chi$
-\end_inset
-
- iff 
-\begin_inset Formula $\alpha\in\mathit{dom}(\chi)$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\Delta\vdash\alpha\in\chi$
-\end_inset
-
- iff 
-\begin_inset Formula $\alpha\in\mathit{dom}(\chi)$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\Delta\vdash\iota\in\chi$
-\end_inset
-
- iff 
-\begin_inset Formula $\exists\iota'$
-\end_inset
-
- such that 
-\begin_inset Formula $\Delta\vdash\iota'\in\chi$
-\end_inset
-
- and 
-\begin_inset Formula $\Delta,\chi,\iota'\vdash\iota:\_$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\mathcal{M}(\varphi,\chi)=\mathcal{M}(\chi(\varphi(\mathtt{this})\downarrow_{1},\varphi\downarrow_{1})$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption Standard
-
-\begin_layout Plain Layout
-Auxiliary well-formedness definitions
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-The rules for a well-formed program are presented in fig.
- 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:Well-formed-programs"
-
+, and 
+\begin_inset Formula $\mathtt{tag}$
 \end_inset
 
 .
- The 
-\noun on
-WF-Program
-\noun default
- rule indicates a program is well-formed if all types in the program are
- well-formed.
- The 
-\noun on
-WF-Type 
-\noun default
-rule indicates that a type is well-formed if the types of all of its fields
- are well-formed, its constructors are well-formed, and its synchronous
- and asynchronous methods are well-formed.
- The 
-\noun on
-WF-Ctor, WF-Sync, 
-\noun default
-and 
-\noun on
-WF-Async
-\noun default
- rules indicate that a method is well-formed when the body of the method
- in results in a subtype of the return type of the method.
- Additionally, 
-\noun on
-WF-Async
-\noun default
- requires that behaviour parameters are 
-\begin_inset Formula $\mathit{Sendable}$
-\end_inset
-
-.
- The body of the method is evaluated using an environment composed of the
- receiver and the method parameters, each mapped to their type, as shown
- in fig.
- 
+ These will be explained in chapter 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "fig:Expression-typing"
+reference "chap:Reference-Capabilities"
 
 \end_inset
 

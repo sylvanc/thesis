@@ -11,6 +11,7 @@
 \definecolor{writeable}{gray}{1.0}
 \definecolor{readable}{gray}{0.8}
 \definecolor{opaque}{gray}{0.6}
+\definecolor{gray}{gray}{0.5}
 \end_preamble
 \use_default_options true
 \begin_modules
@@ -125,24 +126,48 @@ reference capabilities
 \end_layout
 
 \begin_layout Standard
+Properties of the type system and operational semantics, such as 
+\emph on
+atomic behaviours 
+\emph default
+and data-race freedom
+\emph on
+ 
+\emph default
+are leveraged to allow actors themselves to be garbage collected when it
+ can be proved they will never again have messages in their queue.
+ Message-based Actor Collection (
+\emph on
+MAC
+\emph default
+) achieves this using only message passing, without the need for any other
+ form of thread synchronisation or coordination, using a system of deferred,
+ distributed, weighted reference counting in which reference counts do not
+ reflect the number of reachable paths in a heap.
+ This requires a cycle detection actor to be able to collect isolated cyclic
+ graphs of actors.
+ To do this with no stop-the-world step, a novel and inexpensive CNF-ACK
+ protocol is used to determine that the cycle detector's view of the actor
+ topology was the true actor topology when the cycle was detected.
+\end_layout
+
+\begin_layout Standard
 Guaranteeing data-race freedom allows the language to use a novel fully
  concurrent garbage collection protocol.
  This protocol allows each actor to collect its own heap independently and
  concurrently, while still allowing objects to be sent by reference in asynchron
 ous messages (zero-copy message passing).
  This is achieved using Ownership and Reference Counting for Actors (ORCA),
- a system of deferred, distributed, weighted reference counting in which
- reference counts do not reflect the number of reachable paths in a heap
- and do not result in cycles that cannot be collected.
-\end_layout
-
-\begin_layout Standard
-The ORCA protocol is also extended to allow garbage collecting actors themselves.
- This requires a cycle detection actor to be able to collect isolated cyclic
- graphs of actors.
- To do this with no stop-the-world step, a novel and inexpensive CNF-ACK
- protocol is used to determine that the cycle detector's view of the actor
- topology was the true actor topology when the cycle was detected.
+ a protocol derived from 
+\emph on
+MAC 
+\emph default
+that allows passive objects shared across 
+\emph on
+actor-local heaps 
+\emph default
+to be garbage collected with no stop-the-world step.
+ This approach does not require a cycle detector for passive objects.
 \end_layout
 
 \begin_layout Standard

@@ -96,6 +96,12 @@ Pony is a language predicated on the idea that a sufficiently powerful static
 \end_layout
 
 \begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Single-Model-for"
+
+\end_inset
+
 Single Model for Concurrent and Distributed Execution
 \end_layout
 
@@ -124,7 +130,14 @@ Pony uses asynchronous message passing for communicating between units of
 
 \begin_layout Standard
 The actor model has been implemented in many ways, but at its core it has
- three fundamental requirements:
+ three fundamental requirements 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "agha1986actors,agha1987concurrent"
+
+\end_inset
+
+:
 \end_layout
 
 \begin_layout Enumerate
@@ -231,7 +244,14 @@ This is the
 introduction requirement
 \emph default
 , as detailed in Gul Agha's Ph.D.
- thesis: an actor 
+ thesis 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "agha1986actors"
+
+\end_inset
+
+: an actor 
 \begin_inset Formula $\alpha$
 \end_inset
 
@@ -433,12 +453,26 @@ capabilities
 Deny capabilities are a form of uniqueness and immutability type system
  influenced by both 
 \emph on
-object capabilities
+object capabilities 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "miller2003capability"
+
+\end_inset
+
+
 \emph default
  and 
 \emph on
 deny guarantee reasoning
 \emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "dodds2009deny"
+
+\end_inset
+
 .
 \end_layout
 
@@ -448,7 +482,7 @@ Deny capabilities describe what other aliases are
 denied
 \emph default
  by the existence of a reference.
- Furthermore, we distinguish between what is denied 
+ Furthermore, they distinguish between what is denied 
 \emph on
 locally 
 \emph default
@@ -500,6 +534,13 @@ Such reasoning is both local (i.e.
 \emph on
 viewpoint adaptation
 \emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "cunningham2008universe"
+
+\end_inset
+
 , which determines a reference capability for a path based on all elements
  of that path, rather than simply the reference capability of the final
  element of the path, a separate and more liberal treatment of the types
@@ -781,6 +822,13 @@ Pony uses the
 \emph on
 object capability
 \emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "miller2003capability"
+
+\end_inset
+
  model to express capabilities security.
  This was an easy choice, as in the absence of hardware support for capability-b
 ased addressing, the object capability model is the most efficient way to

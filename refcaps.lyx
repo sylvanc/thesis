@@ -125,6 +125,19 @@ reference capability
  that reference.
  In Pony, reference capabilities are used to statically ensure data-race
  freedom.
+ The term 
+\emph on
+reference capability
+\emph default
+ was introduced specifically to distinguish these Pony annotations from
+ object capabilities 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "clebsch2015deny"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -2022,6 +2035,271 @@ rule and the subtyping rules account only for reference capabilities.
 \end_layout
 
 \begin_layout Section
+Well-Formedness
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Formula $\begin{array}{c}
+\dfrac{\mathtt{\forall S\in P.\vdash S\diamond}}{\vdash\mathtt{P}\diamond}\;\textrm{\textsc{WF-Program}}\\
+\\
+\dfrac{\begin{array}{c}
+\mathcal{P}(\mathtt{S})=\mathtt{\overline{F}\,\overline{K}\,\overline{M}\,\overline{B}}\\
+\forall\mathtt{var\,f:S\,\kappa}\in\mathtt{\overline{F}}.\vdash\mathtt{S}\diamond\quad\forall\mathtt{K}\in\mathtt{\overline{K}}.\mathtt{S}\vdash\mathtt{K}\diamond\\
+\forall\mathtt{M}\in\mathtt{\overline{M}}.\mathtt{S}\vdash\mathtt{M}\diamond\quad\forall\mathtt{B}\in\mathtt{\overline{B}}.\mathtt{S}\vdash\mathtt{B}\diamond
+\end{array}}{\vdash\mathtt{S}\diamond}\;\textrm{\textsc{WF-Type}}\\
+\\
+\dfrac{[\mathtt{this\mapsto C\,var,\overline{x}\mapsto\overline{T}]}\vdash\mathtt{e:C\,ref\circ}}{\mathtt{C}\vdash\mathtt{new\,k(\overline{x}:\overline{T})\Rightarrow e}\diamond}\;\textrm{\textsc{WF-Ctor}}\\
+\\
+\dfrac{[\mathtt{this\mapsto S\kappa_{r},\overline{x}\mapsto\overline{T}]}\vdash\mathtt{e:ET}}{\mathtt{S}\vdash\mathtt{fun\,\kappa\,m(\overline{x}:\overline{T}):ET\Rightarrow e}\diamond}\;\textrm{\textsc{WF-Sync}}\\
+\\
+\dfrac{\begin{array}{c}
+Sendable(\mathtt{T_{i}})\\
+\mathtt{[this\mapsto A\,var,\overline{x}\mapsto\overline{T}]}\vdash\mathtt{e:A\,tag}
+\end{array}}{\mathtt{A}\vdash\mathtt{new\,k(\overline{x}:\overline{T})\Rightarrow e}\diamond}\;\textrm{\textsc{WF-Ator}}\\
+\\
+\dfrac{\begin{array}{c}
+Sendable(\mathtt{T_{i}})\\
+\mathtt{[this\mapsto A\,var,\overline{x}\mapsto\overline{T}]}\vdash\mathtt{e:A\,tag}
+\end{array}}{\mathtt{A}\vdash\mathtt{be\,b(\overline{x}:\overline{T})\Rightarrow e}\diamond}\;\textrm{\textsc{WF-Async}}
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Well-formed-programs"
+
+\end_inset
+
+Well-formed programs
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Itemize
+\begin_inset Formula $\mathtt{z}\in\varphi$
+\end_inset
+
+ iff 
+\begin_inset Formula $\mathtt{z}\in dom(\varphi\downarrow_{2})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\alpha\in\chi$
+\end_inset
+
+ iff 
+\begin_inset Formula $\alpha\in\mathit{dom}(\chi)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\Delta\vdash\alpha\in\chi$
+\end_inset
+
+ iff 
+\begin_inset Formula $\alpha\in\mathit{dom}(\chi)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\Delta\vdash\iota\in\chi$
+\end_inset
+
+ iff 
+\begin_inset Formula $\exists\iota'$
+\end_inset
+
+ such that 
+\begin_inset Formula $\Delta\vdash\iota'\in\chi$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\iota'\vdash\iota:\_$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathcal{M}(\varphi,\chi)=\mathcal{M}(\chi(\varphi(\mathtt{this})\downarrow_{1},\varphi\downarrow_{1})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Auxiliary well-formedness definitions
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The rules for a well-formed program are presented in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Well-formed-programs"
+
+\end_inset
+
+.
+ The 
+\noun on
+WF-Program
+\noun default
+ rule indicates a program is well-formed if all types in the program are
+ well-formed.
+ The 
+\noun on
+WF-Type 
+\noun default
+rule indicates that a type is well-formed if the types of all of its fields
+ are well-formed, its constructors are well-formed, and its synchronous
+ and asynchronous methods are well-formed.
+ The 
+\noun on
+WF-Ctor, WF-Sync, 
+\noun default
+and 
+\noun on
+WF-Async
+\noun default
+ rules indicate that a method is well-formed when the body of the method
+ in results in a subtype of the return type of the method.
+ Additionally, 
+\noun on
+WF-Async
+\noun default
+ requires that behaviour parameters are 
+\begin_inset Formula $\mathit{Sendable}$
+\end_inset
+
+.
+ The body of the method is evaluated using an environment composed of the
+ receiver and the method parameters, each mapped to their type, as shown
+ in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Expression-typing"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Constructor Reference Capabilities
+\end_layout
+
+\begin_layout Standard
+The reference capability of the receiver and the return type can vary for
+ synchronous methods, but not for constructors or asynchronous methods.
+ Constructors always operate on a 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+ receiver, since the constructor must write to the new object's fields,
+ and return a 
+\begin_inset Formula $\mathtt{ref\circ}$
+\end_inset
+
+ result, since the new object is initially mutable but also unaliased, as
+ the constructor's reference to the receiver (
+\begin_inset Formula $\mathtt{this}$
+\end_inset
+
+) is discarded when the constructor returns.
+ This allows a constructor that is passed only sendable references as parameters
+ to be embedded in a 
+\begin_inset Formula $\mathtt{recover}$
+\end_inset
+
+ expression, which allows constructing an object with any reference capability.
+ 
+\end_layout
+
+\begin_layout Standard
+In the full language, a class constructor may specify an alternate reference
+ capability for the constructed object.
+\end_layout
+
+\begin_layout Subsection
+Behaviour Reference Capabilities
+\end_layout
+
+\begin_layout Standard
+Asynchronous methods always operate on a 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+ receiver.
+ This is because the receiver of an asynchronous method is always an actor;
+ when the body is executed, a new stack with the receiver as the root actor
+ is created.
+ Since each actor executes the body of a single behaviour (or asynchronous
+ constructor) at any given time, every behaviour body can read from and
+ write to the receiver.
+ 
+\end_layout
+
+\begin_layout Standard
+Since an asynchronous method cannot, by definition, perform any operations
+ at the call site to construct a return value before returning, the receiver
+ is returned to allow chaining method calls.
+ For the same reason, a behaviour can be called on a 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ actor (i.e.
+ an actor of any reference capability).
+\end_layout
+
+\begin_layout Section
 Viewpoint Adaptation
 \end_layout
 
@@ -3887,7 +4165,2693 @@ Thus, through a combination of aliasing and unaliasing, the programmer can
 \end_layout
 
 \begin_layout Section
-TODO: WFV? Soundness? from OOPSLA15 attempt
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Consistent-heap-visibility"
+
+\end_inset
+
+Consistent heap visibility
+\end_layout
+
+\begin_layout Standard
+The core of the soundness of this approach is 
+\emph on
+consistent heap visibility
+\emph default
+, which requires that aliasing in the heap must satisfy all the deny properties
+ specified by the capabilities attached to fields and variables.
+ This leads to the notions of local and global compatibility.
+ Namely, two capabilities are 
+\emph on
+locally compatible
+\emph default
+ 
+\begin_inset Formula $\kappa\sim_{\ell}\kappa'$
+\end_inset
+
+ if neither has a local deny property that prevents the existence of the
+ other.
+ Similarly, they are 
+\emph on
+globally compatible
+\emph default
+, 
+\begin_inset Formula $\kappa\sim_{g}\kappa'$
+\end_inset
+
+, if neither has a global deny property that prevents the existence of the
+ other.
+ These relationships are defined in table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:Compatible-capabilities-2"
+
+\end_inset
+
+, eg.
+ 
+\begin_inset Formula $\mathtt{ref\sim_{\ell}ref}$
+\end_inset
+
+ but 
+\begin_inset Formula $\mathtt{ref}\not\sim_{g}\mathtt{ref}$
+\end_inset
+
+.
+ Both relations are symmetric.
+ It is interesting to note that global compatibility is a subset of local
+ compatibility.
+\end_layout
+
+\begin_layout Standard
+
+\size footnotesize
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+
+\size footnotesize
+\begin_inset Tabular
+<lyxtabular version="3" rows="8" columns="7">
+<features booktabs="true" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\kappa\sim\kappa'$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="1" alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\kappa'$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\kappa$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+iso
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+trn
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+ref
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+val
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+box
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+tag
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+iso
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell,g$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+trn
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell,g$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+ref
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell,g$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+val
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell,g$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell,g$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell,g$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+box
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell,g$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell,g$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell,g$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+tag
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell,g$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell,g$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell,g$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell,g$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell,g$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Formula $\ell,g$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\size footnotesize
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Compatible-capabilities-2"
+
+\end_inset
+
+Compatible capabilities.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename graphics/fast-cheap-runtime.png
+	width 90col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Diagrammatic-representation-of"
+
+\end_inset
+
+A representation of part of a heap.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Diagrammatic-representation-of"
+
+\end_inset
+
+ shows a diagrammatic representation of a heap 
+\begin_inset Formula $\chi_{0}$
+\end_inset
+
+ which contains actors 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+, and objects 
+\begin_inset Formula $\iota_{10}...\iota_{19}$
+\end_inset
+
+.
+ The top rectangles indicate stack frames, for example 
+\begin_inset Formula $\chi_{0}(\alpha_{1})=(\_,\_,\alpha_{1}\cdot\varphi_{1}\cdot\varphi_{2},\_)$
+\end_inset
+
+ and 
+\begin_inset Formula $\varphi_{1}(\mathtt{this})=\iota_{10}$
+\end_inset
+
+ and 
+\begin_inset Formula $\varphi_{2}(\mathtt{t_{2}})=\iota_{18}$
+\end_inset
+
+.
+ The objects are in rounded boxes, and the annotated arrows indicate the
+ contents of their fields, e.g.
+ 
+\begin_inset Formula $\chi_{0}(\iota_{14},\mathtt{f10})=\iota_{19}$
+\end_inset
+
+.
+ The annotations next to the field identifiers (
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathtt{val}$
+\end_inset
+
+, etc.) give types to the variables.
+ Note that 
+\begin_inset Formula $\alpha_{1}=\iota_{10}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{\alpha_{2}=\iota_{14}}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+For consistent heap visibility we require that different paths originating
+ from the same actor and pointing to the same object have locally consistent
+ visibility, while paths originating from different actors and pointing
+ to the same object have globally consistent visibility.
+ For example, in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Diagrammatic-representation-of"
+
+\end_inset
+
+ the path 
+\begin_inset Formula $\mathtt{this.f1.f5.f8}$
+\end_inset
+
+ starting at the first frame of actor 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ and the path 
+\begin_inset Formula $\mathtt{this.f10}$
+\end_inset
+
+ at the first frame of actor 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ are aliases, as they both reach object 
+\begin_inset Formula $\iota_{19}$
+\end_inset
+
+.
+ The first path sees 
+\begin_inset Formula $\iota_{19}$
+\end_inset
+
+ as 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+, while the second sees it as 
+\begin_inset Formula $\mathtt{val}$
+\end_inset
+
+.
+ These are globally compatible capabilities, and therefore these paths preserve
+ consistent heap visibility.
+ On the other hand, if we added a 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+ field to 
+\begin_inset Formula $\iota_{15}$
+\end_inset
+
+, such that it pointed to 
+\begin_inset Formula $\iota_{19}$
+\end_inset
+
+, the resulting capabilities would not be globally compatible.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\[
+\begin{array}{ccccc}
+\Gamma & \in & \mathit{Env} & = & \mathit{LocalID}\rightarrow\mathit{ExtType}\\
+\Delta & \in & \mathit{GlobalEnv} & = & (\mathit{ActorAddr}\times\mathit{Integer})\rightarrow\mathit{Env}\\
+p & \in & \mathit{Path} & = & (\mathit{Integer}\times\mathit{LocalID})\cdot\overline{\mathit{FieldID}}
+\end{array}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Global-environments."
+
+\end_inset
+
+Global environments and paths.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Itemize
+\begin_inset Formula $\Delta,\chi,\iota\vdash\iota:\mathtt{ref},(0,\mathtt{this})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota:\kappa,(i,\mathtt{z})$
+\end_inset
+
+ iff 
+\begin_inset Formula $\chi(\alpha,(i\cdot\mathtt{z}))=\iota$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta(\alpha,i,\mathtt{z})=\mathtt{S}\,\kappa\,\phi$
+\end_inset
+
+ and 
+\begin_inset Formula $\kappa\neq\mathtt{tag}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\Delta,\chi,\iota\vdash\iota':\kappa\blacktriangleright\kappa',p\cdot\mathtt{f}$
+\end_inset
+
+ iff 
+\begin_inset Formula $\Delta,\chi,\iota\vdash\iota'':\kappa,p$
+\end_inset
+
+ and 
+\begin_inset Formula $\chi(\iota'',\mathtt{f})=\iota'$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{F}(\chi(\iota'')\downarrow_{1},\mathtt{f})=\mathtt{S}\,\kappa'$
+\end_inset
+
+ and 
+\begin_inset Formula $\kappa\blacktriangleright\kappa'\neq\mathtt{tag}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\Delta,\chi,\iota\vdash\iota':\kappa$
+\end_inset
+
+ iff 
+\begin_inset Formula $\exists p$
+\end_inset
+
+ such that 
+\begin_inset Formula $\Delta,\chi,\iota\vdash\iota':\kappa,p$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Visibility."
+
+\end_inset
+
+Visibility.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Itemize
+\begin_inset Formula $\kappa\blacktriangleright\kappa'=\begin{cases}
+\kappa' & \mathit{if}\,\kappa\in\{\mathtt{iso,trn,ref}\}\\
+\mathtt{val} & \mathit{if}\,\kappa=\mathtt{val}\wedge\kappa'=\mathtt{val}\\
+\mathtt{box} & \mathit{if}\,\kappa=\mathtt{box}\wedge\kappa'\notin\{\mathtt{iso,val,tag}\}\\
+\mathtt{tag} & \mathit{otherwise}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi,\alpha\vdash p_{1}\cdot\mathtt{f}\sim p_{2}\cdot\mathtt{f}$
+\end_inset
+
+ iff 
+\begin_inset Formula $\chi(\alpha,p_{1})=\chi(\alpha,p_{2})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi,\alpha\vdash(i,\mathtt{z})\sim(i,\mathtt{z})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi,\alpha\vdash\iota\in p$
+\end_inset
+
+ iff 
+\begin_inset Formula $\exists p',\mathtt{\bar{f}}$
+\end_inset
+
+ such that 
+\begin_inset Formula $p=p'.\mathtt{\bar{f}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\chi(\alpha,p')=\iota$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi(\alpha,(i,\mathtt{z})\cdot\mathtt{\overline{f}})=\chi(\varphi_{i}(\mathtt{z}),\mathtt{\overline{f}})$
+\end_inset
+
+ where 
+\begin_inset Formula $\chi(\alpha)\downarrow_{4}=\alpha\cdot\overline{\varphi}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi(\alpha,(-i,\mathtt{x_{j}})\cdot\mathtt{\overline{f}})=\chi(v_{j},\mathtt{\overline{f}})$
+\end_inset
+
+ where 
+\begin_inset Formula $\chi(\alpha)\downarrow_{3}=\overline{\mu}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mu_{i}=(\_,\overline{v})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathit{Stable}(\Delta,\alpha,(i,\mathtt{z})\cdot\mathtt{\overline{f}})$
+\end_inset
+
+ iff 
+\begin_inset Formula $\Delta(\alpha,i,\mathtt{z})\notin\{\mathtt{iso,trn}\}$
+\end_inset
+
+ or 
+\begin_inset Formula $\mathtt{z}\neq\mathtt{t}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Paths"
+
+\end_inset
+
+Topological properties of paths.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For the formal definition of consistent heap visibility, we need notions
+ of:
+\end_layout
+
+\begin_layout Enumerate
+Paths 
+\begin_inset Formula $p$
+\end_inset
+
+ and global environments 
+\begin_inset Formula $\Delta$
+\end_inset
+
+, which give types to the local variables and temporaries in each frame
+ or message, as defined in fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Global-environments."
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+Path visibility 
+\begin_inset Formula $\Delta,\chi,\iota\vdash\iota':\kappa,p$
+\end_inset
+
+, which says that the object or actor 
+\begin_inset Formula $\iota$
+\end_inset
+
+ sees the object or actor 
+\begin_inset Formula $\iota'$
+\end_inset
+
+ as capability 
+\begin_inset Formula $\kappa$
+\end_inset
+
+ through path 
+\begin_inset Formula $p$
+\end_inset
+
+, as defined in fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Visibility."
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+Topological properties of paths, as defined in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Paths"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Environments, 
+\begin_inset Formula $\Gamma$
+\end_inset
+
+, map variables (i.e.
+ local variables or temporaries) to extended types and global environments,
+ 
+\begin_inset Formula $\Delta$
+\end_inset
+
+, map actor addresses and integers to environments.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Diagrammatic-representation-of"
+
+\end_inset
+
+ indicates the types assigned to local variables through the annotations.
+ Thus, it has an implicit global environment 
+\begin_inset Formula $\Delta_{0}$
+\end_inset
+
+, such that 
+\begin_inset Formula $\Delta_{0},\chi_{0},\alpha_{1}\vdash\iota_{10}:\mathtt{ref},(1,\mathtt{this})$
+\end_inset
+
+, and 
+\begin_inset Formula $\Delta_{0},\chi_{0},\alpha_{2}\vdash\iota_{19}:\mathtt{val},(1,\mathtt{this})\cdot\mathtt{f10}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+To define path visibility, the notion of deep viewpoint adaptation 
+\begin_inset Formula $\kappa\blacktriangleright\kappa'$
+\end_inset
+
+ is used, which combines two capabilities as given in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Paths"
+
+\end_inset
+
+.
+ The definition ensures that 
+\begin_inset Formula $\kappa\blacktriangleright\kappa'=\kappa'$
+\end_inset
+
+ if 
+\begin_inset Formula $\kappa$
+\end_inset
+
+ is writeable (deep mutability), 
+\begin_inset Formula $\kappa\blacktriangleright\kappa'=\mathtt{val}$
+\end_inset
+
+ if either 
+\begin_inset Formula $\kappa$
+\end_inset
+
+ or 
+\begin_inset Formula $\kappa'$
+\end_inset
+
+ is 
+\begin_inset Formula $\mathtt{val}$
+\end_inset
+
+ (deep immutability) and 
+\begin_inset Formula $\mathtt{box}\blacktriangleright\kappa'=\mathtt{box}$
+\end_inset
+
+ unless 
+\begin_inset Formula $\kappa'\in\{\mathtt{iso,val,tag}\}$
+\end_inset
+
+.
+ For example, 
+\begin_inset Formula $\mathtt{iso}\blacktriangleright\mathtt{ref}=\mathtt{ref}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The rules in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Visibility."
+
+\end_inset
+
+ say that an address sees itself as 
+\begin_inset Formula $\mathtt{ref}$
+\end_inset
+
+, an actor sees a stack identifier as the capability provided by 
+\begin_inset Formula $\Delta$
+\end_inset
+
+, and an address sees another address as a deep viewpoint adapted capability.
+ Note that, for visibility, 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ types are not seen.
+ Therefore, our example gives us:
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\Delta_{0},\chi_{0},\alpha_{1}\vdash\iota_{10}:\mathtt{ref},(1,\mathtt{this})$
+\end_inset
+
+, but also
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\Delta_{0},\chi_{0},\alpha_{1}\vdash\iota_{10}:\mathtt{box},(1,\mathtt{this})\cdot\mathtt{f1}\cdot\mathtt{f2}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\Delta_{0},\chi_{0},\alpha_{2}\vdash\iota_{19}:\mathtt{val},(1,\mathtt{this})\cdot\mathtt{f10}$
+\end_inset
+
+, but also
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\Delta_{0},\chi_{0},\alpha_{1}\vdash\iota_{19}:\mathtt{tag},(1,\mathtt{this})\cdot\mathtt{f1}\cdot\mathtt{f5}\cdot\mathtt{f8}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathit{WFV}(\Delta,\chi)\,\mathit{iff}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Formula $\forall\alpha,\alpha',\iota,\iota'\in\chi.\forall\kappa,\kappa',p,p',\mathtt{t}$
+\end_inset
+
+ where 
+\begin_inset Formula $\mathit{Stable}(\Delta,\alpha,p)$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathit{Stable}(\Delta,\alpha,p')$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota:\kappa$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\alpha'\vdash\iota:\kappa'$
+\end_inset
+
+ and 
+\begin_inset Formula $\alpha\neq\alpha'$
+\end_inset
+
+ then 
+\begin_inset Formula $\kappa\sim_{g}\kappa'$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota:\kappa,p$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota:\kappa',p'$
+\end_inset
+
+ then
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\chi,\alpha\vdash p\sim p'$
+\end_inset
+
+ or 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa\sim_{\ell}\kappa'$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota:\kappa$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota':\kappa',p'$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\iota\vdash\iota':\kappa''$
+\end_inset
+
+ and 
+\begin_inset Formula $\kappa\in\{\mathtt{iso,trn}\}$
+\end_inset
+
+ then
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\chi,\alpha\vdash\iota\in p'$
+\end_inset
+
+ or
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa''\in\{\mathtt{val,box}\}$
+\end_inset
+
+ and 
+\begin_inset Formula $\kappa'\sim_{g}\mathtt{val}$
+\end_inset
+
+ or
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa''\in\{\mathtt{iso,trn,ref}\}$
+\end_inset
+
+ and 
+\begin_inset Formula $\kappa\sim_{\ell}\kappa'$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\Delta(\alpha,i,\mathtt{t})=\mathtt{S}\,\kappa$
+\end_inset
+
+ and 
+\begin_inset Formula $\kappa\in\{\mathtt{iso,trn}\}$
+\end_inset
+
+ and 
+\begin_inset Formula $\chi(\alpha,i,\mathtt{t})=\chi(\alpha,p_{1})=\iota$
+\end_inset
+
+ then
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $p_{1}=(i,\mathtt{t})$
+\end_inset
+
+ or
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\exists\iota',\kappa',p_{2},\mathtt{\overline{f}}$
+\end_inset
+
+ such that
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\kappa\le\kappa'$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa'\in\{\mathtt{iso,trn}\}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $p_{1}=p_{2}\cdot\mathtt{\overline{f}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota':\kappa',p_{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta,\chi,\iota'\vdash\iota:\kappa,\mathtt{\overline{f}}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Well-formed-visibility."
+
+\end_inset
+
+Well-formed visibility.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Paths"
+
+\end_inset
+
+, two paths are compatible if they share the last step or they are the same
+ identifier with no fields, an address 
+\begin_inset Formula $\iota$
+\end_inset
+
+ is in a path if some prefix of the path points to 
+\begin_inset Formula $\iota$
+\end_inset
+
+, and a path is stable, 
+\begin_inset Formula $\mathit{Stable}(\Delta,\alpha,p)$
+\end_inset
+
+, if its initial identifier is not a unique temporary.
+ For example, 
+\begin_inset Formula $\chi_{0},\alpha_{2}\vdash(1,\mathtt{this})\cdot\mathtt{f10}\sim(1,\mathtt{y1})\cdot\mathtt{f10}$
+\end_inset
+
+.
+ Also, 
+\begin_inset Formula $\mathit{Stable}(\Delta_{0},\alpha_{1},(1,\mathtt{this})\cdot\mathtt{f1}\cdot\mathtt{f4})$
+\end_inset
+
+ and 
+\begin_inset Formula $\neg\mathit{Stable}(\Delta_{0},\alpha_{1},(2,\mathtt{t2})\cdot\mathtt{f9})$
+\end_inset
+
+, even though the two paths are aliases.
+\end_layout
+
+\begin_layout Standard
+Consistent heap visibility is defined in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Well-formed-visibility."
+
+\end_inset
+
+.
+ It requires:
+\end_layout
+
+\begin_layout Enumerate
+Global compatibility.
+ Any two distinct actors that can see the same address must see that address
+ with globally compatible capabilities.
+\end_layout
+
+\begin_layout Enumerate
+Local compatibility.
+ An actor that sees an address in multiple ways must either see compatible
+ paths or locally compatible capabilities.
+\end_layout
+
+\begin_layout Enumerate
+Containment properties of 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+.
+ Given 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ that sees 
+\begin_inset Formula $\iota$
+\end_inset
+
+ as some unique 
+\begin_inset Formula $\kappa$
+\end_inset
+
+ and sees 
+\begin_inset Formula $\iota'$
+\end_inset
+
+ as 
+\begin_inset Formula $\kappa'$
+\end_inset
+
+ via some stable 
+\begin_inset Formula $p'$
+\end_inset
+
+, and given that 
+\begin_inset Formula $\iota$
+\end_inset
+
+ sees 
+\begin_inset Formula $\iota'$
+\end_inset
+
+ as 
+\begin_inset Formula $\kappa''$
+\end_inset
+
+:
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\iota'$
+\end_inset
+
+ must be contained by 
+\begin_inset Formula $\iota$
+\end_inset
+
+, or
+\end_layout
+
+\begin_layout Enumerate
+neither 
+\begin_inset Formula $\iota$
+\end_inset
+
+ nor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ can write to 
+\begin_inset Formula $\iota'$
+\end_inset
+
+, or
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\iota$
+\end_inset
+
+ can write to 
+\begin_inset Formula $\iota'$
+\end_inset
+
+ and 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ sees 
+\begin_inset Formula $\iota'$
+\end_inset
+
+ as locally compatible with 
+\begin_inset Formula $\kappa$
+\end_inset
+
+.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Properties of unique temporary identifiers.
+ Given 
+\begin_inset Formula $\mathtt{t}$
+\end_inset
+
+ that points to 
+\begin_inset Formula $\iota$
+\end_inset
+
+ , some other path 
+\begin_inset Formula $p_{1}$
+\end_inset
+
+ to the same 
+\begin_inset Formula $\iota$
+\end_inset
+
+ must be either:
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+also 
+\begin_inset Formula $\mathtt{t}$
+\end_inset
+
+ or
+\end_layout
+
+\begin_layout Enumerate
+that path 
+\begin_inset Formula $p_{1}$
+\end_inset
+
+ must have a prefix 
+\begin_inset Formula $p_{2}$
+\end_inset
+
+ that sees some 
+\begin_inset Formula $\iota'$
+\end_inset
+
+ with a unique capability 
+\begin_inset Formula $\kappa'$
+\end_inset
+
+ less precise than 
+\begin_inset Formula $\kappa$
+\end_inset
+
+ and 
+\begin_inset Formula $\iota'$
+\end_inset
+
+ must see 
+\begin_inset Formula $\iota$
+\end_inset
+
+ as 
+\begin_inset Formula $\kappa$
+\end_inset
+
+.
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+An implication of well-formed visibility is that if two variables (temporary
+ or otherwise) are aliases and one of them has unique type (aliased or unaliased
+) then 1) they come from the same actor and 2) they are either the same
+ variable or they have locally compatible capabilities, cf.
+ lemmas 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:Temporaries-and-variables"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:Isolation-in-well-formed"
+
+\end_inset
+
+.
+ Note that 
+\begin_inset Formula $\mathit{WFV.1-3}$
+\end_inset
+
+ are concerned with stable paths only, while 
+\begin_inset Formula $\mathit{WFV.4}$
+\end_inset
+
+ is about unstable paths.
+ In particular, 
+\begin_inset Formula $\mathit{WFV.4}$
+\end_inset
+
+ allows a unique temporary to break the requirements from 
+\begin_inset Formula $\mathit{WFV.3}$
+\end_inset
+
+ and alias something writeable from a unique.
+\end_layout
+
+\begin_layout Standard
+The heap from figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Diagrammatic-representation-of"
+
+\end_inset
+
+ has consistent visibility.
+ The paths 
+\begin_inset Formula $\mathtt{(1,this)\cdot f1\cdot f5\cdot f8}$
+\end_inset
+
+ from 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{(1,this)\cdot f10}$
+\end_inset
+
+ from 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ satisfy 
+\begin_inset Formula $\mathit{WFV.1}$
+\end_inset
+
+, while 
+\begin_inset Formula $\mathtt{(1,x1)\cdot f4}$
+\end_inset
+
+ from 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{(2,this)}$
+\end_inset
+
+ from 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ satisfy 
+\begin_inset Formula $\mathit{WFV.2}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathit{WFV.3}$
+\end_inset
+
+.
+ On the other hand, the temporary 
+\begin_inset Formula $\mathtt{(2,t2)}$
+\end_inset
+
+ is not stable, and therefore not restricted by 
+\begin_inset Formula $\mathit{WFV.2}$
+\end_inset
+
+ or 
+\begin_inset Formula $\mathit{WFV.3}$
+\end_inset
+
+, but does adhere to 
+\begin_inset Formula $\mathit{WFV.4}$
+\end_inset
+
+.
+ Finally, the assignment 
+\begin_inset Formula $\mathtt{this.f1.f5.f6=this.f1.f5.f7}$
+\end_inset
+
+ would break 
+\begin_inset Formula $\mathit{WFV.2}$
+\end_inset
+
+, while setting 
+\begin_inset Formula $\mathtt{t2}$
+\end_inset
+
+ to point to 
+\begin_inset Formula $\iota_{15}$
+\end_inset
+
+ would break 
+\begin_inset Formula $\mathit{WFV.4}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Soundness-properties"
+
+\end_inset
+
+Soundness
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Itemize
+\begin_inset Formula $\Delta\vdash\chi\diamond$
+\end_inset
+
+ iff 
+\begin_inset Formula $\forall\iota,\alpha\in\mathit{dom}(\chi)$
+\end_inset
+
+, 
+\begin_inset Formula $\chi\vdash\iota\diamond$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi\vdash\alpha\diamond$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathit{WFV}(\Delta,\chi)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi\vdash\iota\diamond$
+\end_inset
+
+ iff 
+\begin_inset Formula $\forall\mathtt{f}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathcal{F}(\chi(\iota)\downarrow_{1},\mathtt{f})=\mathtt{S}\,\kappa$
+\end_inset
+
+ implies 
+\begin_inset Formula $\chi(\iota,\mathtt{f})\downarrow_{1}=\mathtt{S}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\Delta,\chi\vdash\alpha\diamond$
+\end_inset
+
+ iff 
+\begin_inset Formula $\chi(\alpha)=(\_,\_,\bar{\mu},\alpha\cdot\overline{\varphi},\mathtt{e})$
+\end_inset
+
+ and 
+\begin_inset Formula $\forall i$
+\end_inset
+
+, 
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\varphi_{i},i\diamond$
+\end_inset
+
+ and 
+\begin_inset Formula $\forall j$
+\end_inset
+
+, 
+\begin_inset Formula $\Delta,\chi\vdash\mu_{j},j\diamond$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\varphi,i\diamond$
+\end_inset
+
+ iff given 
+\begin_inset Formula $\varphi=(\mathtt{m},\_,\mathtt{E[\cdot]})$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{M}(\varphi,\chi)=(\mathtt{T,\overline{x:T},\_,ET})$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta(\alpha,i)=\Gamma$
+\end_inset
+
+ then
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\Gamma(\mathtt{this})=\mathtt{T}$
+\end_inset
+
+ and 
+\begin_inset Formula $\forall j\in1..|\mathtt{\overline{T}}|.\Gamma(\mathtt{x_{j}})=\mathtt{T_{j}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\forall\mathtt{z}\in\varphi$
+\end_inset
+
+, 
+\begin_inset Formula $\Gamma(\mathtt{z})=\mathtt{S}\,\kappa\,\phi$
+\end_inset
+
+ and 
+\begin_inset Formula $\chi(\varphi(\mathtt{z}))\downarrow_{1}=\mathtt{S}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $i=1$
+\end_inset
+
+ then 
+\begin_inset Formula $\mathtt{E[\cdot]}=\cdot$
+\end_inset
+
+ and 
+\begin_inset Formula $\varphi(\mathtt{this})=\alpha$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $i>1$
+\end_inset
+
+, given 
+\begin_inset Formula $\chi(\alpha)\downarrow_{4}=\alpha\cdot\overline{\varphi}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Gamma'=\Delta(\alpha,i-1)$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{t}\notin\Gamma'$
+\end_inset
+
+ and 
+\begin_inset Formula $\Gamma''=\Gamma'[\mathtt{t}\mapsto\mathtt{ET}]$
+\end_inset
+
+ then
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\Gamma''\vdash\mathtt{E[t]}:\mathcal{M}(\varphi_{i-1},\chi)\downarrow_{4}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathit{WFT}(\Delta[(\alpha,i)\mapsto\Gamma''],\chi,\alpha,i,\mathtt{E[t]})$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+If 
+\begin_inset Formula $i=|\chi(\alpha)\downarrow_{4}|$
+\end_inset
+
+ then 
+\begin_inset Formula $\mathit{WFT}(\Delta,\chi,\alpha,i,\mathtt{e})$
+\end_inset
+
+ and 
+\begin_inset Formula $\Gamma\vdash\mathtt{e:ET}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\mu,i\diamond$
+\end_inset
+
+ iff given 
+\begin_inset Formula $\mu=(\mathtt{b},\overline{v})$
+\end_inset
+
+ and 
+\begin_inset Formula $v_{j}=\iota$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{M}(\chi(\alpha)\downarrow_{1},\mathtt{b})=(\_,\mathtt{\overline{x:S\,\kappa}},\_,\_)$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta(\alpha,-i)=\Gamma$
+\end_inset
+
+ then
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\chi(\iota)\downarrow_{1}=\mathtt{S_{j}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Gamma(\mathtt{x_{j}})=\mathtt{S\,\kappa}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Well-formed-heaps."
+
+\end_inset
+
+Well-formed heaps.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+A heap 
+\begin_inset Formula $\chi$
+\end_inset
+
+ is well-formed as defined in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Well-formed-heaps."
+
+\end_inset
+
+ if all objects in the heap are well-formed, all actors in the heap are
+ well-formed, and visibility is well-formed.
+ An object is well-formed if all its fields belong to the type defined in
+ the object's class.
+ An actor is well-formed if its stack frames and messages are well-formed.
+ A stack frame is well-formed if 1) its receiver and arguments are well-formed,
+ 2) all local identifiers are well-formed, 3) if it is the only stack frame,
+ it has no continuation and the receiver is the actor, 4) if it is not the
+ only stack frame, its return value and temporary identifiers are well-formed
+ with regard to the previous frame, and 5) if it is the last frame, temporary
+ identifiers are well-formed and the expression has the expected type.
+\end_layout
+
+\begin_layout Subsection
+Treatment of temporaries
+\end_layout
+
+\begin_layout Standard
+Temporaries with unique capabilities, 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ or 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+, are fragile: on the one hand they may break the encapsulation of other
+ 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ or 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+ objects.
+ For example, because 
+\begin_inset Formula $\mathtt{iso}\triangleright\mathtt{iso}=\mathtt{iso}$
+\end_inset
+
+, a field read (
+\noun on
+Fld
+\noun default
+) may return a temporary pointing within the encapsulation of 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+.
+ On the other hand, an assignment to another field or variable might break
+ 
+\emph on
+their
+\emph default
+ encapsulation.
+\end_layout
+
+\begin_layout Standard
+To be well-formed, it is required that in a frame, no more than one temporary
+ has an 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ or 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+ capability, and this temporary appears on a field assignment or a field
+ read.
+ In addition, any temporaries that appear within a recover expression are
+ either inaccessible from any frame or are only accessible through sendable
+ local variables.
+\end_layout
+
+\begin_layout Definition
+Well-formed temporaries.
+ 
+\begin_inset Formula $\mathit{WFT}(\Delta,\chi,\alpha,i,\mathtt{e})$
+\end_inset
+
+ iff:
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+No temporary appears more than once in 
+\emph on
+
+\begin_inset Formula $\mathtt{e}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathcal{T}(\Gamma)\neq\emptyset$
+\end_inset
+
+, then 
+\begin_inset Formula $\mathtt{e\equiv E[e']}$
+\end_inset
+
+, where 
+\begin_inset Formula $\mathtt{e'}$
+\end_inset
+
+ is a redex of the form 
+\begin_inset Formula $\mathtt{t.f}$
+\end_inset
+
+ or 
+\begin_inset Formula $\mathtt{t.f=y}$
+\end_inset
+
+, and 
+\begin_inset Formula $\mathcal{T}(\Gamma)=\{\mathtt{t}\}$
+\end_inset
+
+, where 
+\begin_inset Formula $\Gamma=\Delta(\alpha,i)$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{T}(\Gamma)\equiv\{\mathtt{t}\,|\,\Gamma(\mathtt{t})=\mathtt{S}\,\kappa\wedge\kappa\in\{\mathtt{iso},\mathtt{trn}\}\}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathtt{e=E[recover\,e']}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota:\_,(i,\mathtt{t})$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota:\kappa',(i',\mathtt{z})\cdot\mathtt{\overline{f}}$
+\end_inset
+
+ where 
+\begin_inset Formula $\mathtt{t}$
+\end_inset
+
+ is free in 
+\begin_inset Formula $\mathtt{e'}$
+\end_inset
+
+then either 
+\begin_inset Formula $\mathit{Sendable}(\Delta(\alpha,i',\mathtt{z}))$
+\end_inset
+
+ or 
+\begin_inset Formula $(i,\mathtt{z})=(i',\mathtt{t'})$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{z}$
+\end_inset
+
+ is not free in 
+\begin_inset Formula $\mathtt{E[\cdot]}$
+\end_inset
+
+.
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+The requirements above do not apply to 
+\emph on
+unaliased unique
+\emph default
+ capabilities, e.g.
+ 
+\begin_inset Formula $\mathtt{iso}\circ$
+\end_inset
+
+, or 
+\begin_inset Formula $\mathtt{trn}\circ$
+\end_inset
+
+.
+ When proving type preservation, we maintain the property 
+\begin_inset Formula $\mathit{WFT}(\Delta,\chi,\alpha,i,\mathtt{e})$
+\end_inset
+
+ by turning the types of temporaries with unique capabilities 
+\begin_inset Formula $\kappa\in\{\mathtt{iso},\mathtt{trn}\}$
+\end_inset
+
+ into their aliases, 
+\begin_inset Formula ${\cal A}(\kappa)$
+\end_inset
+
+, as soon as the temporary is no longer involved in field reads or updates
+ in the current redex.
+\end_layout
+
+\begin_layout Definition
+We call an expression 
+\emph on
+
+\begin_inset Formula $\mathtt{e}$
+\end_inset
+
+
+\emph default
+ a 
+\emph on
+redex
+\emph default
+ if it has one of the following forms:
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $\begin{array}{ccc}
+\mathtt{e} & ::= & \mathtt{z.f\,|\,z.f=y\,|\,z.m(\overline{y})\,|\,z.b(\overline{y})\,|\,S.k(\overline{z}})\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The type of the expression is preserved despite this change, because the
+ type rules from fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Expression-typing"
+
+\end_inset
+
+ require the alias of a type (
+\begin_inset Formula $\ldots\vdash_{{\cal A}}\ldots$
+\end_inset
+
+) in all such situations.
+ This is explained further in lemma 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:Aliasing-and-replaceability."
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Theorem
+\begin_inset CommandInset label
+LatexCommand label
+name "A-well-formed-heap"
+
+\end_inset
+
+A well-formed heap ensures data race freedom.
+\end_layout
+
+\begin_layout Theorem
+\begin_inset Formula $\forall\Delta,\chi,\alpha_{1},\alpha_{2},\mathtt{f},\mathtt{g}$
+\end_inset
+
+ , if
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\Delta\vdash\chi\diamond$
+\end_inset
+
+, and 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi(\alpha_{1})=(\_,\_,\sigma_{1},\_,\mathtt{E_{1}[z_{1}.f=z_{3}]})$
+\end_inset
+
+, and
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi(\alpha_{2})=(\_,\_,\sigma_{2},\_,\mathtt{E_{2}[z_{2}.g]})$
+\end_inset
+
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Theorem
+then 
+\begin_inset Formula $\chi(\alpha_{1},|\sigma_{1}|\cdot\mathtt{z_{1}})\ne\chi(\alpha_{2},|\sigma_{2}|\cdot\mathtt{z_{2}})$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Proof
+Follows from the type system and the application of 
+\begin_inset Formula $\mathit{WFV}.1$
+\end_inset
+
+ (global consistency).
+\end_layout
+
+\begin_layout Theorem
+Well-formedness is preserved.
+\end_layout
+
+\begin_layout Theorem
+\begin_inset Formula $\forall\Delta,\chi$
+\end_inset
+
+, if 
+\begin_inset Formula $\Delta\vdash\chi\diamond$
+\end_inset
+
+ and 
+\begin_inset Formula $\chi\rightarrow\chi'$
+\end_inset
+
+ then 
+\begin_inset Formula $\exists\Delta'.\Delta'\vdash\chi'\diamond$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Proof
+Follows from lemmas 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:SL1"
+
+\end_inset
+
+-
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:Type-preservation-upon-1"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Atomicity
+\end_layout
+
+\begin_layout Standard
+Because the type of any entity does not change, any readable reference is
+ always readable, and so guarantees no other actor can write to it.
+ This holds not just for methods, but for behaviours.
+ As a result, theorem 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "A-well-formed-heap"
+
+\end_inset
+
+ guarantees that behaviours are 
+\emph on
+logically atomic
+\emph default
+, a stronger guarantee than data-race freedom.
+\end_layout
+
+\begin_layout Subsection
+TODO: Lemmas from OOPSLA15
 \end_layout
 
 \end_body

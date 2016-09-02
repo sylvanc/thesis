@@ -445,92 +445,59 @@ Message-based Actor Collection Algorithm
 \end_layout
 
 \begin_layout Standard
-The actor-model stipulates that an actor can 
-\begin_inset CommandInset citation
-LatexCommand cite
-key "agha1986actors,agha1987concurrent"
-
-\end_inset
-
-:
-\end_layout
-
-\begin_layout Enumerate
-Send a finite number of asynchronous, buffered messages to other actors,
- with guaranteed delivery but no ordering or fairness guarantees.
-\end_layout
-
-\begin_layout Enumerate
-Select a behaviour to be executed in response to the next message.
-\end_layout
-
-\begin_layout Enumerate
-Create a finite number of new actors.
-\end_layout
-
-\begin_layout Standard
-Additionally, Pony requires that an actor's message queue is FIFO ordered,
- and message delivery is 
-\emph on
-causal 
-\emph default
-on a single node.
- Moreover, each actor has local state.
- 
+The 
 \emph on
 MAC
 \emph default
- is concerned only with references to other actors in an actor's local state,
- but in general the local state also contains references to passive objects,
- as defined in chapter 
+ algorithm extends the operational semantics from chapter 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "chap:Syntax-and-Operational"
 
 \end_inset
 
-.
-\end_layout
-
-\begin_layout Subsection
-Application Messages
-\end_layout
-
-\begin_layout Standard
-Application-level messages are presented in examples as a single message
- type (
+ to allow actors to be garbage collected when they have no pending messages
+ and will never again have pending messages, that is, when the actor is
+ 
 \emph on
-APP
+dead
 \emph default
-) that allows an actor 
-\begin_inset Formula $\iota_{1}$
-\end_inset
-
- to send a set of actors 
-\begin_inset Formula $\iota s$
-\end_inset
-
- to another actor 
-\begin_inset Formula $\iota_{2}$
-\end_inset
-
 .
- In fact, there are multiple application message types, which can contain
- passive objects as well as actors.
- However, since actor collection relies only on the topology of actors,
- and not objects, the set of actors 
-\begin_inset Formula $\iota s$
-\end_inset
-
- is used to present all explicit actor references contained in the message,
- as well as all implicit actor references (i.e.
- the allocating actors for any passive objects included in the message).
+ To do so, firstly, the definition of an actor is extended to keep track
+ of its own 
+\emph on
+local reference count
+\emph default
+, a map of actor addresses to 
+\emph on
+foreign reference counts
+\emph default
+, and a flag to indicate whether or not the actor is 
+\emph on
+blocked
+\emph default
+.
+ Secondly, new message types are added to allow reference counts to be changes
+ in an asynchronous way.
+ Finally, a 
+\emph on
+cycle detector
+\emph default
+ actor is added to the system that can correctly detect and collect isolated
+ cyclic graphs of dead actors.
 \end_layout
 
 \begin_layout Standard
-This is done for convenience in examples, but the operational semantics
- and associated definitions express actual messages and define reachability
- fully.
+Effectively, 
+\emph on
+MAC
+\emph default
+ is an eventual consistency algorithm for for communicating the 
+\emph on
+true topology
+\emph default
+ of an actor graph to a cycle detector without any actor (including the
+ cycle detector) examining another actor's state.
 \end_layout
 
 \begin_layout Subsection
@@ -802,10 +769,10 @@ In
 MAC
 \emph default
 , reference counts are not updated when references are created or destroyed
- on the stack or in the heap, but only when references are sent in messages
- and when local garbage collection indicates no references to an actor are
- reachable from actor's local state.
- The messages act as the mechanism for deferring increments and the external
+ on the stack or in the heap, but only when references are sent and received
+ in messages and when local garbage collection indicates no references to
+ an actor are reachable from actor's local state.
+ The messages act as the mechanism for deferring increments, and the external
  map, in combination with local garbage collection, acts as the mechanism
  for coalescing updates.
 \end_layout
@@ -874,6 +841,47 @@ It would be possible but not efficient for application actors to perform
  in every actor.
  A separate cycle detector reduces this to one message upon block or unblock
  regardless of the number of actors.
+\end_layout
+
+\begin_layout Subsection
+Application Messages
+\end_layout
+
+\begin_layout Standard
+Application-level messages are presented in examples as a single message
+ type (
+\emph on
+APP
+\emph default
+) that allows an actor 
+\begin_inset Formula $\iota_{1}$
+\end_inset
+
+ to send a set of actors 
+\begin_inset Formula $\iota s$
+\end_inset
+
+ to another actor 
+\begin_inset Formula $\iota_{2}$
+\end_inset
+
+.
+ In fact, there are multiple application message types, which can contain
+ passive objects as well as actors.
+ However, since actor collection relies only on the topology of actors,
+ and not objects, the set of actors 
+\begin_inset Formula $\iota s$
+\end_inset
+
+ is used to present all explicit actor references contained in the message,
+ as well as all implicit actor references (i.e.
+ the allocating actors for any passive objects included in the message).
+\end_layout
+
+\begin_layout Standard
+This is done for convenience in examples, but the operational semantics
+ and associated definitions express actual messages and define reachability
+ fully.
 \end_layout
 
 \begin_layout Subsection
@@ -1180,6 +1188,23 @@ INC
 \begin_inset CommandInset label
 LatexCommand label
 name "fig:Initial-PC"
+
+\end_inset
+
+
+\begin_inset Argument 1
+status open
+
+\begin_layout Plain Layout
+Diagram of example 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "A-perceived-cycle"
+
+\end_inset
+
+
+\end_layout
 
 \end_inset
 
@@ -1651,6 +1676,23 @@ name "fig:Conf-PC"
 
 \end_inset
 
+
+\begin_inset Argument 1
+status open
+
+\begin_layout Plain Layout
+Diagram of example 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Expanding-example-"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
 Diagram of example 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -2026,14 +2068,14 @@ reference "fig:Runtime-entities-for-actor-GC"
  
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "fig:actor-execution"
+reference "fig:opsem-for-actor-GC"
 
 \end_inset
 
- to 
+ and 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "fig:cd-messages"
+reference "fig:opsem-cycle-detection"
 
 \end_inset
 
@@ -2071,11 +2113,11 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Formula $\begin{array}{rclcl}
- &  & \mathit{Actor} & = & \mathit{ActorID\times(FieldID\rightarrow Value)}\\
- &  &  & \times & \mathit{\overline{Message}}\times Stack\times Expr\\
- &  &  & \times & (\mathit{ActorID}\rightarrow\overline{Message})\\
+ &  & \mathit{Actor} & = & {\color{gray}\mathit{ActorID\times(FieldID\rightarrow Value)}}\\
+ &  &  & {\color{gray}\times} & {\color{gray}\mathit{\overline{Message}}\times Stack\times Expr}\\
+ &  &  & {\color{gray}\times} & {\color{gray}(\mathit{ActorID}\rightarrow\overline{Message})}\\
  &  &  & \times & \mathit{RefCount}\times\mathit{ExMap}\times\mathit{Blocked}\\
-\mu & \in & \mathit{Message} & = & (\mathit{MethodID\times\overline{Value}})\\
+\mu & \in & \mathit{Message} & = & {\color{gray}(\mathit{MethodID\times\overline{Value}})}\\
  &  &  & | & INC(\mathit{Integer})\,|\,DEC(\mathit{Integer})\\
  &  &  & | & BLK(\mathit{ActorAddr},\mathit{RefCount},\mathit{ExMap})\\
  &  &  & | & UNB(\mathit{ActorAddr})\\
@@ -2103,7 +2145,18 @@ name "fig:Runtime-entities-for-actor-GC"
 
 \end_inset
 
+
+\begin_inset Argument 1
+status open
+
+\begin_layout Plain Layout
 Runtime entities for actor GC
+\end_layout
+
+\end_inset
+
+Runtime entities for actor GC.
+ Elements that are unchanged are greyed out.
 \end_layout
 
 \end_inset
@@ -2117,7 +2170,7 @@ Runtime entities for actor GC
 \end_layout
 
 \begin_layout Standard
-Actors are extended with a local reference count, an external set, and a
+Actors are extended with a local reference count, an external map, and a
  blocked flag.
  Messages are extended with a collection of garbage collection messages
  that are not available to the programming language.
@@ -2143,7 +2196,7 @@ PC
 \end_inset
 
 , which is instantiated when a program begins as 
-\begin_inset Formula $([],[],0)$
+\begin_inset Formula $(\emptyset,\emptyset,0)$
 \end_inset
 
 , is globally accessible, but is not available to expressions in the operational
@@ -2186,6 +2239,12 @@ reference "subsec:Page-Map"
 \end_layout
 
 \begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Reachability"
+
+\end_inset
+
 Reachability
 \end_layout
 
@@ -2239,11 +2298,10 @@ Reachability
 
 \begin_layout Definition
 \begin_inset Formula $\begin{array}{lcl}
-\mathit{Reach}(\chi,\mathit{null},\kappa) & = & \{\}\\
+\mathit{Reach}(\chi,\mathit{null},\kappa) & = & \emptyset\\
 \mathit{Reach}(\chi,\iota,\mathtt{tag}) & = & \{\iota,\mathcal{O}(\iota)\}\\
 \mathit{Reach}(\chi,\iota,\kappa) & = & \{\iota,\mathcal{O}(\iota)\}\\
- & \cup & \forall\mathtt{f}\in\mathcal{F}s(\chi(\iota)\downarrow_{1}).\mathcal{F}(\chi(\iota)\downarrow_{1},\mathtt{f})=\mathtt{S\,\kappa'}.\\
- &  & \mathit{Reach}(\chi,\chi(\iota,\mathtt{f}),\kappa')\\
+ & \cup & \{\iota'\,|\,\exists\mathtt{f}.\mathcal{F}(\chi(\iota)\downarrow_{1},\mathtt{f})=\mathtt{S}\,\kappa'\wedge\iota'\in\mathit{Reach}(\chi,\chi(\iota,\mathtt{f}),\kappa')\\
 \mathit{Reach}(\chi,\overline{v},\overline{\kappa}) & = & \bigcup_{i\in1..|\overline{v}|}\mathit{Reach}(\chi,v_{i},\kappa_{i})\\
 \mathit{Reach}(\chi,\alpha,(\mathtt{n},\overline{v})) & = & \mathit{Reach}(\chi,\overline{v},\overline{\kappa})\,\mathit{where}\,\mathcal{M}(\chi(\alpha)\downarrow_{1},\mathtt{n})=\mathtt{(\_,\overline{x}:\overline{S\,\kappa},e,\_)}
 \end{array}$
@@ -2259,7 +2317,87 @@ Here, the reachable set is defined as all actors and objects that can be
 read
 \emph default
  from some starting point (including the starting point), plus the owners
- of all reachable objects.
+ of all such reachable objects.
+\end_layout
+
+\begin_layout Standard
+Reachability is related to liveness.
+ Actors and objects are live if they are reachable from some actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+, expressed as 
+\begin_inset Formula $\mathit{Reach}(\chi,\alpha,\mathtt{ref})$
+\end_inset
+
+, or if they are reachable from some as yet undelivered message 
+\begin_inset Formula $(\mathtt{n},\overline{v})$
+\end_inset
+
+.
+ Importantly, it is not necessary in 
+\emph on
+MAC
+\emph default
+ to determine global liveness in order to correctly collect actors.
+\end_layout
+
+\begin_layout Standard
+Note that for garbage collection, accounting for viewpoint adaptation is
+ not necessary.
+ Viewpoint adaptation governs how a reference capability 
+\begin_inset Formula $\kappa$
+\end_inset
+
+ sees another reference capability 
+\begin_inset Formula $\kappa'$
+\end_inset
+
+, i.e.
+ 
+\begin_inset Formula $\kappa\triangleright\kappa'$
+\end_inset
+
+, but in the context of garbage collection, 
+\begin_inset Formula $\kappa$
+\end_inset
+
+ for some path to some 
+\begin_inset Formula $\iota$
+\end_inset
+
+ must account for possible future paths to 
+\begin_inset Formula $\iota$
+\end_inset
+
+.
+ Thus, while 
+\begin_inset Formula $\mathtt{iso}\triangleright\mathtt{box}=\mathtt{tag}$
+\end_inset
+
+, during garbage collection we must account for the fact that the 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ origin may in the future be seen as some 
+\begin_inset Formula $\kappa$
+\end_inset
+
+ such that 
+\begin_inset Formula $\mathtt{iso}\le\kappa$
+\end_inset
+
+.
+ In other words, if the origin is later viewed as a 
+\begin_inset Formula $\mathtt{val}$
+\end_inset
+
+, we must not have previously garbage collected the contents of the field,
+ as now 
+\begin_inset Formula $\mathtt{val}\triangleright\mathtt{box}=\mathtt{val}$
+\end_inset
+
+, and the field's contents are now readable.
 \end_layout
 
 \begin_layout Subsection
@@ -2270,7 +2408,7 @@ Reference Count Invariant
 To ensure that no actor is prematurely collected, but all actors are eventually
  collected, a reference count invariant is maintained.
  This invariant has the form 
-\begin_inset Formula $\mathit{LRC}(\alpha)+\mathit{INC}(\alpha)+\mathit{AMC}(\alpha)=\mathit{FRC}(\alpha)+\mathit{DEC}(\alpha)$
+\begin_inset Formula $\mathit{LRC}(\alpha)+\mathit{INC}(\alpha)=\mathit{AMC}(\alpha)+\mathit{FRC}(\alpha)+\mathit{DEC}(\alpha)$
 \end_inset
 
 , all evaluated in the context of some heap 
@@ -2286,12 +2424,12 @@ LRC
 \emph on
 INC
 \emph default
-, plus the number of application messages that can reach that actor, 
+, is always equal to the number of application messages that can reach that
+ actor, 
 \emph on
 AMC
 \emph default
-, is always equal to the sum of all foreign reference counts for the actor,
- 
+, plus the sum of all foreign reference counts for the actor, 
 \emph on
 FRC
 \emph default
@@ -2366,19 +2504,19 @@ Reference count invariant components
 \begin_layout Definition
 \begin_inset Formula $\begin{array}{lcl}
 \mathit{LRC}(\alpha) & = & \chi(\alpha)\downarrow_{7}\\
-\mathit{INC}(\alpha) & = & \sum_{\forall\overline{\mu}\in Q(\chi,\alpha)}\begin{cases}
+\mathit{INC}(\alpha) & = & \sum_{\overline{\mu}\in Q(\chi,\alpha)}\begin{cases}
 \rho & \mathit{if}\,\mu_{i}=\mathit{INC}(\rho)\\
 0 & \mathit{otherwise}
 \end{cases}\\
-\mathit{AMC}(\alpha) & = & \sum_{\forall\alpha'\in\mathit{dom}(\chi).\forall\overline{\mu}\in Q(\chi,\alpha')}\begin{cases}
+\mathit{DEC}(\alpha) & = & \sum_{\overline{\mu}\in Q(\chi,\alpha)}\begin{cases}
+\rho & \mathit{if}\,\mu_{i}=\mathit{DEC}(\rho)\\
+0 & \mathit{otherwise}
+\end{cases}\\
+\mathit{AMC}(\alpha) & = & \sum_{\alpha'\in\mathit{dom}(\chi).\overline{\mu}\in Q(\chi,\alpha')}\begin{cases}
 1 & \mathit{if}\,\alpha\in\mathit{Reach}(\chi,\alpha',\mu_{i})\\
 0 & \mathit{otherwise}
 \end{cases}\\
-\mathit{FRC}(\alpha) & = & \sum_{\alpha'\in\mathit{dom}(\chi)}\chi(\alpha')\downarrow_{8}(\alpha)\\
-\mathit{DEC}(\alpha) & = & \sum_{\forall\overline{\mu}\in Q(\chi,\alpha)}\begin{cases}
-\rho & \mathit{if}\,\mu_{i}=\mathit{DEC}(\rho)\\
-0 & \mathit{otherwise}
-\end{cases}
+\mathit{FRC}(\alpha) & = & \sum_{\alpha'\in\mathit{dom}(\chi)}\chi(\alpha')\downarrow_{8}(\alpha)
 \end{array}$
 \end_inset
 
@@ -2422,16 +2560,20 @@ Additionally, each actor maintains another invariant: if an actor
 \begin_inset Formula $\alpha$
 \end_inset
 
- can reach another actor 
+ is reachable from the local state of another actor 
 \begin_inset Formula $\alpha'$
 \end_inset
 
- in its local state, then 
+, then 
 \begin_inset Formula $\alpha$
 \end_inset
 
- will hold a foreign reference count for 
+ have a local reference count of 1 or more, and 
 \begin_inset Formula $\alpha'$
+\end_inset
+
+ will hold a foreign reference count for 
+\begin_inset Formula $\alpha$
 \end_inset
 
  of 1 or more.
@@ -2442,7 +2584,7 @@ Reachability reference count invariant
 \end_layout
 
 \begin_layout Definition
-\begin_inset Formula $\alpha'\in\mathit{Reach}(\chi,\alpha,\mathtt{ref})\Rightarrow\chi(\alpha)\downarrow_{8}(\alpha')>0$
+\begin_inset Formula $\forall\alpha,\alpha'.\alpha\neq\alpha'\wedge\alpha\in\mathit{Reach}(\chi,\alpha',\mathtt{ref})\Rightarrow\chi(\alpha)\downarrow_{7}>0\wedge\chi(\alpha')\downarrow_{8}(\alpha)>0$
 \end_inset
 
 
@@ -2476,7 +2618,7 @@ When an actor
 \end_inset
 
  must change either its reference count or its external map to reflect that
- the the resulting message has an implicit reference count of 1 for 
+ the resulting message has an implicit reference count of 1 for 
 \begin_inset Formula $\alpha'$
 \end_inset
 
@@ -2636,13 +2778,19 @@ reference "fig:Auxiliary-definitions-for-actor-gc"
 \end_layout
 
 \begin_layout Definition
+\begin_inset CommandInset label
+LatexCommand label
+name "Sending-a-reference"
+
+\end_inset
+
 Sending a reference
 \end_layout
 
 \begin_layout Definition
 \begin_inset Formula $\begin{array}{lcl}
 \mathit{Send}(\chi,\alpha,\{v\}\cup vs) & = & \mathit{Send}(\mathit{Send}(\chi,\alpha,v),\alpha,vs)\\
-\mathit{Send}(\chi,\alpha,\{\}) & = & \chi\\
+\mathit{Send}(\chi,\alpha,\emptyset) & = & \chi\\
 \mathit{Send}(\chi,\alpha,\mathit{null}) & = & \chi\\
 \mathit{Send}(\chi,\alpha,\omega) & = & \chi\\
 \mathit{Send}(\chi,\alpha,\alpha') & = & \mathit{Adj}(\chi,\alpha,\alpha',-1)
@@ -2667,7 +2815,7 @@ When an actor
 \begin_inset Formula $\alpha$
 \end_inset
 
- received a reference to an actor 
+ receives a reference to an actor 
 \begin_inset Formula $\alpha'$
 \end_inset
 
@@ -2749,13 +2897,19 @@ the message's implicit reference count to
 \end_layout
 
 \begin_layout Definition
+\begin_inset CommandInset label
+LatexCommand label
+name "Receiving-a-reference"
+
+\end_inset
+
 Receiving a reference
 \end_layout
 
 \begin_layout Definition
 \begin_inset Formula $\begin{array}{lcl}
 \mathit{Recv}(\chi,\alpha,\{v\}\cup vs) & = & \mathit{Recv}(\mathit{Recv}(\chi,\alpha,v),\alpha,vs)\\
-\mathit{Recv}(\chi,\alpha,\{\}) & = & \chi\\
+\mathit{Recv}(\chi,\alpha,\emptyset) & = & \chi\\
 \mathit{Recv}(\chi,\alpha,\mathit{null}) & = & \chi\\
 \mathit{Recv}(\chi,\alpha,\omega) & = & \chi\\
 \mathit{Recv}(\chi,\alpha,\alpha') & = & \mathit{Adj}(\chi,\alpha,\alpha',1)
@@ -2802,7 +2956,7 @@ Actor Local Execution
 The extended small-step operational semantics in figure 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "fig:actor-execution"
+reference "fig:opsem-for-actor-GC"
 
 \end_inset
 
@@ -2821,7 +2975,11 @@ reference "fig:Local-execution"
 \begin_inset Formula $n$
 \end_inset
 
- is used to represent an arbitrary integer.
+ is used to represent an arbitrary integer such than 
+\begin_inset Formula $n>0$
+\end_inset
+
+.
  This is used when an actor is created with some initial reference count,
  or when an actor creates additional reference count for another actor by
  sending an 
@@ -2931,7 +3089,7 @@ status open
 \begin_layout Plain Layout
 \begin_inset CommandInset label
 LatexCommand label
-name "fig:actor-execution"
+name "fig:opsem-for-actor-GC"
 
 \end_inset
 
@@ -2962,20 +3120,19 @@ status open
  &  & \quad\mathcal{M}(\mathtt{A},\mathtt{k})=\mathtt{(\_,\overline{x}:\overline{S\,\kappa},\_,\_)}\wedge\\
  &  & \quad\chi'=\mathit{Send}(\chi,\alpha,\mathit{Reach}(\chi,\overline{v},\overline{\kappa}))\wedge\\
  &  & \quad\chi''=\chi'[\alpha\mapsto\mathit{Inc}(\chi,\alpha,\alpha',n),\\
- &  & \quad\quad\alpha'\mapsto(\mathtt{A},\mathtt{{\cal F}s(\mathtt{A})}\mapsto\mathit{null},(\mathtt{k},\overline{v}),\alpha,\varepsilon,[],n,[],\mathit{false})]\\
+ &  & \quad\quad\alpha'\mapsto(\mathtt{A},\mathtt{{\cal F}s(\mathtt{A})}\mapsto\mathit{null},(\mathtt{k},\overline{v}),\alpha,\varepsilon,\emptyset,n,\emptyset,\mathit{false})]\\
 \mathit{Adj}(\chi,\alpha,\alpha',n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
  &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
- &  & \quad\chi(\alpha)\downarrow_{8}[\alpha'\mapsto(\chi(\alpha)\downarrow_{8}(\alpha')+n)],\\
- &  & \quad\chi(\alpha)\downarrow_{9})]\,\mathit{if}\,\alpha\neq\alpha'\wedge\chi(\alpha)\downarrow_{8}(\alpha')>-n\\
-\mathit{Adj}(\chi,\alpha,\alpha',n) &  & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
- &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7}-n,\\
- &  & \quad\chi(\alpha)\downarrow_{8},\chi(\alpha)\downarrow_{9})]\,\mathit{if}\,\alpha=\alpha'\\
+ &  & \quad\chi(\alpha)\downarrow_{8}[\alpha'\mapsto(\chi(\alpha)\downarrow_{8}(\alpha')+n)],\chi(\alpha)\downarrow_{9})]\\
+ &  & \quad\mathit{if}\,\alpha\neq\alpha'\wedge\chi(\alpha)\downarrow_{8}(\alpha')>-n\\
+\mathit{Adj}(\chi,\alpha,\alpha',n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
+ &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7}-n,\chi(\alpha)\downarrow_{8},\chi(\alpha)\downarrow_{9})]\\
+ &  & \quad\mathit{if}\,\alpha=\alpha'\\
 \mathit{Rel}(\chi,\alpha,\iota) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
  &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
  &  & \quad\chi(\alpha)\downarrow_{8}[\iota\mapsto0],\chi(\alpha)\downarrow_{9})]\\
 \chi[\alpha\mapsto\beta] & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
- &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
- &  & \quad\chi(\alpha)\downarrow_{8},\beta)]
+ &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\chi(\alpha)\downarrow_{8},\beta)]
 \end{array}$
 \end_inset
 
@@ -3323,7 +3480,7 @@ textwidth][c]{
 \end{array}}{\chi,\alpha_{CD},\varepsilon\rightsquigarrow\chi[\alpha_{CD}\mapsto\overline{\mu}],\alpha_{CD},\varepsilon}\;\textrm{\textsc{NoAck}}\\
 \\
 \dfrac{\begin{array}{c}
-\mathit{Closed}(\chi,\alpha_{CD}\alpha s)\quad\tau=\chi(\alpha,\mathtt{f_{3}})\\
+\mathit{Closed}(\chi,\alpha_{CD},\alpha s)\quad\tau=\chi(\alpha_{CD},\mathtt{f_{3}})\\
 \chi'=\chi[\alpha_{CD},\tau,\alpha s\mapsto\mathit{false}]\\
 \chi''=\chi'[\alpha_{CD},\mathtt{f_{3}}\mapsto\tau+1]\\
 \chi'''=\chi''[\alpha_{CD},\alpha s++\mathit{CNF}(\tau)]
@@ -3389,9 +3546,9 @@ status open
 \chi[\alpha_{CD},\tau,\{\alpha\}\cup\alpha s\mapsto\beta] & = & \chi[\alpha_{CD},\mathtt{f_{2}}\mapsto\chi(\alpha_{CD},\mathtt{f_{2}})(\tau)[\alpha\mapsto\beta]][\alpha,\alpha s\mapsto\beta]\\
 \chi[\alpha_{CD},\{\alpha\}\cup\alpha s++\mu] & = & \chi[\alpha_{CD},\alpha++\mu][\alpha_{CD},\alpha s++\mu]\\
 \\
-\mathit{Rel}(\chi,\{\alpha\}\cup\alpha s) & = & \mathit{Rel}(\chi,\alpha)\\
+\mathit{Rel}(\chi,\{\alpha\}\cup\alpha s) & = & \mathit{Rel}(\mathit{Rel}(\chi,\alpha),\alpha s)\\
 \mathit{Rel}(\chi,\alpha) & = & \mathit{Rel}(\chi,\alpha,\mathit{Reach}(\chi,\alpha,\mathtt{ref}))\\
-\mathit{Rel}(\chi,\alpha,\{\iota\}\cup\iota s) & = & \mathit{Rel}(\chi,\alpha,\iota)
+\mathit{Rel}(\chi,\alpha,\{\iota\}\cup\iota s) & = & \mathit{Rel}(\mathit{Rel}(\chi,\alpha,\iota),\iota s)
 \end{array}$
 \end_inset
 
@@ -3595,7 +3752,7 @@ quiescence
  must be executing in order to send a message to itself.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Section
 Robustness
 \end_layout
 
@@ -4382,6 +4539,86 @@ To reduce the risk of node failure resulting in a set of actors that cannot
  sending a remote reference to a remote node it would be possible for the
  decrement message not to arrive due to network failure, even if the remote
  node was able to receive the remote reference.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Using-MAC-in"
+
+\end_inset
+
+Using 
+\emph on
+MAC
+\emph default
+ in Other Actor-Model Languages
+\end_layout
+
+\begin_layout Standard
+The core of 
+\emph on
+MAC
+\emph default
+ is that an actor is dead when it has no work to perform and will never
+ again have work to perform, and only then can an actor be safely terminated.
+ To determine if an actor has or will ever have work, 
+\emph on
+MAC
+\emph default
+ relies on message queues being the only mechanism by which an actor receives
+ work.
+\end_layout
+
+\begin_layout Standard
+As a result, while 
+\emph on
+MAC
+\emph default
+ can be used in any actor-model language, it will only provide safe garbage
+ collection if the language does not allow actors to receive work by other
+ means.
+ This is not universally true for actor-model languages.
+ Erlang and Elixir, for example, both make this guarantee, but Akka (being
+ a library on top of Scala and Java) does not.
+\end_layout
+
+\begin_layout Standard
+To use 
+\emph on
+MAC
+\emph default
+ for another language, it may be necessary to modify the operational semantics
+ to accommodate non-atomic behaviours.
+ For example, 
+\noun on
+Behave
+\noun default
+ only accepts application-level messages when an actors stack is empty,
+ but Erlang allows messages to be received using an expression in a function.
+\end_layout
+
+\begin_layout Standard
+In addition, the semantics would need to be modified to account for pattern
+ matching on an actor's queue.
+ Such pattern matching allows causal ordering to be broken.
+ To account for this, 
+\emph on
+MAC
+\emph default
+ messages on the queue would have to be handled in order, and before application
+ level messages that appear after them.
+\end_layout
+
+\begin_layout Standard
+The final wrinkle is the notion of a blocked actor in the presence of non-atomic
+ behaviours.
+ Instead of blocking when a message queue is empty, an actor would only
+ block when the message queue is empty 
+\emph on
+and
+\emph default
+ the actor is performing a receive without a timeout.
 \end_layout
 
 \end_body
