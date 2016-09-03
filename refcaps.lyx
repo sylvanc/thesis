@@ -420,8 +420,6 @@ Deny Properties
 \end_layout
 
 \begin_layout Standard
-
-\size footnotesize
 \begin_inset Float table
 wide true
 sideways false
@@ -447,8 +445,6 @@ textwidth][c]{
 
 \begin_layout Plain Layout
 \align center
-
-\size footnotesize
 \begin_inset Tabular
 <lyxtabular version="3" rows="5" columns="4">
 <features tabularvalignment="middle">
@@ -470,8 +466,6 @@ textwidth][c]{
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 Deny global read/write aliases
 \end_layout
 
@@ -481,8 +475,6 @@ Deny global read/write aliases
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 Deny global write aliases
 \end_layout
 
@@ -492,8 +484,6 @@ Deny global write aliases
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 Allow all global aliases
 \end_layout
 
@@ -505,8 +495,6 @@ Allow all global aliases
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 Deny local read/write aliases
 \end_layout
 
@@ -517,7 +505,6 @@ Deny local read/write aliases
 
 \begin_layout Plain Layout
 
-\size footnotesize
 \emph on
 \begin_inset ERT
 status open
@@ -564,8 +551,6 @@ Isolated (
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 Deny local write aliases
 \end_layout
 
@@ -576,7 +561,6 @@ Deny local write aliases
 
 \begin_layout Plain Layout
 
-\size footnotesize
 \emph on
 \begin_inset ERT
 status open
@@ -606,7 +590,6 @@ Transition (
 
 \begin_layout Plain Layout
 
-\size footnotesize
 \emph on
 \begin_inset ERT
 status open
@@ -644,8 +627,6 @@ Value (
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 Allow all local aliases
 \end_layout
 
@@ -656,7 +637,6 @@ Allow all local aliases
 
 \begin_layout Plain Layout
 
-\size footnotesize
 \emph on
 \begin_inset ERT
 status open
@@ -686,7 +666,6 @@ Reference (
 
 \begin_layout Plain Layout
 
-\size footnotesize
 \emph on
 \begin_inset ERT
 status open
@@ -716,7 +695,6 @@ Box (
 
 \begin_layout Plain Layout
 
-\size footnotesize
 \emph on
 \begin_inset ERT
 status open
@@ -755,7 +733,6 @@ Tag (
 
 \begin_layout Plain Layout
 
-\size footnotesize
 \emph on
 \begin_inset ERT
 status open
@@ -781,7 +758,6 @@ cellcolor{writeable}
 
 \begin_layout Plain Layout
 
-\size footnotesize
 \emph on
 \begin_inset ERT
 status open
@@ -807,7 +783,6 @@ cellcolor{readable}
 
 \begin_layout Plain Layout
 
-\size footnotesize
 \emph on
 \begin_inset ERT
 status open
@@ -851,8 +826,6 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
@@ -1850,8 +1823,6 @@ Type System
 \end_layout
 
 \begin_layout Standard
-
-\size footnotesize
 \begin_inset Float figure
 wide false
 sideways false
@@ -1925,8 +1896,6 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
@@ -1950,8 +1919,6 @@ Expression typing
 \end_layout
 
 \begin_layout Standard
-
-\size footnotesize
 \begin_inset Float figure
 wide false
 sideways false
@@ -1973,8 +1940,6 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
@@ -2304,8 +2269,6 @@ Viewpoint Adaptation
 \end_layout
 
 \begin_layout Standard
-
-\size footnotesize
 \begin_inset Float table
 wide false
 sideways false
@@ -2878,8 +2841,6 @@ tag
 \end_layout
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
@@ -2903,8 +2864,6 @@ Viewpoint adaptation.
 \end_layout
 
 \begin_layout Standard
-
-\size footnotesize
 \begin_inset Float table
 wide false
 sideways false
@@ -3498,8 +3457,6 @@ tag
 \end_layout
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
@@ -4225,8 +4182,6 @@ reference "tab:Compatible-capabilities-2"
 \end_layout
 
 \begin_layout Standard
-
-\size footnotesize
 \begin_inset Float table
 wide false
 sideways false
@@ -4234,8 +4189,6 @@ status open
 
 \begin_layout Plain Layout
 \align center
-
-\size footnotesize
 \begin_inset Tabular
 <lyxtabular version="3" rows="8" columns="7">
 <features booktabs="true" tabularvalignment="middle">
@@ -4251,8 +4204,6 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\kappa\sim\kappa'$
 \end_inset
 
@@ -4265,8 +4216,6 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\kappa'$
 \end_inset
 
@@ -4326,8 +4275,6 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\kappa$
 \end_inset
 
@@ -4340,8 +4287,6 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 iso
 \end_layout
 
@@ -4351,8 +4296,6 @@ iso
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 trn
 \end_layout
 
@@ -4362,8 +4305,6 @@ trn
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 ref
 \end_layout
 
@@ -4373,8 +4314,6 @@ ref
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 val
 \end_layout
 
@@ -4384,8 +4323,6 @@ val
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 box
 \end_layout
 
@@ -4395,8 +4332,6 @@ box
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 tag
 \end_layout
 
@@ -4408,8 +4343,6 @@ tag
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 iso
 \end_layout
 
@@ -4464,8 +4397,6 @@ iso
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell,g$
 \end_inset
 
@@ -4480,8 +4411,6 @@ iso
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 trn
 \end_layout
 
@@ -4527,8 +4456,6 @@ trn
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell$
 \end_inset
 
@@ -4541,8 +4468,6 @@ trn
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell,g$
 \end_inset
 
@@ -4557,8 +4482,6 @@ trn
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 ref
 \end_layout
 
@@ -4586,8 +4509,6 @@ ref
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell$
 \end_inset
 
@@ -4609,8 +4530,6 @@ ref
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell$
 \end_inset
 
@@ -4623,8 +4542,6 @@ ref
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell,g$
 \end_inset
 
@@ -4639,8 +4556,6 @@ ref
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 val
 \end_layout
 
@@ -4677,8 +4592,6 @@ val
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell,g$
 \end_inset
 
@@ -4691,8 +4604,6 @@ val
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell,g$
 \end_inset
 
@@ -4705,8 +4616,6 @@ val
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell,g$
 \end_inset
 
@@ -4721,8 +4630,6 @@ val
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 box
 \end_layout
 
@@ -4741,8 +4648,6 @@ box
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell$
 \end_inset
 
@@ -4755,8 +4660,6 @@ box
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell$
 \end_inset
 
@@ -4769,8 +4672,6 @@ box
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell,g$
 \end_inset
 
@@ -4783,8 +4684,6 @@ box
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell,g$
 \end_inset
 
@@ -4797,8 +4696,6 @@ box
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell,g$
 \end_inset
 
@@ -4813,8 +4710,6 @@ box
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 tag
 \end_layout
 
@@ -4824,8 +4719,6 @@ tag
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell,g$
 \end_inset
 
@@ -4838,8 +4731,6 @@ tag
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell,g$
 \end_inset
 
@@ -4852,8 +4743,6 @@ tag
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell,g$
 \end_inset
 
@@ -4866,8 +4755,6 @@ tag
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell,g$
 \end_inset
 
@@ -4880,8 +4767,6 @@ tag
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell,g$
 \end_inset
 
@@ -4894,8 +4779,6 @@ tag
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Formula $\ell,g$
 \end_inset
 
@@ -4913,8 +4796,6 @@ tag
 \end_layout
 
 \begin_layout Plain Layout
-
-\size footnotesize
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
@@ -6850,8 +6731,3067 @@ logically atomic
 , a stronger guarantee than data-race freedom.
 \end_layout
 
+\begin_layout Section
+Soundness Argument
+\end_layout
+
+\begin_layout Standard
+The property central to any soundness argument is the preservation of the
+ well-formed visibility property, 
+\begin_inset Formula $\mathit{WFV}(\Delta,\chi)$
+\end_inset
+
+, and the well-formed temporaries property 
+\begin_inset Formula $\mathit{WFT}(\Delta,\chi,\alpha,i,\mathtt{e})$
+\end_inset
+
+ for all expressions and continuations.
+ To study the former, we need properties about the creation of new paths,
+ while for the latter, we need to control the types we assign to the temporaries
+ in each step.
+\end_layout
+
+\begin_layout Lemma
+Uniqueness of contexts.
+\end_layout
+
+\begin_layout Lemma
+For any expressions 
+\begin_inset Formula $\mathtt{e_{1}}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathtt{e_{2}}$
+\end_inset
+
+ and contexts 
+\begin_inset Formula $\mathtt{E_{1}[\cdot]}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathtt{E_{2}[\cdot]}$
+\end_inset
+
+, if 
+\begin_inset Formula $\mathtt{E_{1}[e_{2}]\equiv E_{2}[e_{2}]}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{e_{1}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{e_{2}}$
+\end_inset
+
+ are redexes then 
+\begin_inset Formula $\mathtt{E_{1}[\cdot]\equiv E_{2}[\cdot]}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{e_{1}\equiv e_{2}}$
+\end_inset
+
+.
+\end_layout
+
+\begin_deeper
+\begin_layout Lemma
+\begin_inset CommandInset label
+LatexCommand label
+name "lem:Context-lemma."
+
+\end_inset
+
+Context lemma.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Gamma\vdash\mathtt{E[e]:ET}\Rightarrow\exists\mathtt{ET'}.\Gamma,\mathtt{y}\mapsto\mathtt{ET'}\vdash\mathtt{E[y]:ET}\wedge\Gamma\vdash\mathtt{e:ET'}\wedge\mathtt{y}\notin dom(\Gamma)$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathtt{y}\notin\mathit{dom}(\Gamma)\wedge\Gamma,\mathtt{y}\mapsto\mathtt{ET'}\vdash\mathtt{E[y]:ET}\wedge\Gamma\vdash\mathtt{e:ET'}\Rightarrow\Gamma\vdash\mathtt{E[e]:ET}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Lemma
+\begin_inset CommandInset label
+LatexCommand label
+name "lem:pco"
+
+\end_inset
+
+Properties of capability operators.
+\end_layout
+
+\begin_layout Lemma
+\begin_inset Formula $\forall\kappa,\kappa_{1},\kappa_{2}:$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\kappa_{1}\sim_{g}\kappa_{2}$
+\end_inset
+
+, then 
+\begin_inset Formula $\kappa_{1}\sim_{l}\kappa_{2}.$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\kappa_{1}\le\kappa_{2}$
+\end_inset
+
+, then
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\kappa_{1}\sim_{l}\kappa\Rightarrow\kappa_{2}\sim_{l}\kappa$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa_{1}\sim_{g}\kappa\Rightarrow\kappa_{2}\sim_{g}\kappa$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\kappa_{1}\sim_{l}\kappa_{2}$
+\end_inset
+
+, and both 
+\begin_inset Formula $\kappa_{1}\triangleright\kappa$
+\end_inset
+
+ and 
+\begin_inset Formula $\kappa_{2}\triangleright\kappa$
+\end_inset
+
+ are defined, then 
+\begin_inset Formula $\kappa_{1}\triangleright\kappa\sim_{l}\kappa_{2}\triangleright\kappa$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\kappa_{1}\sim_{g}\kappa_{2}$
+\end_inset
+
+, and both 
+\begin_inset Formula $\kappa_{1}\triangleright\kappa$
+\end_inset
+
+ and 
+\begin_inset Formula $\kappa_{2}\triangleright\kappa$
+\end_inset
+
+ are defined, then 
+\begin_inset Formula $\kappa_{1}\triangleright\kappa\sim_{g}\kappa_{2}\triangleright\kappa$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa_{2}\le\kappa_{1}\triangleright\kappa_{2}$
+\end_inset
+
+ or 
+\begin_inset Formula $\kappa_{1}=\mathtt{val}$
+\end_inset
+
+ or 
+\begin_inset Formula $\kappa_{1}\triangleright\kappa_{2}=\bot$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathcal{A}(\kappa_{1})\le\kappa_{2}$
+\end_inset
+
+ then
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\kappa_{1}\sim_{l}\kappa\Rightarrow\kappa_{2}\sim_{l}\kappa$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa_{1}\sim_{g}\kappa\Rightarrow\kappa_{1}\sim_{g}\kappa$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathcal{A}(\kappa_{1}\triangleright\kappa)\le\kappa_{2}\triangleright\kappa$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathcal{A}(\kappa_{1})\le\kappa_{2}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{A}(\kappa_{2})\le\kappa_{4}$
+\end_inset
+
+ then
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\kappa_{1}\sim_{l}\kappa_{2}\Rightarrow\kappa_{3}\sim_{l}\kappa_{4}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa_{1}\sim_{g}\kappa_{2}\Rightarrow\kappa_{3}\sim_{g}\kappa_{4}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Proof
+By case analysis on 
+\begin_inset Formula $\kappa_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\kappa_{2}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+On the other hand, 
+\begin_inset Formula $\kappa_{1}\le\kappa_{2}$
+\end_inset
+
+does not imply that 
+\begin_inset Formula $\kappa\triangleright\kappa_{2}\le\kappa\triangleright\kappa_{2}$
+\end_inset
+
+.
+ For example, 
+\begin_inset Formula $\mathtt{iso}\le\mathtt{trn}$
+\end_inset
+
+, but 
+\begin_inset Formula $\mathtt{box}\triangleright\mathtt{iso}=\mathtt{tag}\nleq\mathtt{box}\triangleright\mathtt{trn}=\mathtt{box}$
+\end_inset
+
+.
+ Similarly, 
+\begin_inset Formula $\kappa_{1}\le\kappa_{2}$
+\end_inset
+
+does not imply that 
+\begin_inset Formula $\kappa_{1}\triangleright\kappa\le\kappa_{2}\triangleright\kappa$
+\end_inset
+
+; take 
+\begin_inset Formula $\mathtt{iso}\triangleright\mathtt{trn}=\mathtt{tag}\nleq\mathtt{trn}\triangleright\mathtt{trn}=\mathtt{trn}.$
+\end_inset
+
+ Finally, the 
+\begin_inset Formula $\triangleright$
+\end_inset
+
+ operator is not associative, i.e.
+ 
+\begin_inset Formula $(\kappa_{1}\triangleright\kappa_{2})\triangleright\kappa_{3}\ne\kappa_{1}\triangleright(\kappa_{2}\triangleright\kappa_{3})$
+\end_inset
+
+.
+ For example, 
+\begin_inset Formula $(\mathtt{iso}\triangleright\mathtt{trn})\triangleright\mathtt{val}=\bot\ne\mathtt{iso}\triangleright(\mathtt{trn}\triangleright\mathtt{val})=\mathtt{val}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Lemma
+Properties of deep viewpoint adaptation.
+\end_layout
+
+\begin_layout Lemma
+\begin_inset Formula $\forall\kappa,\kappa_{1}...,\kappa_{n}$
+\end_inset
+
+:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\kappa_{1}\le\kappa_{2}$
+\end_inset
+
+then 
+\begin_inset Formula $\kappa_{1}\blacktriangleright\kappa\le\kappa_{2}\triangleright\kappa$
+\end_inset
+
+, or 
+\begin_inset Formula $\kappa_{2}=\mathtt{val}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa_{1}\blacktriangleright\kappa_{2}=\mathtt{val}$
+\end_inset
+
+ iff 
+\begin_inset Formula $\kappa_{1}\triangleright\kappa_{2}=\mathtt{val}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa_{1}\blacktriangleright\kappa_{2}\le\kappa_{1}\triangleright\kappa_{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $(...(\kappa_{1}\blacktriangleright\kappa_{2})\blacktriangleright\kappa_{3}...)\blacktriangleright\kappa_{n}\le(...(\kappa_{1}\triangleright\kappa_{2})\triangleright\kappa_{3}...)\triangleright\kappa_{n}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $(...(\kappa_{1}\blacktriangleright\kappa_{2})\blacktriangleright\kappa_{3}...)\blacktriangleright\kappa_{n}=\mathtt{val}$
+\end_inset
+
+ iff 
+\begin_inset Formula $(...(\kappa_{1}\triangleright\kappa_{2})\triangleright\kappa_{3}...)\triangleright\kappa_{n}=\mathtt{val}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\kappa_{1}\sim_{l}\kappa_{2}$
+\end_inset
+
+and 
+\begin_inset Formula $\kappa_{1},\kappa_{2}\ne\mathtt{tag}$
+\end_inset
+
+, then 
+\begin_inset Formula $\kappa_{1}\blacktriangleright\kappa\sim_{l}\kappa_{2}\blacktriangleright\kappa$
+\end_inset
+
+ or 
+\begin_inset Formula $\kappa_{1}=\kappa_{2}=\mathtt{ref}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\kappa_{1}\sim_{g}\kappa_{2}$
+\end_inset
+
+and 
+\begin_inset Formula $\kappa_{1},\kappa_{2}\ne\mathtt{tag}$
+\end_inset
+
+ then 
+\begin_inset Formula $\kappa_{1}\blacktriangleright\kappa\sim_{g}\kappa_{2}\blacktriangleright\kappa$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathcal{A}(\kappa_{1})\le\kappa_{2}$
+\end_inset
+
+ and 
+\begin_inset Formula $\kappa_{1}\ne\kappa_{2}\ne\mathtt{tag}$
+\end_inset
+
+ then 
+\begin_inset Formula $\mathcal{A}(\kappa_{1}\blacktriangleright\kappa)\le\kappa_{2}\blacktriangleright\kappa$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Lemma
+\begin_inset CommandInset label
+LatexCommand label
+name "lem:CPP"
+
+\end_inset
+
+Capabilities are preserved along paths.
+\end_layout
+
+\begin_layout Lemma
+If 
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota:\kappa,p$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota:\kappa^{\prime},p$
+\end_inset
+
+ then 
+\begin_inset Formula $\kappa=\kappa^{\prime}$
+\end_inset
+
+.
+\end_layout
+
+\end_deeper
+\begin_layout Proof
+By induction over the structure of 
+\begin_inset Formula $p$
+\end_inset
+
+.
+\end_layout
+
 \begin_layout Subsection
-TODO: Lemmas from OOPSLA15
+New paths
+\end_layout
+
+\begin_layout Lemma
+\begin_inset CommandInset label
+LatexCommand label
+name "lem:Simplification."
+
+\end_inset
+
+Simplification.
+\end_layout
+
+\begin_layout Lemma
+If
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\mathcal{A}(\kappa_{1}\,\phi)\le\kappa_{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa_{2}\le\kappa_{3}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa_{4}\triangleleft\kappa_{2}$
+\end_inset
+
+ or 
+\begin_inset Formula $\kappa_{4}\triangleleft\kappa_{3}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Lemma
+Then
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+[4.]
+\backslash
+setcounter{enumi}{4}
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $\mathcal{A}(\kappa_{1}\,\phi)\le\kappa_{3}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa_{4}\triangleleft\mathcal{A}(\kappa_{1}\,\phi)$
+\end_inset
+
+ or 
+\begin_inset Formula $\kappa_{4}\triangleleft\kappa_{3}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Proof
+(4) follows from (1) and (2).
+ For (5), if 
+\begin_inset Formula $\kappa_{4}\triangleleft\kappa_{3}$
+\end_inset
+
+, done.
+ Otherwise, 
+\begin_inset Formula $\kappa_{2}'=\mathcal{A}(\kappa_{1}\,\phi)$
+\end_inset
+
+.
+ If 
+\begin_inset Formula $\kappa_{4}=\mathtt{ref}$
+\end_inset
+
+, then for all 
+\begin_inset Formula $\kappa_{1}\,\phi$
+\end_inset
+
+, 
+\begin_inset Formula $\kappa_{4}\triangleleft\kappa_{2}'$
+\end_inset
+
+.
+ If 
+\begin_inset Formula $\kappa_{4}=\mathtt{trn}$
+\end_inset
+
+, then 
+\begin_inset Formula $\kappa_{2}\in\{\mathtt{iso,trn,val,tag}\}\not\ni\kappa_{3}$
+\end_inset
+
+.
+ If 
+\begin_inset Formula $\kappa_{2}'\in\{\mathtt{iso,trn,val}\}$
+\end_inset
+
+ then 
+\begin_inset Formula $\kappa_{1}\,\phi\in\{\mathtt{iso\circ,trn\circ,val}\}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{trn}\triangleleft\kappa_{2}'$
+\end_inset
+
+.
+ If 
+\begin_inset Formula $\kappa_{2}'=\mathtt{tag}$
+\end_inset
+
+ then 
+\begin_inset Formula $\kappa_{3}=\mathtt{tag}$
+\end_inset
+
+, which contradicts 
+\begin_inset Formula $\kappa_{4}\not\triangleleft\kappa_{3}$
+\end_inset
+
+.
+ If 
+\begin_inset Formula $\kappa_{4}=\mathtt{iso}$
+\end_inset
+
+, the same holds, except 
+\begin_inset Formula $\kappa_{2}$
+\end_inset
+
+ cannot be 
+\begin_inset Formula $\mathtt{trn}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Definition
+Unaliased types can be treated as base types.
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $\mathtt{ET'}\sqsubseteq\mathtt{ET}$
+\end_inset
+
+ iff 
+\begin_inset Formula $\mathtt{ET'}=\mathtt{ET}$
+\end_inset
+
+, or 
+\begin_inset Formula $\mathtt{ET'}=\mathtt{S}\,\kappa\circ$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{ET}=\mathtt{S}\,\kappa$
+\end_inset
+
+
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Definition
+\begin_inset CommandInset label
+LatexCommand label
+name "def:An-identifier-"
+
+\end_inset
+
+An identifier 
+\begin_inset Formula $\mathtt{z}$
+\end_inset
+
+ is 
+\emph on
+aliased
+\emph default
+ in a runtime expression 
+\begin_inset Formula $\mathtt{e}$
+\end_inset
+
+ iff 
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $\exists\mathtt{E[\cdot]},\mathtt{e'},\mathtt{f},\mathtt{\overline{y}},\mathtt{\overline{e}},\mathtt{n},\mathtt{S}$
+\end_inset
+
+ such that
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathtt{e\equiv E[x=z]}$
+\end_inset
+
+ or
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathtt{e\equiv E[e'.f=z]}$
+\end_inset
+
+ or
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathtt{e\equiv E[e'.n(\overline{y},z,\overline{e})]}$
+\end_inset
+
+ or
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathtt{e\equiv E[z.n(\overline{y})]}$
+\end_inset
+
+ or
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathtt{e\equiv E[S.k(\overline{y},z,\overline{e})]}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Lemma
+\begin_inset CommandInset label
+LatexCommand label
+name "lem:Inversion."
+
+\end_inset
+
+Inversion.
+\end_layout
+
+\begin_layout Lemma
+If 
+\begin_inset Formula $\Gamma\vdash\mathtt{e:ET}$
+\end_inset
+
+ then
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathtt{e\equiv x}$
+\end_inset
+
+ then 
+\begin_inset Formula $\Gamma(\mathtt{x})\sqsubseteq\mathtt{ET}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\family typewriter
+
+\begin_inset Formula $\mathtt{e\equiv e_{1}.f}$
+\end_inset
+
+
+\family default
+ then 
+\begin_inset Formula $\exists\mathtt{S},\mathtt{S'},\kappa,\kappa'$
+\end_inset
+
+ such that 
+\begin_inset Formula $\Gamma\vdash\mathtt{e_{1}:S\,\kappa}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{F}(\mathtt{S,f})=\mathtt{S'\,\kappa'}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{ET=S'\,\kappa\triangleright\kappa'}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathtt{e\equiv null}$
+\end_inset
+
+ then 
+\begin_inset Formula $\exists\mathtt{S}$
+\end_inset
+
+ such that 
+\begin_inset Formula $\mathtt{S\,iso\circ\sqsubseteq ET}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathtt{e\equiv e_{1};e_{2}}$
+\end_inset
+
+ then 
+\begin_inset Formula $\exists\mathtt{ET_{1}}$
+\end_inset
+
+ such that 
+\begin_inset Formula $\Gamma\vdash\mathtt{e_{1}:ET_{1}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Gamma\vdash\mathtt{e_{2}:ET}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathtt{e\equiv x=e_{1}}$
+\end_inset
+
+ then 
+\begin_inset Formula $\exists\mathtt{S,\kappa,\kappa',\phi}$
+\end_inset
+
+ such that 
+\begin_inset Formula $\Gamma(\mathtt{x})=\mathtt{S\,\kappa}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Gamma\vdash\mathtt{e_{1}:S\,\kappa'\,\phi}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{A}(\kappa'\,\phi)\le\kappa$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{U}(\mathtt{S\,\kappa})\sqsubseteq\mathtt{ET}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathtt{e\equiv e_{1}.f=e_{2}}$
+\end_inset
+
+ then 
+\begin_inset Formula $\exists\mathtt{S_{1},S_{2},\kappa_{1},\kappa_{2},\phi}$
+\end_inset
+
+ such that
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\Gamma\vdash\mathtt{e_{1}:S_{1}\,\kappa_{1}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Gamma\vdash\mathtt{e_{2}:S_{2}\,\kappa_{2}\,\phi}$
+\end_inset
+
+ and
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\mathcal{F}(\mathtt{S_{1},f})=\mathtt{S_{2}\,\kappa_{3}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{A}(\kappa_{2}\,\phi)\le\kappa_{3}$
+\end_inset
+
+,
+\begin_inset Newline newline
+\end_inset
+
+either 
+\begin_inset Formula $\kappa_{1}\triangleleft\kappa_{3}$
+\end_inset
+
+ or 
+\begin_inset Formula $\kappa_{1}\triangleleft\mathcal{A}(\kappa_{2}\,\phi)$
+\end_inset
+
+,
+\begin_inset Newline newline
+\end_inset
+
+and 
+\begin_inset Formula $\mathcal{U}(\mathtt{S_{2}\,\kappa_{1}\triangleright\kappa_{3}})\sqsubseteq\mathtt{ET}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathtt{e\equiv e_{0}.m(\overline{e})}$
+\end_inset
+
+ then 
+\begin_inset Formula $\exists\mathtt{S_{0},\kappa_{0},\kappa_{0}',\phi,\overline{T},\overline{ET},ET'}$
+\end_inset
+
+ such that
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\Gamma\vdash\mathtt{e_{0}:S_{0}\,\kappa_{0}\,\phi}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{A}(\kappa_{0}\,\phi)\le\kappa_{0}'$
+\end_inset
+
+ and
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\mathcal{M}(\mathtt{S_{0},m})=(\mathtt{S_{0}\,\kappa_{0}',\overline{x:T},\_,ET'})$
+\end_inset
+
+ and
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\Gamma\vdash\mathtt{e_{i}:ET_{i}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{A}(\mathtt{ET_{i}})\le\mathtt{T_{i}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{ET'\sqsubseteq ET}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathtt{e\equiv e_{0}.b(\overline{e})}$
+\end_inset
+
+ then 
+\begin_inset Formula $\exists\mathtt{A,\kappa_{0},\kappa_{0}',\phi,\overline{T}}$
+\end_inset
+
+ such that
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\Gamma\vdash\mathtt{e_{0}:A\,\kappa_{0}\,\phi}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{A}(\kappa_{0}\,\phi)\le\kappa_{0}'$
+\end_inset
+
+ and
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\mathcal{M}(\mathtt{A,b})=(\mathtt{A\,ref,\overline{x:T},\_,A\,tag})$
+\end_inset
+
+ and
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\mathit{sendable}(\mathtt{T_{i}})$
+\end_inset
+
+ and 
+\begin_inset Formula $\Gamma\vdash\mathtt{e_{i}:ET_{i}}$
+\end_inset
+
+and 
+\begin_inset Formula $\mathcal{A}(\mathtt{ET_{i}})\le\mathtt{T_{i}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{A\,tag=ET}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathtt{e\equiv C.k(\overline{e})}$
+\end_inset
+
+then 
+\begin_inset Formula $\exists\mathtt{\overline{ET},\overline{T}}$
+\end_inset
+
+ such that
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\mathcal{M}(\mathtt{C,k})=(\mathtt{C\,ref,\overline{x:T},\_,C\,ref\circ})$
+\end_inset
+
+ and
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\Gamma\vdash\mathtt{e_{i}:ET_{i}}$
+\end_inset
+
+and 
+\begin_inset Formula $\mathcal{A}(\mathtt{ET_{i}})\le\mathtt{T_{i}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{C\,ref\circ\sqsubseteq ET}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathtt{e\equiv A.k(\overline{e})}$
+\end_inset
+
+then 
+\begin_inset Formula $\exists\mathtt{\overline{ET},\overline{T}}$
+\end_inset
+
+ such that
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\mathcal{M}(\mathtt{A,k})=(\mathtt{A\,ref,\overline{x:T},\_,A\,tag})$
+\end_inset
+
+ and
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\mathit{sendable}(\mathtt{T_{i}})$
+\end_inset
+
+ and 
+\begin_inset Formula $\Gamma\vdash\mathtt{e_{i}:ET_{i}}$
+\end_inset
+
+and 
+\begin_inset Formula $\mathcal{A}(\mathtt{ET_{i}})\le\mathtt{T_{i}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{A\,tag=ET}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathtt{e\equiv recover\,e'}$
+\end_inset
+
+ then 
+\begin_inset Formula $\exists\mathtt{ET'}$
+\end_inset
+
+ such that
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\Gamma'=\Gamma\backslash\{\mathtt{x}\,|\,\neg\mathit{sendable}(\Gamma(\mathtt{x}))\}$
+\end_inset
+
+ and
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\Gamma'\vdash\mathtt{e':ET'}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{R}(\mathtt{ET'})\sqsubseteq\mathtt{ET}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Proof
+By induction on the typing of 
+\begin_inset Formula $\Gamma\vdash\mathtt{e:ET}$
+\end_inset
+
+.
+ For case 6 (field assignment), apply lemma 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:Simplification."
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Lemma
+\begin_inset CommandInset label
+LatexCommand label
+name "lem:Temporaries-and-variables"
+
+\end_inset
+
+Temporaries and variables with unique capabilities are unique.
+\end_layout
+
+\begin_layout Lemma
+If
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\mathit{WFV}(\Delta,\chi)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi(\alpha,i,\mathtt{z})=\chi(\alpha',i',\mathtt{z'})=\iota$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta(\alpha,i,\mathtt{z})=\mathtt{S\,\kappa\,\phi}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa\in\{\mathtt{iso,trn}\}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta,\chi,\alpha'\vdash\iota:\kappa',(i',\mathtt{z'})$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Lemma
+Then 
+\begin_inset Formula $\alpha=\alpha'$
+\end_inset
+
+ and either 
+\begin_inset Formula $\kappa\sim_{\ell}\kappa'$
+\end_inset
+
+ or 
+\begin_inset Formula $(i,\mathtt{z})=(i',\mathtt{z'})$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Proof
+Assume that 
+\begin_inset Formula $\alpha\neq\alpha'$
+\end_inset
+
+.
+ Then, by 
+\begin_inset Formula $\mathit{WFV.1}$
+\end_inset
+
+, 
+\begin_inset Formula $\kappa\sim_{g}\kappa'$
+\end_inset
+
+.
+ This implies 
+\begin_inset Formula $\kappa'=\mathtt{tag}$
+\end_inset
+
+, which contradicts 5.
+ Therefore, 
+\begin_inset Formula $\alpha=\alpha'$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\alpha'\vdash\iota:\kappa,(i,\mathtt{z})$
+\end_inset
+
+.
+ If 
+\begin_inset Formula $\mathit{Stable}(\Delta,\alpha,(i,\mathtt{z}))$
+\end_inset
+
+ then by 
+\begin_inset Formula $\mathit{WFV.2}$
+\end_inset
+
+, either 
+\begin_inset Formula $\kappa\sim_{\ell}\kappa'$
+\end_inset
+
+ (done) or 
+\begin_inset Formula $\chi,\alpha\vdash(i,\mathtt{z})\sim(i',\mathtt{z'})$
+\end_inset
+
+, which requires 
+\begin_inset Formula $(i,\mathtt{z})=(i',\mathtt{z'})$
+\end_inset
+
+ (done).
+ If 
+\begin_inset Formula $\neg\mathit{Stable}(\Delta,\alpha,(i,\mathtt{z}))$
+\end_inset
+
+ then 
+\begin_inset Formula $\mathtt{z=t}$
+\end_inset
+
+ and by 
+\begin_inset Formula $\mathit{WFV.4}$
+\end_inset
+
+ either 
+\begin_inset Formula $(i,\mathtt{z})=(i',\mathtt{z'})$
+\end_inset
+
+ (done) or 
+\begin_inset Formula $\exists\iota',\kappa'',p',\mathtt{\overline{f}}$
+\end_inset
+
+ such that 
+\begin_inset Formula $\kappa\le\kappa''$
+\end_inset
+
+ and 
+\begin_inset Formula $\kappa''\in\{\mathtt{iso,trn}\}$
+\end_inset
+
+ and 
+\begin_inset Formula $(i',\mathtt{z'})=p'\cdot\mathtt{\overline{f}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota':\kappa'',p'$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\iota'\vdash\iota:\kappa,(0,\mathtt{this})\cdot\mathtt{\overline{f}}$
+\end_inset
+
+, so 
+\begin_inset Formula $\mathtt{\overline{f}=\epsilon}$
+\end_inset
+
+ and 
+\begin_inset Formula $p'=(i',\mathtt{z'})$
+\end_inset
+
+ and 
+\begin_inset Formula $\iota=\iota'$
+\end_inset
+
+.
+ This gives us 
+\begin_inset Formula $\Delta,\chi,\iota\vdash\iota:\kappa,(0,\mathtt{this})$
+\end_inset
+
+, which by the definition of visibility gives us 
+\begin_inset Formula $\kappa=\mathtt{ref}$
+\end_inset
+
+, which contradicts (4) (done).
+\end_layout
+
+\begin_layout Lemma
+\begin_inset CommandInset label
+LatexCommand label
+name "lem:Isolation-in-well-formed"
+
+\end_inset
+
+Isolation in well-formed visibility.
+\end_layout
+
+\begin_layout Lemma
+If
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\mathit{WFV}(\Delta,\chi)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta(\alpha,i,\mathtt{t})=\mathtt{S\,\kappa\,\phi}$
+\end_inset
+
+ and 
+\begin_inset Formula $\chi(\alpha,i,\mathtt{t})=\iota$
+\end_inset
+
+ and 
+\begin_inset Formula $\kappa\in\{\mathtt{iso,trn}\}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta,\chi,\alpha'\vdash\iota:\kappa',p$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Lemma
+Then
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+[4.]
+\backslash
+setcounter{enumi}{4}
+\end_layout
+
+\end_inset
+
+If 
+\begin_inset Formula $\kappa\,\phi=\mathtt{iso\circ}$
+\end_inset
+
+ then 
+\begin_inset Formula $\alpha=\alpha'$
+\end_inset
+
+ and 
+\begin_inset Formula $p=(i,\mathtt{t})$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\kappa\,\phi=\mathtt{trn}\circ$
+\end_inset
+
+ then 
+\begin_inset Formula $\alpha=\alpha'$
+\end_inset
+
+ and either 
+\begin_inset Formula $p=(i,\mathtt{t})$
+\end_inset
+
+ or 
+\begin_inset Formula $\kappa'=\mathtt{box}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\kappa\,\phi=\mathtt{iso}$
+\end_inset
+
+ then 
+\begin_inset Formula $\alpha=\alpha'$
+\end_inset
+
+ and either 
+\begin_inset Formula $p=(i,\mathtt{t})$
+\end_inset
+
+ or 
+\begin_inset Formula $\exists\iota',\kappa'',p',\mathtt{\overline{f}}$
+\end_inset
+
+ such that 
+\begin_inset Formula $\kappa\le\kappa''$
+\end_inset
+
+ and 
+\begin_inset Formula $\kappa''\in\{\mathtt{iso,trn}\}$
+\end_inset
+
+ and 
+\begin_inset Formula $p=p'\cdot\mathtt{\overline{f}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota':\kappa'',p'$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\iota'\vdash\iota:\mathtt{iso},\mathtt{\overline{f}}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\kappa\,\phi=\mathtt{trn}$
+\end_inset
+
+ then 
+\begin_inset Formula $\alpha=\alpha'$
+\end_inset
+
+ and either 
+\begin_inset Formula $p=(i,\mathtt{t})$
+\end_inset
+
+ or 
+\begin_inset Formula $\kappa'=\mathtt{box}$
+\end_inset
+
+ or 
+\begin_inset Formula $\exists\iota',p',\mathtt{\overline{f}}$
+\end_inset
+
+ such that 
+\begin_inset Formula $p=p'\cdot\mathtt{\overline{f}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota':\mathtt{trn},p'$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\iota'\vdash\iota:\mathtt{trn},\mathtt{\overline{f}}$
+\end_inset
+
+.
+\end_layout
+
+\end_deeper
+\begin_layout Proof
+(4) and (5) follow from lemma 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:Temporaries-and-variables"
+
+\end_inset
+
+.
+ (5) and (6) follow from lemma 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:Temporaries-and-variables"
+
+\end_inset
+
+ and 
+\begin_inset Formula $\mathit{WFV.4}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Lemma
+\begin_inset CommandInset label
+LatexCommand label
+name "lem:Aliasing-and-replaceability."
+
+\end_inset
+
+Aliasing and replaceability.
+\end_layout
+
+\begin_layout Lemma
+If
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\Gamma\vdash\mathtt{e:ET}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{z}$
+\end_inset
+
+ is aliased in 
+\begin_inset Formula $\mathtt{e}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathtt{z}$
+\end_inset
+
+ does not appear more than once in 
+\begin_inset Formula $\mathtt{e}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Gamma(\mathtt{z})$
+\end_inset
+
+ is not unaliased
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Gamma'=\Gamma[\mathtt{z}\mapsto\mathcal{A}(\Gamma(\mathtt{z}))]$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Lemma
+Then 
+\begin_inset Formula $\Gamma'\vdash\mathtt{e:ET}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Proof
+By induction over the structure of 
+\begin_inset Formula $\mathtt{e}$
+\end_inset
+
+.
+ We apply lemma 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:Inversion."
+
+\end_inset
+
+.
+ Moreover, we use the fact that 
+\begin_inset Formula $\forall\kappa.\mathcal{A}(\mathcal{A}(\kappa))=\mathcal{A}(\kappa)$
+\end_inset
+
+.
+ The base cases are expressions that can alias 
+\begin_inset Formula $\mathtt{z}$
+\end_inset
+
+.
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+If 
+\begin_inset Formula $\mathtt{e\equiv x=z}$
+\end_inset
+
+ then, by lemma 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:Inversion."
+
+\end_inset
+
+, we obtain 
+\begin_inset Formula $\Gamma(\mathtt{x})=\mathtt{S\,\kappa}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Gamma(\mathtt{z})=\mathtt{S}\,\kappa'\,\phi$
+\end_inset
+
+ and 
+\begin_inset Formula $\phi\neq\circ$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{A}(\kappa')\le\kappa$
+\end_inset
+
+.
+ Therefore, we have 
+\begin_inset Formula $\mathcal{A}(\mathcal{A}(\kappa'))\le\kappa$
+\end_inset
+
+ and so 
+\begin_inset Formula $\Gamma'\vdash\mathtt{x=z:ET}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+If 
+\begin_inset Formula $\mathtt{e\equiv e'.f=z}$
+\end_inset
+
+ then, by lemma 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:Inversion."
+
+\end_inset
+
+, we obtain 
+\begin_inset Formula $\Gamma\vdash\mathtt{e'}:\mathtt{S\,\kappa}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{F}(\mathtt{S,f})=\mathtt{S'\,\kappa'}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Gamma(\mathtt{z})=\mathtt{S'}\,\kappa''\,\phi$
+\end_inset
+
+ and 
+\begin_inset Formula $\phi\neq\circ$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{A}(\kappa'')\le\kappa'$
+\end_inset
+
+.
+ Therefore, we have 
+\begin_inset Formula $\mathcal{A}(\mathcal{A}(\kappa''))\le\kappa'$
+\end_inset
+
+ and so 
+\begin_inset Formula $\Gamma'\vdash\mathtt{e'.f=z:ET}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+If 
+\begin_inset Formula $\mathtt{e\equiv e'.n(\overline{y},z,\overline{e})}$
+\end_inset
+
+ then, by lemma 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:Inversion."
+
+\end_inset
+
+, we obtain 
+\begin_inset Formula $\Gamma\vdash\mathtt{e':S\,\kappa}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{M}(\mathtt{S,n})=(\_,\mathtt{\overline{x:S\,\kappa}},\_,\_)$
+\end_inset
+
+ and 
+\begin_inset Formula $\Gamma(\mathtt{z})=\mathtt{S_{i}\,\kappa_{i}'\,\phi}$
+\end_inset
+
+ and and 
+\begin_inset Formula $\phi\neq\circ$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{A}(\kappa_{i}')\le\kappa_{i}$
+\end_inset
+
+.
+ Therefore, we have 
+\begin_inset Formula $\mathcal{A}(\mathcal{A}(\kappa_{i}'))\le\kappa_{i}$
+\end_inset
+
+ and so 
+\begin_inset Formula $\Gamma'\vdash\mathtt{e'.n(\overline{y},z,\overline{e}):ET}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+If 
+\begin_inset Formula $\mathtt{e\equiv z.n(\overline{y})}$
+\end_inset
+
+ then, by lemma 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:Inversion."
+
+\end_inset
+
+, we obtain 
+\begin_inset Formula $\Gamma(\mathtt{z})=\mathtt{S\,\kappa\,\phi}$
+\end_inset
+
+ and 
+\begin_inset Formula $\phi\neq\circ$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{M}(\mathtt{S,n)}=(\mathtt{S\,\kappa'})$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{A}(\kappa)\le(\kappa')$
+\end_inset
+
+.
+ Therefore, we have 
+\begin_inset Formula $\mathcal{A}(\mathcal{A}(\kappa))\le\kappa'$
+\end_inset
+
+ and so 
+\begin_inset Formula $\Gamma'\vdash\mathtt{z.n(\overline{y}):ET}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+If 
+\begin_inset Formula $\mathtt{e\equiv S.k(\overline{y},z,\overline{e})}$
+\end_inset
+
+then, by lemma 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:Inversion."
+
+\end_inset
+
+, we obtain 
+\begin_inset Formula $\mathcal{M}(\mathtt{S,k})=(\_,\mathtt{\overline{x:S\,\kappa}},\_,\_)$
+\end_inset
+
+ and 
+\begin_inset Formula $\Gamma(\mathtt{z})=\mathtt{S_{i}\,\kappa_{i}'\,\phi}$
+\end_inset
+
+ and and 
+\begin_inset Formula $\phi\neq\circ$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{A}(\kappa_{i}')\le\kappa_{i}$
+\end_inset
+
+.
+ Therefore, we have 
+\begin_inset Formula $\mathcal{A}(\mathcal{A}(\kappa_{i}'))\le\kappa_{i}$
+\end_inset
+
+ and so 
+\begin_inset Formula $\Gamma'\vdash\mathtt{S.k(\overline{y},z,\overline{e}):ET}$
+\end_inset
+
+.
+\end_layout
+
+\end_deeper
+\begin_layout Proof
+For the inductive step, if 
+\begin_inset Formula $\mathtt{e\equiv E[e']}$
+\end_inset
+
+and 
+\begin_inset Formula $\mathtt{z}$
+\end_inset
+
+ is aliased in 
+\begin_inset Formula $\mathtt{e}$
+\end_inset
+
+, then, by lemma 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:Context-lemma."
+
+\end_inset
+
+, we obtain that 
+\begin_inset Formula $\exists\mathtt{ET',y\notin\Gamma}$
+\end_inset
+
+ such that 
+\begin_inset Formula $\Gamma\vdash\mathtt{e':ET'}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Gamma[\mathtt{y}\mapsto\mathtt{ET'}]\vdash\mathtt{E[y]:ET}$
+\end_inset
+
+, and so 
+\begin_inset Formula $\Gamma'\vdash\mathtt{e':ET'}$
+\end_inset
+
+.
+ Therefore, by lemma 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:Context-lemma."
+
+\end_inset
+
+, we obtain 
+\begin_inset Formula $\Gamma'\vdash\mathtt{E[e']:ET}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Lemma
+Origins of temporary identifiers.
+\end_layout
+
+\begin_layout Lemma
+If
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\mathtt{z}$
+\end_inset
+
+ appears once in expression 
+\begin_inset Formula $\mathtt{e}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathtt{z}$
+\end_inset
+
+ is not aliased in 
+\begin_inset Formula $\mathtt{e}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Lemma
+Then 
+\begin_inset Formula $\exists\mathtt{E'}$
+\end_inset
+
+ such that
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+[3.]
+\backslash
+setcounter{enumi}{3}
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $\mathtt{e\equiv E'[z.f]}$
+\end_inset
+
+, or
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathtt{e\equiv E'[z.f=e']}$
+\end_inset
+
+, or
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathtt{e\equiv E'[recover\,z]}$
+\end_inset
+
+, or
+\end_layout
+
+\end_deeper
+\begin_layout Proof
+By application of definition 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "def:An-identifier-"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Lemma
+If 
+\begin_inset Formula $\Gamma,\mathtt{x:T_{1}\vdash e:ET_{1}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{A}(\mathtt{T_{2}})\le\mathtt{T_{1}}$
+\end_inset
+
+ then 
+\begin_inset Formula $\exists\mathtt{ET_{2}}.\Gamma,\mathtt{x:T_{2}\vdash e:ET_{2}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{ET_{1}=ET_{2}}$
+\end_inset
+
+ or 
+\begin_inset Formula $\mathcal{A}(\mathtt{ET_{2}})\le\mathtt{ET_{1}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Proof
+By structural induction on the typing and lemma 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:pco"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Lemma
+New paths through field read.
+\end_layout
+
+\begin_layout Lemma
+If
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\chi(\alpha,i,\mathtt{z})=\iota$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta(\alpha,i,\mathtt{z})=\mathtt{S\,\kappa\,\phi}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi(\iota,\mathtt{f})=\iota'$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{F}(\mathtt{S,f})=\mathtt{S'\,\kappa'}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathtt{T=\bot}$
+\end_inset
+
+ if 
+\begin_inset Formula $\mathtt{z=t'}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathtt{S\,\kappa}$
+\end_inset
+
+ otherwise
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta'=\Delta[(\alpha,i,\mathtt{z})\mapsto\mathtt{T},(\alpha,i,\mathtt{t})\mapsto\mathtt{S'\,\kappa\triangleright\kappa'})]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathcal{T}(\Delta(\alpha,i))\subseteq\{\mathtt{z}\}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Lemma
+Then
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+[7.]
+\backslash
+setcounter{enumi}{7}
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $\forall\alpha',\iota'',\kappa'',p'$
+\end_inset
+
+ if 
+\begin_inset Formula $\Delta',\chi,\alpha'\vdash\iota'',\kappa'',p'$
+\end_inset
+
+ then
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\Delta,\chi,\alpha'\vdash\iota'':\kappa'',p'$
+\end_inset
+
+ or
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\alpha'=\alpha$
+\end_inset
+
+ and 
+\begin_inset Formula $\exists\mathtt{\overline{f}},\overline{\kappa}$
+\end_inset
+
+ such that
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $p'=(i,\mathtt{t})\cdot\mathtt{\overline{f}}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa''=\kappa\triangleright\kappa'\overline{\blacktriangleright\kappa}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota'':\kappa\blacktriangleright\kappa'\overline{\blacktriangleright\kappa},(i,\mathtt{z})\cdot\mathtt{f\cdot\overline{f}}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathit{WFV}(\Delta,\chi)$
+\end_inset
+
+ then 
+\begin_inset Formula $\mathit{WFV}(\Delta',\chi)$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{T}(\Delta'(\alpha,i))\subseteq\{\mathtt{t}\}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Lemma
+New paths through local assignment.
+\end_layout
+
+\begin_layout Lemma
+If
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi(\alpha,i,\mathtt{z})=\iota$
+\end_inset
+
+ and 
+\begin_inset Formula $\chi(\alpha,i,\mathtt{x})=\iota'$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathtt{t}\notin\chi(\alpha,i)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta(\alpha,i,\mathtt{z})=\mathtt{S\,\kappa\,\phi}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta(\alpha,i,\mathtt{x})=\mathtt{S\,\kappa'}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi'=\chi[(\alpha,i,\mathtt{x})\mapsto\iota,(\alpha,i,\mathtt{t})\mapsto\iota']$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathtt{T=\bot}$
+\end_inset
+
+ if 
+\begin_inset Formula $\mathtt{z=t'}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathtt{S\,\kappa}$
+\end_inset
+
+ otherwise
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta'=\Delta[(\alpha,i,\mathtt{z})\mapsto\mathtt{T},(\alpha,i,\mathtt{t})\mapsto\mathcal{U}(\mathtt{S\,\kappa'})]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathcal{T}(\Delta(\alpha,i))\subseteq\{\mathtt{z}\}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Lemma
+Then
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+[7.]
+\backslash
+setcounter{enumi}{7}
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $\forall\alpha',\iota'',\kappa'',p$
+\end_inset
+
+ if 
+\begin_inset Formula $\Delta',\chi',\alpha'\vdash\iota'':\kappa'',p$
+\end_inset
+
+ then
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\Delta,\chi,\alpha'\vdash\iota'':\kappa'',p$
+\end_inset
+
+ or
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\alpha=\alpha'$
+\end_inset
+
+ and 
+\begin_inset Formula $\exists\mathtt{\overline{f}},\overline{\kappa}$
+\end_inset
+
+ such that
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $p=(i,\mathtt{x})\cdot\mathtt{\overline{f}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\kappa''=\kappa'\overline{\blacktriangleright\kappa}$
+\end_inset
+
+ and
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota'':\kappa\overline{\blacktriangleright\kappa},(i,\mathtt{z})\cdot\mathtt{\overline{f}}$
+\end_inset
+
+, or
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $p=(i\cdot\mathtt{t})\cdot\mathtt{\overline{f}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\kappa''=\kappa'\overline{\blacktriangleright\kappa}$
+\end_inset
+
+ and
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota'':\kappa'\overline{\blacktriangleright\kappa},(i,\mathtt{x})\cdot\mathtt{\overline{f}}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathcal{A}(\kappa\,\phi)\le\kappa'$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathit{WFV}(\Delta,\chi)$
+\end_inset
+
+ then 
+\begin_inset Formula $\mathit{WFV}(\Delta',\chi')$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{T}(\Delta'(\alpha,i))\subseteq\{\mathtt{t}\}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Lemma
+New paths through field assignment.
+\end_layout
+
+\begin_layout Lemma
+If
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi(\alpha,i,\mathtt{z})=\iota$
+\end_inset
+
+ and 
+\begin_inset Formula $\chi(\alpha,i,\mathtt{z'})=\iota'$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta(\alpha,i,\mathtt{z})=\mathtt{S\,\kappa\,\phi}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta(\alpha,i,\mathtt{z'})=\mathtt{S'\,\kappa'\,\phi'}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi(\iota,\mathtt{f})=\iota''$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{F}(\mathtt{S,f})=\mathtt{S'\,\kappa''}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi'=\chi[(\iota,\mathtt{f})\mapsto\iota',(\alpha,i,\mathtt{t})\mapsto\iota'']$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathtt{T=\bot}$
+\end_inset
+
+ if 
+\begin_inset Formula $\mathtt{z=t'}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathtt{S\,\kappa}$
+\end_inset
+
+ otherwise
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathtt{T'=\bot}$
+\end_inset
+
+ if 
+\begin_inset Formula $\mathtt{z'=t''}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathtt{S'\,\kappa'}$
+\end_inset
+
+ otherwise
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta'=\Delta[(\alpha,i,\mathtt{z})\mapsto\mathtt{T},(\alpha,i,\mathtt{z'})\mapsto\mathtt{T'},(\alpha,i,\mathtt{t})\mapsto\mathcal{U}(\mathtt{S'\,\kappa\triangleright\kappa''})]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathcal{T}(\Delta(\alpha,i))\subseteq\{\mathtt{z,z'}\}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Lemma
+Then
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+[9.]
+\backslash
+setcounter{enumi}{9}
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $\forall\alpha',\iota''',\kappa''',p'$
+\end_inset
+
+ if 
+\begin_inset Formula $\Delta',\chi',\alpha'\vdash\iota''':\kappa''',p'$
+\end_inset
+
+ then
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\Delta,\chi,\alpha'\vdash\iota''':\kappa''',p'$
+\end_inset
+
+ or
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\alpha'=\alpha$
+\end_inset
+
+ and 
+\begin_inset Formula $\exists\mathtt{\overline{f}},\overline{\kappa}$
+\end_inset
+
+ such that
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\kappa'''=\kappa\blacktriangleright\kappa''\overline{\blacktriangleright\kappa}$
+\end_inset
+
+ and 
+\begin_inset Formula $p'=(i,\mathtt{z})\cdot\mathtt{f\cdot\overline{f}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota''':\kappa'\overline{\blacktriangleright\kappa},(i,\mathtt{z'})\cdot\mathtt{\overline{f}}$
+\end_inset
+
+, or
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa'''=\mathcal{U}(\kappa\triangleright\kappa'')\overline{\blacktriangleright\kappa}$
+\end_inset
+
+ and 
+\begin_inset Formula $p'=(i,\mathtt{t})\cdot\mathtt{\overline{f}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota''':\kappa\blacktriangleright\kappa''\overline{\blacktriangleright\kappa},(i,\mathtt{z})\cdot\mathtt{f\cdot\overline{f}}$
+\end_inset
+
+, or
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\exists\kappa'''',p\neq(i,\mathtt{z})$
+\end_inset
+
+ such that 
+\begin_inset Formula $\kappa'''=\kappa''''\blacktriangleright\kappa''\overline{\blacktriangleright\kappa}$
+\end_inset
+
+ and 
+\begin_inset Formula $p'=p\cdot\mathtt{f\cdot\overline{f}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota:\kappa'''',p$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathcal{A}(\kappa'\,\phi')\le\kappa''$
+\end_inset
+
+ and (
+\begin_inset Formula $\kappa\triangleleft\kappa'$
+\end_inset
+
+ or 
+\begin_inset Formula $\kappa\triangleleft\kappa''$
+\end_inset
+
+) and 
+\begin_inset Formula $\mathit{WFV}(\Delta,\chi)$
+\end_inset
+
+ then 
+\begin_inset Formula $\mathit{WFV}(\Delta',\chi')$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{T}(\Delta'(\alpha,i))=\emptyset$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Lemma
+New paths through message passing.
+\end_layout
+
+\begin_layout Lemma
+If
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi(\alpha,i,\mathtt{z})=\iota$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta(\alpha,i,\mathtt{z})=\mathtt{S\,\kappa\,\phi}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi'=\chi[(\alpha',-j,\mathtt{x})\mapsto\iota]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathtt{T=\bot}$
+\end_inset
+
+ if 
+\begin_inset Formula $\mathtt{z=t}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathtt{S\,\kappa}$
+\end_inset
+
+ otherwise
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta'=\Delta[(\alpha,i,\mathtt{z})\mapsto\mathtt{T},(\alpha',-j,\mathtt{x})\mapsto\mathtt{S\,\kappa'}]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathcal{T}(\Delta(\alpha,i))\subseteq\{\mathtt{z}\}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Lemma
+Then
+\begin_inset Separator latexpar
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+[6.]
+\backslash
+setcounter{enumi}{6}
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $\forall\alpha'',\iota'',\kappa'',p$
+\end_inset
+
+ if 
+\begin_inset Formula $\Delta',\chi',\alpha''\vdash\iota'':\kappa'',p$
+\end_inset
+
+ then
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\Delta,\chi,\alpha''\vdash\iota'':\kappa'',p$
+\end_inset
+
+ or
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\alpha''=\alpha'$
+\end_inset
+
+ and 
+\begin_inset Formula $\exists\mathtt{\overline{f}},\overline{\kappa}$
+\end_inset
+
+ such that
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $p=(-j,\mathtt{x})\cdot\mathtt{\overline{f}}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\kappa''=\kappa'\overline{\blacktriangleright\kappa}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta,\chi,\alpha\vdash\iota'':\kappa\overline{\blacktriangleright\kappa},(i,\mathtt{z})\cdot\mathtt{\overline{f}}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+If 
+\begin_inset Formula $\mathcal{A}(\kappa\,\phi)\le\kappa'$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathit{sendable}(\kappa')$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathit{WFV}(\Delta,\chi)$
+\end_inset
+
+ then 
+\begin_inset Formula $\mathit{WFV}(\Delta',\chi')$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{T}(\Delta'(\alpha,i))=\emptyset$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+Preservation of well-formedness
+\end_layout
+
+\begin_layout Lemma
+\begin_inset CommandInset label
+LatexCommand label
+name "lem:SL1"
+
+\end_inset
+
+Type preservation on same frame.
+\end_layout
+
+\begin_layout Lemma
+For all heaps 
+\begin_inset Formula $\chi$
+\end_inset
+
+, actors 
+\begin_inset Formula $\alpha$
+\end_inset
+
+, global type environments 
+\begin_inset Formula $\Delta$
+\end_inset
+
+, frames 
+\begin_inset Formula $\varphi,$
+\end_inset
+
+ stacks 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ and expressions 
+\begin_inset Formula $\mathtt{e}$
+\end_inset
+
+, if
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\chi(\alpha)=(\_,\_,\_,\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{E[e]})$
+\end_inset
+
+ and 
+\begin_inset Formula $|\bar{\varphi}|=i-1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi,\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{e}\rightsquigarrow\chi'',\alpha\cdot\overline{\varphi}\cdot\varphi',\mathtt{e'}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi'=\chi''[\alpha\mapsto(\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{E[e']})]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta(\alpha,i)\vdash\mathtt{e:ET}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta\vdash\chi\diamond$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Lemma
+Then 
+\begin_inset Formula $\exists\Delta^{\prime}$
+\end_inset
+
+ such that
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\Delta'(\alpha,i)\vdash\mathtt{e':ET}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta'\vdash\chi'\diamond$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Lemma
+\begin_inset CommandInset label
+LatexCommand label
+name "lem:SL2"
+
+\end_inset
+
+Type preservation for method call.
+\end_layout
+
+\begin_layout Lemma
+For all heaps 
+\begin_inset Formula $\chi$
+\end_inset
+
+ and actors 
+\begin_inset Formula $\alpha$
+\end_inset
+
+, if
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi(\alpha)=(\_,\_,\_,\sigma\cdot\varphi,\mathtt{E[e]})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi,\sigma\cdot\varphi,\mathtt{e}\rightsquigarrow\chi'',\sigma\cdot\varphi\cdot\varphi',\mathtt{e'}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi'=\chi''[\alpha\mapsto(\sigma\cdot\varphi\cdot\varphi',\mathtt{E[e']})]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta\vdash\chi\diamond$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Lemma
+Then 
+\begin_inset Formula $\exists\Delta^{\prime}$
+\end_inset
+
+ such that 
+\begin_inset Formula $\Delta'\vdash\chi'\diamond$
+\end_inset
+
+.
+\end_layout
+
+\begin_deeper
+\begin_layout Lemma
+\begin_inset CommandInset label
+LatexCommand label
+name "lem:Type-preservation-upon"
+
+\end_inset
+
+Type preservation upon method return
+\end_layout
+
+\begin_layout Lemma
+For all heaps 
+\begin_inset Formula $\chi$
+\end_inset
+
+ and actors 
+\begin_inset Formula $\alpha$
+\end_inset
+
+, if
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi(\alpha)=(\_,\_,\_,\sigma\cdot\varphi\cdot\varphi',\mathtt{z})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathtt{t}\notin\varphi$
+\end_inset
+
+ and 
+\begin_inset Formula $\varphi''=\varphi[\mathtt{t}\mapsto\varphi'(\mathtt{z})]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\varphi'=(\_,\_,\mathtt{E[\cdot]})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi'=\chi[\alpha\mapsto(\sigma\cdot\varphi'',\mathtt{E[t]})]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta\vdash\chi\diamond$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Lemma
+Then 
+\begin_inset Formula $\exists\Delta^{\prime}$
+\end_inset
+
+ such that 
+\begin_inset Formula $\Delta'\vdash\chi'\diamond$
+\end_inset
+
+.
+\end_layout
+
+\begin_deeper
+\begin_layout Lemma
+\begin_inset CommandInset label
+LatexCommand label
+name "lem:Type-preservation-upon-1"
+
+\end_inset
+
+Type preservation upon message handling.
+\end_layout
+
+\begin_layout Lemma
+For all heaps 
+\begin_inset Formula $\chi$
+\end_inset
+
+ and actors 
+\begin_inset Formula $\alpha$
+\end_inset
+
+, if
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi(\alpha)=(\mathtt{A},\mathit{fs},(\mathtt{n}\cdot\bar{v})\cdot\overline{\mu},\alpha,\epsilon)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathcal{M}(\mathtt{A,n})=(\_,\mathtt{\overline{x:T}},\mathtt{e},\_)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\varphi=(\mathtt{n},[\mathtt{this}\mapsto\alpha,\mathtt{\bar{x}}\mapsto\bar{v}],\cdot)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\chi'=\chi[\alpha\mapsto(\mathtt{A},\mathit{fs},\overline{\mu},(\alpha\cdot\varphi),\mathtt{e})]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Delta\vdash\chi\diamond$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Lemma
+Then 
+\begin_inset Formula $\exists\Delta^{\prime}$
+\end_inset
+
+ such that 
+\begin_inset Formula $\Delta'\vdash\chi'\diamond$
+\end_inset
+
+.
 \end_layout
 
 \end_body
