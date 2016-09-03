@@ -5251,7 +5251,7 @@ status open
 \begin_layout Itemize
 \begin_inset Formula $\kappa\blacktriangleright\kappa'=\begin{cases}
 \kappa' & \mathit{if}\,\kappa\in\{\mathtt{iso,trn,ref}\}\\
-\mathtt{val} & \mathit{if}\,\kappa=\mathtt{val}\wedge\kappa'=\mathtt{val}\\
+\mathtt{val} & \mathit{if}\,\kappa=\mathtt{val}\vee\kappa'=\mathtt{val}\\
 \mathtt{box} & \mathit{if}\,\kappa=\mathtt{box}\wedge\kappa'\notin\{\mathtt{iso,val,tag}\}\\
 \mathtt{tag} & \mathit{otherwise}
 \end{cases}$

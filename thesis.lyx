@@ -172,9 +172,9 @@ to be garbage collected with no stop-the-world step.
 
 \begin_layout Standard
 To validate these ideas, I have written a complete runtime (including a
- workstealing scheduler, garbage collector, memory allocator, message queuing,
+ work-stealing scheduler, garbage collector, memory allocator, message queuing,
  asynchronous I/O, and more) and an ahead-of-time optimising compiler with
- an LLVM backend.
+ an LLVM back-end.
  The language is open source.
 \end_layout
 
@@ -244,16 +244,6 @@ filename "opsem.lyx"
 \begin_inset CommandInset include
 LatexCommand include
 filename "refcaps.lyx"
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset CommandInset include
-LatexCommand include
-filename "typesystem.lyx"
 
 \end_inset
 

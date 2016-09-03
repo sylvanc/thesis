@@ -310,7 +310,7 @@ unaliased type
  This is described in detail in chapter 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "chap:Type-System"
+reference "chap:Reference-Capabilities"
 
 \end_inset
 
@@ -834,7 +834,7 @@ unaliased type
 , as explained in chapter 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "chap:Type-System"
+reference "chap:Reference-Capabilities"
 
 \end_inset
 

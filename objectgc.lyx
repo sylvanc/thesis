@@ -1039,12 +1039,672 @@ Collect
 Completeness
 \end_layout
 
+\begin_layout Standard
+The presented object garbage collection semantics allow the 
+\noun on
+Collect
+\noun default
+ rule to be executed non-deterministically.
+ This models real world garbage collection scenarios, wherein there can
+ be many heuristics to determine at what point garbage collection should
+ occur.
+ As such, it is possible for a program to run to completion (i.e.
+ achieve actor quiescence) without collecting any passive object garbage.
+ Indeed, some small real world programs written in Pony do exactly this.
+\end_layout
+
+\begin_layout Standard
+However, these semantics allow all globally unreachable passive objects
+ to be collected, while not strictly requiring that such collection takes
+ place.
+ Objects that are not sent in messages are collectable via 
+\noun on
+Collect
+\noun default
+, and objects that have been sent in messages will eventually be collectable
+ after receiving actors either no longer reference the object and send a
+ 
+\emph on
+DEC
+\emph default
+ message via 
+\noun on
+Release
+\noun default
+, or are themselves collected (as in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:opsem-cycle-detection"
+
+\end_inset
+
+), which also generates a 
+\emph on
+DEC
+\emph default
+ message.
+\end_layout
+
 \begin_layout Section
 Robustness
 \end_layout
 
+\begin_layout Standard
+The semantics for 
+\emph on
+ORCA
+\emph default
+ are sound and do not have exceptional conditions.
+ However, as with 
+\emph on
+MAC
+\emph default
+, 
+\emph on
+ORCA
+\emph default
+ is robust even when failure is introduced.
+\end_layout
+
+\begin_layout Standard
+The robustness conditions are similar to those for 
+\emph on
+MAC
+\emph default
+, described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Robustness"
+
+\end_inset
+
+.
+ The failure of a some actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ will cause objects 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ has allocated to never be collected, even if they become globally unreachable.
+ Similarly, any objects for which 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ held a foreign reference count will not be collected by their owners, as
+ 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ will never send 
+\emph on
+DEC
+\emph default
+ messages for those objects.
+ However, again similar to 
+\emph on
+MAC
+\emph default
+, such failures impact completeness, but do not result in objects being
+ prematurely collected.
+\end_layout
+
+\begin_layout Standard
+The impact of individual message failure depends on the message type.
+ For 
+\emph on
+APP
+\emph default
+ and 
+\emph on
+DEC
+\emph default
+ messages, an object 
+\begin_inset Formula $\omega$
+\end_inset
+
+ contained in such a messages will never be collected, as the implicit reference
+ to 
+\begin_inset Formula $\omega$
+\end_inset
+
+ in 
+\emph on
+APP
+\emph default
+, or the explicit reference count in 
+\emph on
+DEC
+\emph default
+, will be lost.
+ However, a lost 
+\emph on
+INC
+\emph default
+ message can result in premature object collection, making 
+\emph on
+ORCA
+\emph default
+ unsound in the face of individual message loss.
+\end_layout
+
+\begin_layout Standard
+However, the mediating factors described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Robustness"
+
+\end_inset
+
+ remain true for 
+\emph on
+ORCA
+\emph default
+: due to the actor-model requirement of guaranteed delivery, individual
+ message failure can be treated as actor failure, reducing the soundness
+ failure to a completeness failure.
+ In Pony, individual actors and messages in the concurrent setting (or on
+ a single node in the distributed setting) do not fail, removing even the
+ completeness impact.
+\end_layout
+
 \begin_layout Section
 Distributed Object GC
+\end_layout
+
+\begin_layout Standard
+The reduction in the ordering guarantee from causal order in the concurrent
+ setting to pairwise FIFO order in the distributed setting would initially
+ appear to make 
+\emph on
+ORCA
+\emph default
+ as described unsound.
+ However, the data-race free type system described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
+ combined with the necessity for copying objects when they are sent between
+ distributed nodes (generally by serialising the object over a network,
+ as distributed nodes do not share memory between nodes) means that 
+\emph on
+ORCA
+\emph default
+ remains sound in the distributed setting.
+\end_layout
+
+\begin_layout Subsection
+Locally Fulfilled Object Capabilities
+\end_layout
+
+\begin_layout Standard
+
+\noun on
+WF-Async
+\noun default
+ in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Well-formed-programs"
+
+\end_inset
+
+ requires that behaviour arguments are 
+\begin_inset Formula $\mathit{Sendable}$
+\end_inset
+
+, i.e.
+ 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathtt{val}$
+\end_inset
+
+, or 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+.
+ Each of these cases will be examined.
+\end_layout
+
+\begin_layout Standard
+When an actor 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ on node 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+ sends an 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ reference to object 
+\begin_inset Formula $\omega$
+\end_inset
+
+ to another actor 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ on node 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+, the deny properties of 
+\begin_inset Formula $\mathtt{iso}$
+\end_inset
+
+ guarantee that no actor other than 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ can read from or write to 
+\begin_inset Formula $\omega$
+\end_inset
+
+.
+ As a result, the deserialised copy of 
+\begin_inset Formula $\omega$
+\end_inset
+
+ on 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ is the authoritative representation of 
+\begin_inset Formula $\omega$
+\end_inset
+
+.
+ As such, if 
+\begin_inset Formula $\omega$
+\end_inset
+
+ becomes unreachable on 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+, without accounting for reachability on any other node, it is safe for
+ 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ to collect 
+\begin_inset Formula $\omega$
+\end_inset
+
+.
+ References on other nodes may survive, but they will be 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ references, so the collection of 
+\begin_inset Formula $\omega$
+\end_inset
+
+ is sound.
+\end_layout
+
+\begin_layout Standard
+When an actor 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ on node 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+ sends a 
+\begin_inset Formula $\mathtt{val}$
+\end_inset
+
+ reference to object 
+\begin_inset Formula $\omega$
+\end_inset
+
+ to another actor 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ on node 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+, the deny properties of 
+\begin_inset Formula $\mathtt{val}$
+\end_inset
+
+ guarantee that no actor can write to 
+\begin_inset Formula $\omega$
+\end_inset
+
+.
+ As such, any copy of 
+\begin_inset Formula $\omega$
+\end_inset
+
+ on any node is an authoritative representation of 
+\begin_inset Formula $\omega$
+\end_inset
+
+.
+ As such, if 
+\begin_inset Formula $\omega$
+\end_inset
+
+ becomes unreachable on any node, without accounting for reachability on
+ any other node, it is safe for 
+\begin_inset Formula $\omega$
+\end_inset
+
+ to be collected on that node.
+ References on other nodes may survive, and will remain authoritative.
+\end_layout
+
+\begin_layout Standard
+Finally, when an actor 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ on node 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+ sends a 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ reference to object 
+\begin_inset Formula $\omega$
+\end_inset
+
+ to another actor 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ on node 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+, that reference cannot be used to read from or write to 
+\begin_inset Formula $\omega$
+\end_inset
+
+.
+ The fields of 
+\begin_inset Formula $\omega$
+\end_inset
+
+ need not be serialised when sending such a reference.
+ If 
+\begin_inset Formula $\omega$
+\end_inset
+
+ becomes unreachable on 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+, without accounting for reachability on any other node, it is safe for
+ 
+\begin_inset Formula $\omega$
+\end_inset
+
+ to be collected on 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+.
+ References on other nodes may survive, and, if they allow reading from
+ or writing to 
+\begin_inset Formula $\omega$
+\end_inset
+
+, will remain authoritative.
+\end_layout
+
+\begin_layout Standard
+The combination of the introduction requirement and deny properties results
+ in a distributed system wherein object references are always able to fulfil
+ their interfaces (i.e.
+ provide capabilities allowed by the type system) locally, without communication
+ with other nodes.
+ Asynchronous messages to actors, i.e.
+ behaviour invocations, may result in communication with other nodes, but
+ synchronous calls to actors or objects, i.e.
+ function invocations, will not.
+\end_layout
+
+\begin_layout Subsection
+Distributed Object Identity
+\end_layout
+
+\begin_layout Standard
+An object's identity in the concurrent setting, or on a single node in the
+ distributed setting, is the object's address in the heap.
+ However, when an actor 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ on node 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+ sends a reference to some object 
+\begin_inset Formula $\omega$
+\end_inset
+
+ to 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ on node 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+, it is not feasible to require that 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ instantiate 
+\begin_inset Formula $\omega$
+\end_inset
+
+ on 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ with the same heap address that 
+\begin_inset Formula $\omega$
+\end_inset
+
+ has on 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+.
+ The language must either accept that an object loses its identity when
+ sent in a message to an actor that happens to be executing on another node,
+ which would break the equivalence of the concurrent and distributed operational
+ semantics, or some mechanism for mapping the identity of 
+\begin_inset Formula $\omega$
+\end_inset
+
+ on 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+ to its identity on 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ must be provided.
+\end_layout
+
+\begin_layout Standard
+It is important that such a mechanism not introduce a new garbage collection
+ problem in the form of garbage collecting assigned global identities.
+ For example, if 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ were to provide a local mapping of 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+ heap addresses to 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ heap addresses, 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ would need to inform all nodes in the distributed system when any address
+ on 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ that had been sent to any node was garbage collected, in order to prevent
+ out-of-date mappings resulting in a new object at address 
+\begin_inset Formula $\omega$
+\end_inset
+
+ on 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+ having the same identity as the previous object at address 
+\begin_inset Formula $\omega$
+\end_inset
+
+ on 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+ that had been sent to 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Similarly, any system of non-random identities must cope with namespace
+ issues (
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+ must not assign an identity that 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ might assign).
+ Assigning namespaces is complex in a distributed system due to network
+ splits and joins.
+ That is, if 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ each take on the namespace assignment role after a network split, if the
+ network split is healed, 
+\begin_inset Formula $\mathcal{N}_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{N}_{2}$
+\end_inset
+
+ may have assigned the same namespace to different nodes.
+\end_layout
+
+\begin_layout Standard
+One possible approach is to assign a sufficiently long and sufficiently
+ random identifier to any object sent to another node.
+ This provides a probabilistic approach to distributed object identity that
+ requires no garbage collection.
+ The probability of a distributed object identity collision can be approximated
+ by treating the distributed system as if it were executing a birthday attack
+ on itself, which gives a probability 
+\begin_inset Formula $p$
+\end_inset
+
+ for a number of distributed objects 
+\begin_inset Formula $n$
+\end_inset
+
+ with a random identifier length of 
+\begin_inset Formula $k$
+\end_inset
+
+ bits as 
+\begin_inset Formula $p(n,k)=1-e^{-n(n-1)/2^{k+1}}$
+\end_inset
+
+.
+ For example, if the acceptable risk of an object identity collision is
+ 
+\begin_inset Formula $p=10^{-12}$
+\end_inset
+
+, a 128-bit object identity allows approximately 
+\begin_inset Formula $2^{45}$
+\end_inset
+
+ objects to be created, or a 256-bit object identity allows approximately
+ 
+\begin_inset Formula $2^{109}$
+\end_inset
+
+ objects to be created.
+\end_layout
+
+\begin_layout Standard
+To reduce the computational overhead of calculating such random numbers
+ for every object sent to another node, each node 
+\begin_inset Formula $\mathcal{N}$
+\end_inset
+
+ can create a random identity for itself, 
+\begin_inset Formula $\mathcal{N}_{id}$
+\end_inset
+
+, when the node joins the distributed system, and use a monotonic counter
+ 
+\begin_inset Formula $c$
+\end_inset
+
+ to assign object identities of the form 
+\begin_inset Formula $\mathcal{N}_{id}\cdot c$
+\end_inset
+
+.
+ For the same 
+\begin_inset Formula $p=10^{-12}$
+\end_inset
+
+ risk, a 128-bit node identifier and a 64-bit monotonic counter allows approxima
+tely 
+\begin_inset Formula $2^{45}$
+\end_inset
+
+ nodes and 
+\begin_inset Formula $2^{64}$
+\end_inset
+
+ objects per node.
 \end_layout
 
 \begin_layout Section
@@ -1096,6 +1756,70 @@ reference "sec:Single-Model-for"
 \end_inset
 
 , not be violated.
+ If the introduction requirement were to be violated, then it would be possible
+ for some actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ to be able to reach some object 
+\begin_inset Formula $\omega$
+\end_inset
+
+ allocated by some other actor 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ without 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ having either created 
+\begin_inset Formula $\omega$
+\end_inset
+
+ or received 
+\begin_inset Formula $\omega$
+\end_inset
+
+ in a message.
+ As a result, 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ might not hold a positive foreign reference count for 
+\begin_inset Formula $\omega$
+\end_inset
+
+, and 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ might prematurely collect 
+\begin_inset Formula $\omega$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The BEAM runtime, being built specifically for as an actor-model runtime,
+ does not violate the introduction requirement, and so languages built on
+ top of it, such as Erlang and Elixir, could use 
+\emph on
+ORCA
+\emph default
+, again with the same caveats regarding causality and non-atomic behaviours
+ as for 
+\emph on
+MAC
+\emph default
+.
+ On the other hand, Akka, being built on JVM languages that allow non-actor
+ concurrency, does not enforce the introduction requirement, and so 
+\emph on
+ORCA
+\emph default
+ would be unsound.
 \end_layout
 
 \end_body
