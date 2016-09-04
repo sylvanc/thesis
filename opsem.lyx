@@ -586,21 +586,21 @@ status open
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\chi[\alpha,\mathtt{f}\mapsto v]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2}[\mathtt{f}\mapsto v],\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6})]$
+\begin_inset Formula $\chi[\alpha,\mathtt{f}\mapsto v]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2}[\mathtt{f}\mapsto v],\chi(\alpha)\downarrow_{3}...\chi(\alpha)\downarrow_{6})]$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\chi[\alpha\mapsto(\sigma,\mathtt{e})]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\sigma,\mathtt{e},\chi(\alpha)\downarrow_{6})]$
+\begin_inset Formula $\chi[\alpha\mapsto(\sigma,\mathtt{e})]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{3},\sigma,\mathtt{e},\chi(\alpha)\downarrow_{6})]$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\chi[\alpha,\alpha'++\mu]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6}[\alpha'\mapsto\chi(\alpha)\downarrow_{6}\cdot\mu])$
+\begin_inset Formula $\chi[\alpha,\alpha'++\mu]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6}[\alpha'\mapsto\chi(\alpha)\downarrow_{6}\cdot\mu])$
 \end_inset
 
 
@@ -614,7 +614,15 @@ status open
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\mathit{New}(\chi,\mathtt{A},\mathtt{k},\overline{v})=(\alpha,\chi')\,\mathit{where}\,\alpha\not\in\mathit{dom}(\chi)\wedge\chi'=\chi[\alpha\mapsto(\mathtt{A},{\cal F}s(\mathtt{A})\mapsto\mathit{null},(\mathtt{k},\overline{v}),\alpha,\varepsilon,[])]$
+\begin_inset Formula $\mathit{New}(\chi,\mathtt{A},\mathtt{k},\overline{v})=(\alpha,\chi')\,\mathit{where}$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\alpha\not\in\mathit{dom}(\chi)\wedge\chi'=\chi[\alpha\mapsto(\mathtt{A},{\cal F}s(\mathtt{A})\mapsto\mathit{null},(\mathtt{k},\overline{v}),\alpha,\varepsilon,[])]$
 \end_inset
 
 
@@ -761,6 +769,61 @@ single
 LatexCommand ref
 reference "fig:Lookup-functions"
 
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Notation
+\end_layout
+
+\begin_layout Standard
+To simplify the presentation, some notation conventions are followed.
+ The use of 
+\begin_inset Formula $\overline{x}$
+\end_inset
+
+ indicates a sequence of 
+\begin_inset Formula $x$
+\end_inset
+
+, whereas 
+\begin_inset Formula $xs$
+\end_inset
+
+ indicates a set of 
+\begin_inset Formula $x$
+\end_inset
+
+.
+ The projection 
+\begin_inset Formula $x\downarrow_{k}$
+\end_inset
+
+ is used to express the 
+\begin_inset Formula $k^{th}$
+\end_inset
+
+ element of the tuple 
+\begin_inset Formula $x$
+\end_inset
+
+.
+ The use of 
+\begin_inset Formula $x\downarrow_{k}...x\downarrow_{k+n}$
+\end_inset
+
+ refers to a sequence of the 
+\begin_inset Formula $k^{th}$
+\end_inset
+
+ through 
+\begin_inset Formula $k+n^{th}$
+\end_inset
+
+ elements of the tuple 
+\begin_inset Formula $x$
 \end_inset
 
 .

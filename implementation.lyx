@@ -4942,12 +4942,12 @@ reference "fig:Cycle-detector-state"
 \end_inset
 
 , or adds it if the actor is not yet present.
- Then, the cycle detector updates the view 
+ The cycle detector updates the view 
 \begin_inset Formula $\mathtt{rc}$
 \end_inset
 
  with the value reported by the actor.
- Then, any previous topology delta that has been cached in the 
+ Any previous topology delta that has been cached in the 
 \begin_inset Formula $\mathtt{delta}$
 \end_inset
 

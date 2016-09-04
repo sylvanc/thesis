@@ -1716,7 +1716,7 @@ reference "Expanding-example-"
 \begin_inset Formula $\iota_{2}$
 \end_inset
 
-, which implicitly shows the external set.
+, which implicitly shows the external map.
 \end_layout
 
 \end_inset
@@ -2504,16 +2504,16 @@ Reference count invariant components
 \begin_layout Definition
 \begin_inset Formula $\begin{array}{lcl}
 \mathit{LRC}(\alpha) & = & \chi(\alpha)\downarrow_{7}\\
-\mathit{INC}(\alpha) & = & \sum_{\overline{\mu}\in Q(\chi,\alpha)}\begin{cases}
+\mathit{INC}(\alpha) & = & \sum_{\overline{\mu}\in Q(\chi,\alpha)}\sum_{i=1}^{|\mu|}\begin{cases}
 \rho & \mathit{if}\,\mu_{i}=\mathit{INC}(\rho)\\
 0 & \mathit{otherwise}
 \end{cases}\\
-\mathit{DEC}(\alpha) & = & \sum_{\overline{\mu}\in Q(\chi,\alpha)}\begin{cases}
+\mathit{DEC}(\alpha) & = & \sum_{\overline{\mu}\in Q(\chi,\alpha)}\sum_{i=1}^{|\mu|}\begin{cases}
 \rho & \mathit{if}\,\mu_{i}=\mathit{DEC}(\rho)\\
 0 & \mathit{otherwise}
 \end{cases}\\
-\mathit{AMC}(\alpha) & = & \sum_{\alpha'\in\mathit{dom}(\chi).\overline{\mu}\in Q(\chi,\alpha')}\begin{cases}
-1 & \mathit{if}\,\alpha\in\mathit{Reach}(\chi,\alpha',\mu_{i})\\
+\mathit{AMC}(\alpha) & = & \sum_{\alpha'\in\mathit{dom}(\chi).\overline{\mu}\in Q(\chi,\alpha')}\sum_{i=1}^{|\mu|}\begin{cases}
+1 & \mathit{if}\,\alpha\in\mathit{Reach}(\chi,\alpha,\mu_{i})\\
 0 & \mathit{otherwise}
 \end{cases}\\
 \mathit{FRC}(\alpha) & = & \sum_{\alpha'\in\mathit{dom}(\chi)}\chi(\alpha')\downarrow_{8}(\alpha)
@@ -2800,6 +2800,22 @@ Sending a reference
 
 \end_layout
 
+\begin_layout Standard
+Note that for actor garbage collection, 
+\begin_inset Formula $\mathit{Send}$
+\end_inset
+
+ ignores object references.
+ This will be extended to account for object references in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Object-Collection"
+
+\end_inset
+
+.
+\end_layout
+
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
@@ -2917,6 +2933,26 @@ Receiving a reference
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+As with 
+\begin_inset Formula $\mathit{Send}$
+\end_inset
+
+, here 
+\begin_inset Formula $\mathit{Recv}$
+\end_inset
+
+ ignores object references.
+ This will be extended to account for object references in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Object-Collection"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Subsection
@@ -3121,18 +3157,15 @@ status open
  &  & \quad\chi'=\mathit{Send}(\chi,\alpha,\mathit{Reach}(\chi,\overline{v},\overline{\kappa}))\wedge\\
  &  & \quad\chi''=\chi'[\alpha\mapsto\mathit{Inc}(\chi,\alpha,\alpha',n),\\
  &  & \quad\quad\alpha'\mapsto(\mathtt{A},\mathtt{{\cal F}s(\mathtt{A})}\mapsto\mathit{null},(\mathtt{k},\overline{v}),\alpha,\varepsilon,\emptyset,n,\emptyset,\mathit{false})]\\
-\mathit{Adj}(\chi,\alpha,\alpha',n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
- &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
+\mathit{Adj}(\chi,\alpha,\alpha',n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{7},\\
  &  & \quad\chi(\alpha)\downarrow_{8}[\alpha'\mapsto(\chi(\alpha)\downarrow_{8}(\alpha')+n)],\chi(\alpha)\downarrow_{9})]\\
  &  & \quad\mathit{if}\,\alpha\neq\alpha'\wedge\chi(\alpha)\downarrow_{8}(\alpha')>-n\\
-\mathit{Adj}(\chi,\alpha,\alpha',n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
- &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7}-n,\chi(\alpha)\downarrow_{8},\chi(\alpha)\downarrow_{9})]\\
+\mathit{Adj}(\chi,\alpha,\alpha',n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{6},\\
+ &  & \quad\chi(\alpha)\downarrow_{7}-n,\chi(\alpha)\downarrow_{8},\chi(\alpha)\downarrow_{9})]\\
  &  & \quad\mathit{if}\,\alpha=\alpha'\\
-\mathit{Rel}(\chi,\alpha,\iota) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
- &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
+\mathit{Rel}(\chi,\alpha,\iota) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{7},\\
  &  & \quad\chi(\alpha)\downarrow_{8}[\iota\mapsto0],\chi(\alpha)\downarrow_{9})]\\
-\chi[\alpha\mapsto\beta] & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
- &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\chi(\alpha)\downarrow_{8},\beta)]
+\chi[\alpha\mapsto\beta] & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{8},\beta)]
 \end{array}$
 \end_inset
 

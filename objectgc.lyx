@@ -635,15 +635,15 @@ Reference count invariant components
 \begin_layout Definition
 \begin_inset Formula $\begin{array}{lcl}
 \mathit{LRC}(\omega) & = & \chi(\mathcal{O}(\omega))\downarrow_{8}(\omega)\\
-\mathit{INC}(\omega) & = & \sum_{\forall\overline{\mu}\in Q(\chi,\mathcal{O}(\omega))}\begin{cases}
+\mathit{INC}(\omega) & = & \sum_{\forall\overline{\mu}\in Q(\chi,\mathcal{O}(\omega))}\sum_{i=1}^{|\mu|}\begin{cases}
 \rho & \mathit{if}\,\mu_{i}=\mathit{INC}(\xi)\wedge\xi(\omega)=\rho\\
 0 & \mathit{otherwise}
 \end{cases}\\
-\mathit{DEC}(\omega) & = & \sum_{\forall\overline{\mu}\in Q(\chi,\mathcal{O}(\omega))}\begin{cases}
+\mathit{DEC}(\omega) & = & \sum_{\forall\overline{\mu}\in Q(\chi,\mathcal{O}(\omega))}\sum_{i=1}^{|\mu|}\begin{cases}
 \rho & \mathit{if}\,\mu_{i}=\mathit{DEC}(\xi)\wedge\xi(\omega)=\rho\\
 0 & \mathit{otherwise}
 \end{cases}\\
-\mathit{AMC}(\omega) & = & \sum_{\forall\alpha\in\mathit{dom}(\chi).\forall\overline{\mu}\in Q(\chi,\alpha)}\begin{cases}
+\mathit{AMC}(\omega) & = & \sum_{\forall\alpha\in\mathit{dom}(\chi).\forall\overline{\mu}\in Q(\chi,\alpha)}\sum_{i=1}^{|\mu|}\begin{cases}
 1 & \mathit{if}\,\omega\in\mathit{Reach}(\chi,\alpha,\mu_{i})\\
 0 & \mathit{otherwise}
 \end{cases}\\
@@ -657,8 +657,47 @@ Reference count invariant components
 \begin_layout Standard
 The reference count invariant is maintained in the same way for passive
  objects as for actors.
- The reachability reference count invariant differs from the actor reachability
- reference count invariant only in using ownership and the external map.
+\end_layout
+
+\begin_layout Standard
+The reachability reference count invariant for objects differs from the
+ actor reachability reference count invariant in several ways.
+ When determining which queues should be examined, the owning actor 
+\begin_inset Formula $\alpha=\mathcal{O}(\omega)$
+\end_inset
+
+ is considered.
+ Rather than an object 
+\begin_inset Formula $\omega$
+\end_inset
+
+ tracking its own local reference count, the owning actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ for 
+\begin_inset Formula $\omega$
+\end_inset
+
+ tracks the local reference count for 
+\begin_inset Formula $\omega$
+\end_inset
+
+ in the external map of 
+\begin_inset Formula $\alpha$
+\end_inset
+
+.
+ When examining 
+\emph on
+INC 
+\emph default
+and 
+\emph on
+DEC
+\emph default
+ messages, external sets are examined rather than a scalar reference count
+ value.
 \end_layout
 
 \begin_layout Definition
@@ -874,9 +913,9 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Formula $\dfrac{\begin{array}{c}
-\omega s\subseteq\mathit{dom}(\chi)\quad\omega s\notin\mathit{Reach}(\chi,\alpha,\mathtt{ref})\\
-\forall\omega\in\omega s.\mathcal{O}(\omega)=\alpha\wedge\chi(\alpha)\downarrow_{8}(\omega)\not>0
-\end{array}}{\chi,\alpha\cdot\overline{\varphi},\mathtt{e}\rightsquigarrow\chi\backslash\omega s,\alpha\cdot\overline{\varphi},\mathtt{e}}\;\textrm{\textsc{Collect}}$
+\omega\in\mathit{dom}(\chi)\quad\omega\notin\mathit{Reach}(\chi,\alpha,\mathtt{ref})\\
+\mathcal{O}(\omega)=\alpha\wedge\chi(\alpha)\downarrow_{8}(\omega)\not>0
+\end{array}}{\chi,\alpha\cdot\overline{\varphi},\mathtt{e}\rightsquigarrow\chi\backslash\omega,\alpha\cdot\overline{\varphi},\mathtt{e}}\;\textrm{\textsc{Collect}}$
 \end_inset
 
 
@@ -914,14 +953,12 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Formula $\begin{array}{lcl}
-\mathit{Adj}(\chi,\alpha,\xi) & = & \iota\in\mathit{dom}(\xi).\mathit{Adj}(\mathit{Adj}(\chi,\alpha,\iota,\xi(\iota)),\alpha,\xi\backslash\iota)\\
+\mathit{Adj}(\chi,\alpha,\xi) & = & \mathit{Adj}(\mathit{Adj}(\chi,\alpha,\iota,\xi(\iota)),\alpha,\xi\backslash\iota)\,\mathit{where}\,\iota\in\mathit{dom}(\xi)\\
 \mathit{Adj}(\chi,\alpha,\emptyset) & = & \chi\\
-\mathit{Adj}(\chi,\alpha,\omega,n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
- &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
+\mathit{Adj}(\chi,\alpha,\omega,n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{7},\\
  &  & \quad\chi(\alpha)\downarrow_{8}[\omega\mapsto(\chi(\alpha)\downarrow_{8}(\omega)+n)],\chi(\alpha)\downarrow_{9})]\\
  &  & \quad\mathit{if}\,\alpha\neq\mathcal{O}(\omega)\wedge\chi(\alpha)\downarrow_{8}(\alpha')>-n\\
-\mathit{Adj}(\chi,\alpha,\omega,n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3},\chi(\alpha)\downarrow_{4},\\
- &  & \quad\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6},\chi(\alpha)\downarrow_{7},\\
+\mathit{Adj}(\chi,\alpha,\omega,n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{7},\\
  &  & \quad\chi(\alpha)\downarrow_{8}[\omega\mapsto(\chi(\alpha)\downarrow_{8}(\iota)-n)],\chi(\alpha)\downarrow_{9})]\\
  &  & \quad\mathit{if}\,\alpha=\mathcal{O}(\omega)\\
 -\xi & = & [\iota\mapsto-\rho\,|\,\xi(\iota)=\rho]\\
@@ -1028,11 +1065,46 @@ The
 \noun on
 Collect
 \noun default
- rule allows for removal of passive objects from the heap when the objects
- are not reachable from the owning actor and the owning actor holds no local
- reference count weight for the objects.
+ rule allows for removal of a passive object 
+\begin_inset Formula $\omega$
+\end_inset
+
+ from the heap when 
+\begin_inset Formula $\omega$
+\end_inset
+
+ is not reachable from the owning actor and the owning actor holds no local
+ reference count weight for 
+\begin_inset Formula $\omega$
+\end_inset
+
+.
  This allows local heap collection by the owning actor using any mechanism
  for local heap tracing.
+\end_layout
+
+\begin_layout Standard
+Note that in the definition of 
+\begin_inset Formula $\mathit{Adj}$
+\end_inset
+
+ in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Auxiliary-definitions-for-object-gc"
+
+\end_inset
+
+, although the choice of 
+\begin_inset Formula $\iota$
+\end_inset
+
+ in the first case is arbitrary, the definition is deterministic.
+ The order in which adjustments to addresses in 
+\begin_inset Formula $\xi$
+\end_inset
+
+ does not affect the result.
 \end_layout
 
 \begin_layout Section
