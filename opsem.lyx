@@ -446,7 +446,7 @@ textwidth][c]{
 \\
 \dfrac{\begin{array}{c}
 \alpha'=\varphi(\mathtt{z})\\
-\chi'=\chi[\alpha,\alpha'++(\mathtt{b},\varphi(\mathtt{\overline{y}})]
+\chi'=\chi[\alpha'++(\mathtt{b},\varphi(\mathtt{\overline{y}})]
 \end{array}}{\chi,\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{z.b(\overline{y})}\rightsquigarrow\chi',\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{z}}\;\textrm{\textsc{Async}} &  & \dfrac{\begin{array}{c}
 \mathtt{A}=\chi(\alpha)\downarrow_{1}\quad(\mathtt{n},\overline{v})\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
 \mathcal{M}(\mathtt{A,n})=\mathtt{(\_,\overline{x}:\_,e,\_)}\\
@@ -490,7 +490,7 @@ name "fig:Local-execution"
 
 \end_inset
 
-Local execution.
+Local execution
 \end_layout
 
 \end_inset
@@ -512,10 +512,7 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Formula $\begin{array}{c}
-\dfrac{\chi,\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5}\rightsquigarrow\chi',\sigma,\mathtt{e}}{\chi\rightarrow\chi'[\alpha\mapsto(\sigma,\mathtt{e})]}\;\textrm{\textsc{Global}}\\
-\\
-\dfrac{\chi(\alpha)\downarrow_{3}=\overline{\mu}\quad\exists\alpha'.\chi(\alpha)\downarrow_{6}(\alpha')=\mu\cdot\overline{\mu'}}{\chi\rightarrow\chi[\alpha\mapsto\overline{\mu}\cdot\mu]}\;\textrm{\textsc{Deliver}}
-\end{array}$
+\dfrac{\chi,\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5}\rightsquigarrow\chi',\sigma,\mathtt{e}}{\chi\rightarrow\chi'[\alpha\mapsto(\sigma,\mathtt{e})]}\;\textrm{\textsc{Global}}\end{array}$
 \end_inset
 
 
@@ -531,7 +528,7 @@ name "fig:Global-execution."
 
 \end_inset
 
-Global execution.
+Global execution
 \end_layout
 
 \end_inset
@@ -586,21 +583,21 @@ status open
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\chi[\alpha,\mathtt{f}\mapsto v]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2}[\mathtt{f}\mapsto v],\chi(\alpha)\downarrow_{3}...\chi(\alpha)\downarrow_{6})]$
+\begin_inset Formula $\chi[\alpha,\mathtt{f}\mapsto v]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2}[\mathtt{f}\mapsto v],\chi(\alpha)\downarrow_{3}...\chi(\alpha)\downarrow_{5})]$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\chi[\alpha\mapsto(\sigma,\mathtt{e})]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{3},\sigma,\mathtt{e},\chi(\alpha)\downarrow_{6})]$
+\begin_inset Formula $\chi[\alpha\mapsto(\sigma,\mathtt{e})]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{3},\sigma,\mathtt{e})]$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\chi[\alpha,\alpha'++\mu]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6}[\alpha'\mapsto\chi(\alpha)\downarrow_{6}\cdot\mu])$
+\begin_inset Formula $\chi[\alpha++\mu]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\chi(\alpha)\downarrow_{3}\cdot\mu,\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5})]$
 \end_inset
 
 
@@ -669,8 +666,7 @@ The operational semantics has the shape
 \end_inset
 
  to their actor identifier, their fields, their message queue, their stack,
- the next expression to execute, and a logical pairwise (actor-to-actor)
- FIFO queue of messages by this actor that have not yet been delivered.
+ and the next expression to execute.
  These runtime entities are defined in figure 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -830,7 +826,7 @@ To simplify the presentation, some notation conventions are followed.
 \end_layout
 
 \begin_layout Subsection
-Local Execution
+Concurrent Execution
 \end_layout
 
 \begin_layout Standard
@@ -1062,10 +1058,6 @@ T-Consume
  affect the reference capability of the result of the expression.
 \end_layout
 
-\begin_layout Subsection
-Global Execution
-\end_layout
-
 \begin_layout Standard
 Global execution is defined in figure 
 \begin_inset CommandInset ref
@@ -1074,18 +1066,185 @@ reference "fig:Global-execution."
 
 \end_inset
 
- .
+.
 
 \noun on
  Global 
 \noun default
 says that if an actor can execute, then its stack and next expression to
  execute will be updated.
- 
+\end_layout
+
+\begin_layout Subsection
+Distributed Execution
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Formula $\begin{array}{rclcl}
+ &  & \mathit{Actor} & = & {\color{gray}\mathit{ActorID\times(FieldID\rightarrow Value)}}\\
+ &  &  & {\color{gray}\times} & {\color{gray}\mathit{\overline{Message}}\times Stack\times Expr}\\
+ &  &  & \times & (\mathit{ActorID}\rightarrow\overline{Message})
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Runtime-entities-1"
+
+\end_inset
+
+
+\begin_inset Argument 1
+status open
+
+\begin_layout Plain Layout
+Distributed runtime entities
+\end_layout
+
+\end_inset
+
+Distributed runtime entities.
+ Elements that are unchanged are greyed out.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Formula $\begin{array}{c}
+\dfrac{\begin{array}{c}
+\alpha'=\varphi(\mathtt{z})\\
+\chi'=\chi[\alpha,\alpha'++(\mathtt{b},\varphi(\mathtt{\overline{y}})]
+\end{array}}{\chi,\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{z.b(\overline{y})}\rightsquigarrow\chi',\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{z}}\;\textrm{\textsc{Async}}\\
+\\
+\dfrac{\chi(\alpha)\downarrow_{3}=\overline{\mu}\quad\exists\alpha'.\chi(\alpha)\downarrow_{6}(\alpha')=\mu\cdot\overline{\mu'}}{\chi\rightarrow\chi[\alpha\mapsto\overline{\mu}\cdot\mu]}\;\textrm{\textsc{Deliver}}
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Distributed-execution"
+
+\end_inset
+
+Distributed execution
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Formula $\chi[\alpha,\alpha'++\mu]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6}[\alpha'\mapsto\chi(\alpha)\downarrow_{6}\cdot\mu])$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Distributed-execution-1"
+
+\end_inset
+
+Auxiliary definitions for distributed execution
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In the distributed setting, atomic delivery of messages is not feasible.
+ To account for this, the definition of an actor is extended in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Runtime-entities-1"
+
+\end_inset
+
+ to include a logical pairwise (actor-to-actor) FIFO queue of messages sent
+ by this actor that have not yet been delivered.
+\end_layout
+
+\begin_layout Standard
+In figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Distributed-execution"
+
+\end_inset
+
+, the 
 \noun on
-Deliver 
+Async
 \noun default
-moves a message from a logical pairwise FIFO queue to the actual actor message
+ rule is changed to place the newly created message into the pairwise FIFO
+ queue of undelivered messages between the sender and the receiver, rather
+ than directly into the message queue of the receiver.
+ The new
+\noun on
+ Deliver 
+\noun default
+rule moves a message from a pairwise FIFO queue to the receiver's message
  queue.
 \end_layout
 
@@ -1101,24 +1260,20 @@ The purpose of the separate pairwise FIFO queues is to model an arbitrary
 \end_inset
 
 .
- On a single node, every execution of 
+ On a single node, 
 \noun on
 Async 
 \noun default
-is effectively immediately followed by an execution of 
-\noun on
-Deliver
-\noun default
- that immediately enqueues the new message.
+atomically enqueues the message in the receiver's message queue.
  This guarantees message causality on a single node.
 \end_layout
 
 \begin_layout Standard
-However, in the distributed context, 
+However, in the distributed context, the message produced by 
 \noun on
 Async 
 \noun default
-is not guaranteed to be followed by 
+is not placed in the receiver's queue until some future execution of 
 \noun on
 Deliver
 \noun default
