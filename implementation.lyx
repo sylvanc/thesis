@@ -4981,10 +4981,40 @@ reference "subsec:Finding-Isolated-Graphs"
 \end_inset
 
 ) that the actor is a member of are expired.
+ If the actor's perceived reference count is zero, it is removed from the
+ 
+\begin_inset Formula $\mathtt{deferred}$
+\end_inset
+
+ map and immediately collected.
+ Otherwise, the actor is added to the 
+\begin_inset Formula $\mathtt{deferred}$
+\end_inset
+
+ map.
 \end_layout
 
 \begin_layout Standard
-TODO: not done
+The 
+\begin_inset Formula $\mathtt{deferred}$
+\end_inset
+
+ map is used to reduce the total work done by the cycle detector.
+ Rather than finding isolated graphs of blocked actors every time an actor
+ blocks, the process is deferred until some number of actors have blocked.
+ At that point, some actor in the 
+\begin_inset Formula $\mathtt{deferred}$
+\end_inset
+
+ map is chosen as a starting point, and an attempt is made.
+ If the attempt touches actors in the 
+\begin_inset Formula $\mathtt{deferred}$
+\end_inset
+
+ map, they are removed from the map, effectively reducing the total number
+ of isolated graph searches.
+ Finding or not finding an isolated graph is used as a feedback mechanism
+ to the number of deferred actors required to trigger a detection attempt.
 \end_layout
 
 \begin_layout Subsection
@@ -4995,6 +5025,40 @@ name "subsec:Apply-Topology-Deltas"
 \end_inset
 
 Applying Topology Deltas
+\end_layout
+
+\begin_layout Standard
+Topology deltas are applied lazily, in order to avoid the work required
+ to update a topology until the blocked actor's view of its own topology
+ is required for a cycle detection attempt, or until the blocked actor sends
+ another topology update to the cycle detector.
+ The topology delta shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Topology-delta-information"
+
+\end_inset
+
+ is applied to the 
+\begin_inset Formula $\mathtt{viewrefmap\_t}$
+\end_inset
+
+ from figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:A-view-of"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The 
+\begin_inset Formula $\mathtt{viewrefmap\_t}$
+\end_inset
+
+ uses a reference counted intermediary between TODO:
 \end_layout
 
 \begin_layout Subsection
