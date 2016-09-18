@@ -500,6 +500,26 @@ true topology
  cycle detector) examining another actor's state.
 \end_layout
 
+\begin_layout Standard
+Note that without causality, 
+\emph on
+MAC 
+\emph default
+does not hold without modification.
+ This is discussed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:distributed-actor-GC"
+
+\end_inset
+
+, where an extension of 
+\emph on
+MAC
+\emph default
+ is proposed that does not require causal ordering.
+\end_layout
+
 \begin_layout Subsection
 Topology
 \end_layout
@@ -2440,63 +2460,6 @@ DEC
 .
 \end_layout
 
-\begin_layout Standard
-In order to track all messages bound for some actor 
-\begin_inset Formula $\alpha$
-\end_inset
-
-, 
-\begin_inset Formula $Q(\chi,\alpha)$
-\end_inset
-
- is defined to be the set of all message queues that will be delivered to
- 
-\begin_inset Formula $\alpha$
-\end_inset
-
-, including the already enqueued messages and the FIFO queue from all other
- actors that have not yet been enqueued for 
-\begin_inset Formula $\alpha$
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Definition
-Queues for 
-\begin_inset Formula $\alpha$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Definition
-\begin_inset Formula $Q(\chi,\alpha)=\{\chi(\alpha)\downarrow_{3}\}\cup\{\overline{\mu}\,|\,\alpha'\in\mathit{dom}(\chi)\wedge\overline{\mu}=\chi(\alpha')\downarrow_{6}(\alpha)\}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-In the concurrent setting, where enqueuing messages is atomic, only the
- actor's message queue will contain messages.
- However, in the distributed setting, where causality is not enforced, the
- FIFO queues may also contain messages.
- Note that without causality, 
-\emph on
-MAC 
-\emph default
-does not hold without modification.
- This is discussed in section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sec:distributed-actor-GC"
-
-\end_inset
-
-.
-\end_layout
-
 \begin_layout Definition
 Reference count invariant components
 \end_layout
@@ -2504,16 +2467,16 @@ Reference count invariant components
 \begin_layout Definition
 \begin_inset Formula $\begin{array}{lcl}
 \mathit{LRC}(\alpha) & = & \chi(\alpha)\downarrow_{7}\\
-\mathit{INC}(\alpha) & = & \sum_{\overline{\mu}\in Q(\chi,\alpha)}\sum_{i=1}^{|\mu|}\begin{cases}
-\rho & \mathit{if}\,\mu_{i}=\mathit{INC}(\rho)\\
+\mathit{INC}(\alpha) & = & \sum_{i=1}^{|Q(\chi,\alpha)|}\begin{cases}
+\rho & \mathit{if}\,Q(\chi,\alpha)_{i}=\mathit{INC}(\rho)\\
 0 & \mathit{otherwise}
 \end{cases}\\
-\mathit{DEC}(\alpha) & = & \sum_{\overline{\mu}\in Q(\chi,\alpha)}\sum_{i=1}^{|\mu|}\begin{cases}
-\rho & \mathit{if}\,\mu_{i}=\mathit{DEC}(\rho)\\
+\mathit{DEC}(\alpha) & = & \sum_{i=1}^{|Q(\chi,\alpha)|}\begin{cases}
+\rho & \mathit{if}\,Q(\chi,\alpha)_{i}=\mathit{DEC}(\rho)\\
 0 & \mathit{otherwise}
 \end{cases}\\
-\mathit{AMC}(\alpha) & = & \sum_{\alpha'\in\mathit{dom}(\chi).\overline{\mu}\in Q(\chi,\alpha')}\sum_{i=1}^{|\mu|}\begin{cases}
-1 & \mathit{if}\,\alpha\in\mathit{Reach}(\chi,\alpha,\mu_{i})\\
+\mathit{AMC}(\alpha) & = & \sum_{\alpha'\in\mathit{dom}(\chi)}\sum_{i=1}^{|Q(\chi,\alpha')|}\begin{cases}
+1 & \mathit{if}\,\alpha\in\mathit{Reach}(\chi,\alpha,Q(\chi,\alpha')_{i})\\
 0 & \mathit{otherwise}
 \end{cases}\\
 \mathit{FRC}(\alpha) & = & \sum_{\alpha'\in\mathit{dom}(\chi)}\chi(\alpha')\downarrow_{8}(\alpha)

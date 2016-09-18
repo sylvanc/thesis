@@ -604,6 +604,13 @@ status open
 \end_layout
 
 \begin_layout Itemize
+\begin_inset Formula $\chi[\alpha\mapsto\overline{\mu}]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1},\chi(\alpha)\downarrow_{2},\overline{\mu},\chi(\alpha)\downarrow_{4},\chi(\alpha)\downarrow_{5})]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
 \begin_inset Formula $\mathit{New}(\chi,\mathtt{C})=(\omega,\chi')\,\mathit{where}\,\omega\not\in\mathit{dom}(\chi)\wedge\chi'=\chi[\omega\mapsto(\mathtt{C},{\cal F}s(\mathtt{C})\mapsto\mathit{null})]$
 \end_inset
 
@@ -1145,7 +1152,7 @@ status open
 \chi'=\chi[\alpha,\alpha'++(\mathtt{b},\varphi(\mathtt{\overline{y}})]
 \end{array}}{\chi,\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{z.b(\overline{y})}\rightsquigarrow\chi',\alpha\cdot\overline{\varphi}\cdot\varphi,\mathtt{z}}\;\textrm{\textsc{Async}}\\
 \\
-\dfrac{\chi(\alpha)\downarrow_{3}=\overline{\mu}\quad\exists\alpha'.\chi(\alpha)\downarrow_{6}(\alpha')=\mu\cdot\overline{\mu'}}{\chi\rightarrow\chi[\alpha\mapsto\overline{\mu}\cdot\mu]}\;\textrm{\textsc{Deliver}}
+\dfrac{\exists\alpha'.\chi(\alpha')\downarrow_{6}(\alpha)=\mu\cdot\overline{\mu}}{\chi\rightarrow\chi[\alpha',\alpha\mapsto\overline{\mu}][\alpha++\mu]}\;\textrm{\textsc{Deliver}}
 \end{array}$
 \end_inset
 
@@ -1181,9 +1188,15 @@ wide false
 sideways false
 status open
 
-\begin_layout Plain Layout
-\align center
-\begin_inset Formula $\chi[\alpha,\alpha'++\mu]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6}[\alpha'\mapsto\chi(\alpha)\downarrow_{6}\cdot\mu])$
+\begin_layout Itemize
+\begin_inset Formula $\chi[\alpha,\alpha'++\mu]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6}[\alpha'\mapsto\chi(\alpha)\downarrow_{6}(\alpha')\cdot\mu])$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\chi[\alpha,\alpha'\mapsto\mu]=\chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{5},\chi(\alpha)\downarrow_{6}[\alpha'\mapsto\overline{\mu}])$
 \end_inset
 
 
@@ -1290,6 +1303,74 @@ reference "chap:Evaluation-and-Further"
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Standard
+In order to consider all messages bound for some actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+, 
+\begin_inset Formula $Q(\chi,\alpha)$
+\end_inset
+
+ is defined to be the concatenation of all message queues that will be delivered
+ to 
+\begin_inset Formula $\alpha$
+\end_inset
+
+, including the already enqueued messages and the FIFO queue from all other
+ actors that have not yet been enqueued for 
+\begin_inset Formula $\alpha$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Definition
+Queues for 
+\begin_inset Formula $\alpha$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $Q(\chi,\alpha)=\{\chi(\alpha)\downarrow_{3}\}\cup\{\overline{\mu}\,|\,\alpha'\in\mathit{dom}(\chi)\wedge\overline{\mu}=\chi(\alpha')\downarrow_{6}(\alpha)\}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula $\begin{array}{ccc}
+Q(\chi,\alpha) & = & Q(\chi,\alpha,\{\alpha'\,|\,\alpha'\in\mathit{dom}(\chi)\}\\
+Q(\chi,\alpha,\{\alpha'\}\cup\alpha s) & = & Q(\chi,\alpha,\alpha')\cdot Q(\chi,\alpha,\alpha s)\\
+Q(\chi,\alpha,\emptyset) & = & \emptyset\\
+Q(\chi,\alpha,\alpha') & = & \begin{cases}
+\chi(\alpha)\downarrow_{3} & \mathit{if}\,\alpha=\alpha'\\
+\chi(\alpha')\downarrow_{6}(\alpha) & \mathit{otherwise}
+\end{cases}
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In the concurrent setting, where enqueuing messages is atomic, only the
+ actor's message queue will contain messages.
+ However, in the distributed setting, where causality is not enforced, the
+ FIFO queues may also contain messages.
+ The concatenation produced by 
+\begin_inset Formula $Q(\chi,\alpha)$
+\end_inset
+
+ is non-deterministic, as the evaluation of 
+\begin_inset Formula $\alpha'\in\mathit{dom}(\chi)$
+\end_inset
+
+ is unordered.
 \end_layout
 
 \begin_layout Standard
@@ -1526,35 +1607,6 @@ However, many of the design goals cannot be provided for with the semantics
  happens only via message passing, it remains possible for two actors to
  exchange information by modifying fields of the same object, resulting
  in behaviours that are no longer logically atomic.
-\end_layout
-
-\begin_layout Section
-TODO:
-\end_layout
-
-\begin_layout Itemize
-\noindent
-Without implementation details, but with explanation of asynchronicity,
- how we are implementing the actor model, examples of orderings of events
- (constructor ordering, etc.).
-\end_layout
-
-\begin_layout Itemize
-\noindent
-In source code examples, 
-\begin_inset Quotes eld
-\end_inset
-
-dim
-\begin_inset Quotes erd
-\end_inset
-
- the refcaps and say we will explain them later.
-\end_layout
-
-\begin_layout Itemize
-\noindent
-Use pony intro slides examples.
 \end_layout
 
 \end_body

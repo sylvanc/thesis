@@ -100,6 +100,11 @@ Abstract
 \end_layout
 
 \begin_layout Standard
+TODO: REWRITE WITH WE INSTEAD OF I, add a brief history of who has worked
+ on Pony
+\end_layout
+
+\begin_layout Standard
 I have developed a new programming language, called Pony, that allows the
  user to easily write fast, safe, parallel programs.
  The focus of this work is using a powerful and novel static type system

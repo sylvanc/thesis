@@ -635,16 +635,16 @@ Reference count invariant components
 \begin_layout Definition
 \begin_inset Formula $\begin{array}{lcl}
 \mathit{LRC}(\omega) & = & \chi(\mathcal{O}(\omega))\downarrow_{8}(\omega)\\
-\mathit{INC}(\omega) & = & \sum_{\forall\overline{\mu}\in Q(\chi,\mathcal{O}(\omega))}\sum_{i=1}^{|\mu|}\begin{cases}
-\rho & \mathit{if}\,\mu_{i}=\mathit{INC}(\xi)\wedge\xi(\omega)=\rho\\
+\mathit{INC}(\omega) & = & \sum_{i=1}^{|Q(\chi,\mathcal{O}(\omega))|}\begin{cases}
+\rho & \mathit{if}\,Q(\chi,\mathcal{O}(\omega))_{i}=\mathit{INC}(\xi)\wedge\xi(\omega)=\rho\\
 0 & \mathit{otherwise}
 \end{cases}\\
-\mathit{DEC}(\omega) & = & \sum_{\forall\overline{\mu}\in Q(\chi,\mathcal{O}(\omega))}\sum_{i=1}^{|\mu|}\begin{cases}
-\rho & \mathit{if}\,\mu_{i}=\mathit{DEC}(\xi)\wedge\xi(\omega)=\rho\\
+\mathit{DEC}(\omega) & = & \sum_{i=1}^{|Q(\chi,\mathcal{O}(\omega))|}\begin{cases}
+\rho & \mathit{if}\,Q(\chi,\mathcal{O}(\omega))_{i}=\mathit{DEC}(\xi)\wedge\xi(\omega)=\rho\\
 0 & \mathit{otherwise}
 \end{cases}\\
-\mathit{AMC}(\omega) & = & \sum_{\forall\alpha\in\mathit{dom}(\chi).\forall\overline{\mu}\in Q(\chi,\alpha)}\sum_{i=1}^{|\mu|}\begin{cases}
-1 & \mathit{if}\,\omega\in\mathit{Reach}(\chi,\alpha,\mu_{i})\\
+\mathit{AMC}(\omega) & = & \sum_{\alpha\in\mathit{dom}(\chi)}\sum_{i=1}^{|Q(\chi,\alpha)|}\begin{cases}
+1 & \mathit{if}\,\omega\in\mathit{Reach}(\chi,\alpha,Q(\chi,\alpha)_{i})\\
 0 & \mathit{otherwise}
 \end{cases}\\
 \mathit{FRC}(\omega) & = & \sum_{\alpha\neq\mathcal{O}(\omega)}\chi(\alpha)\downarrow_{8}(\omega)

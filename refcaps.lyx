@@ -1875,7 +1875,7 @@ textwidth][c]{
 \Gamma_{0}=\Gamma\quad\Gamma_{\mathtt{i-1}}\vdash_{\mathcal{A}}\mathtt{e_{i}:T{}_{i}}\,|\,\Gamma_{\mathtt{i}}
 \end{array}}{\Gamma\vdash\mathtt{A.k(\overline{e}):A\,tag}\,|\,\Gamma_{\mathtt{|\overline{e}|}}}\;\textrm{\textsc{T-Ator}}\\
 \\
-\dfrac{\mathtt{x}\in\Gamma}{\Gamma\vdash\mathtt{consume\,x}:\mathcal{U}(\Gamma(\mathtt{x}))\,|\,\Gamma\backslash\{\mathtt{x}\}}\;\textrm{\textsc{T-Consume}} &  & \dfrac{\Gamma\backslash\{\mathtt{x}\,|\,\neg\mathit{Sendable}(\Gamma(\mathtt{x}))\}\vdash\mathtt{e:ET}}{\Gamma\vdash\mathtt{recover\,e:}\mathcal{R}(\mathtt{ET})\,|\,\Gamma}\;\textrm{\textsc{T-Rec}}\\
+\dfrac{\mathtt{x}\in\Gamma}{\Gamma\vdash\mathtt{consume\,x}:\mathcal{U}(\Gamma(\mathtt{x}))\,|\,\Gamma\backslash\{\mathtt{x}\}}\;\textrm{\textsc{T-Consume}} &  & \dfrac{\Gamma\backslash\{\mathtt{x}\,|\,\neg\mathit{Sendable}(\Gamma(\mathtt{x}))\}\vdash\mathtt{e:ET}\,|\,\Gamma'}{\Gamma\vdash\mathtt{recover\,e:}\mathcal{R}(\mathtt{ET})\,|\,\Gamma\cap\Gamma'}\;\textrm{\textsc{T-Rec}}\\
 \\
 \dfrac{\Gamma\vdash\mathtt{e:ET'}\,|\,\Gamma'\quad\mathcal{A}(\mathtt{ET'})\le\mathtt{T}}{\Gamma\vdash_{\mathcal{A}}\mathtt{e:T}\,|\,\Gamma'}\;\textrm{\textsc{T-Alias}} &  & \dfrac{\Gamma\vdash\mathtt{e:S}\,\kappa\circ\,|\,\Gamma'}{\Gamma\vdash\mathtt{e:S}\,\kappa\,|\,\Gamma'}\;\textrm{\textsc{T-Subsume}}
 \end{array}$
@@ -5194,7 +5194,7 @@ status open
 \end_inset
 
  where 
-\begin_inset Formula $\chi(\alpha)\downarrow_{3}=\overline{\mu}$
+\begin_inset Formula $Q(\chi,\alpha)=\overline{\mu}$
 \end_inset
 
  and 
