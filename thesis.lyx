@@ -100,12 +100,7 @@ Abstract
 \end_layout
 
 \begin_layout Standard
-TODO: REWRITE WITH WE INSTEAD OF I, add a brief history of who has worked
- on Pony
-\end_layout
-
-\begin_layout Standard
-I have developed a new programming language, called Pony, that allows the
+We have developed a new programming language, called Pony, that allows the
  user to easily write fast, safe, parallel programs.
  The focus of this work is using a powerful and novel static type system
  to guarantee properties of a program in order to eliminate many runtime
@@ -162,8 +157,11 @@ Guaranteeing data-race freedom allows the language to use a novel fully
  This protocol allows each actor to collect its own heap independently and
  concurrently, while still allowing objects to be sent by reference in asynchron
 ous messages (zero-copy message passing).
- This is achieved using Ownership and Reference Counting for Actors (ORCA),
- a protocol derived from 
+ This is achieved using Ownership and Reference Counting for Actors (
+\emph on
+ORCA
+\emph default
+), a protocol derived from 
 \emph on
 MAC 
 \emph default
@@ -172,22 +170,44 @@ that allows passive objects shared across
 actor-local heaps 
 \emph default
 to be garbage collected with no stop-the-world step.
- This approach does not require a cycle detector for passive objects.
 \end_layout
 
 \begin_layout Standard
-To validate these ideas, I have written a complete runtime (including a
+To validate these ideas, we have written a complete runtime (including a
  work-stealing scheduler, garbage collector, memory allocator, message queuing,
- asynchronous I/O, and more) and an ahead-of-time optimising compiler with
- an LLVM back-end.
+ asynchronous I/O, and more) and an ahead-of-time optimising compiler.
  The language is open source.
 \end_layout
 
+\begin_layout Section*
+Acknowledgements
+\end_layout
+
 \begin_layout Standard
-Finally, I discuss opportunities for further work, including extensions
- to both the language (e.g.
- reflection and meta-programming) and the runtime (e.g.
- distributed computing).
+Although I developed the type system, semantics, and garbage collector,
+ and implemented the compiler and runtime, many other people have contributed
+ to Pony.
+ Sophia Drossopoulou has contributed to every part of the formalisation
+ of Pony, especially the proofs, and has literally taught me everything
+ I know about formal methods.
+ This project could not possibly have happened without her.
+ Other key contributors have been Sebastian Blessing (masters thesis on
+ distributed Pony), Andy McNeil (implementation work on the compiler), Juliana
+ Franco (formalisation of object garbage collection), Luke Cheeseman (value-depe
+ndent types), George Steed (formalisation of type expressions), and the
+ SLURP group at Imperial College (invaluable feedback and discussion).
+ Also of special note are Tobias Wrigstad, Dave Clarke, and the Upscale
+ Project, who have bravely used the Pony runtime for their own language,
+ Encore.
+\end_layout
+
+\begin_layout Standard
+More recently, the Pony open-source community has been amazing, including
+ Sean Allen, Joe Eli McIlvain, Benoit Vey, Theo Butler, Perelandric, Reini
+ Urban, Gordon Tisher, Dipin Hora, Jonas Lasauskas, John Mumm, Andy Turley,
+ George Marrows, Darach Ennis, Tommy McGuire, Carl Quinn, Malthe Borch,
+ Kevin Cantú, Markus Fix, Chris Double, Dan Connolly, and many others.
+ I owe them all a beer, and I owe anyone I've failed to mention two beers.
 \end_layout
 
 \begin_layout Standard

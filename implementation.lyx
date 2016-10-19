@@ -383,7 +383,6 @@ reference "subsec:Tracing-GC"
 \end_inset
 
 .
- TODO: alloc/free performance test results
 \end_layout
 
 \begin_layout Subsection
@@ -1492,17 +1491,18 @@ status open
 
 \begin_layout Plain Layout
 
-bool messageq_push(messageq_t* q, pony_msg_t* m) {
+bool ponyint_messageq_push(messageq_t* q, pony_msg_t* m) {
 \end_layout
 
 \begin_layout Plain Layout
 
-  m->next = NULL;
+  atomic_store_explicit(&m->next, NULL, memory_order_relaxed);
 \end_layout
 
 \begin_layout Plain Layout
 
-  pony_msg_t* prev = (pony_msg_t*)_atomic_exchange(&q->head, m);
+  pony_msg_t* prev = atomic_exchange_explicit(&q->head, m,     memory_order_rela
+xed);
 \end_layout
 
 \begin_layout Plain Layout
@@ -1517,7 +1517,7 @@ bool messageq_push(messageq_t* q, pony_msg_t* m) {
 
 \begin_layout Plain Layout
 
-  _atomic_store(&prev->next, m);
+  atomic_store_explicit(&prev->next, m, memory_order_release);
 \end_layout
 
 \begin_layout Plain Layout
@@ -1571,7 +1571,7 @@ status open
 
 \begin_layout Plain Layout
 
-pony_msg_t* messageq_pop(messageq_t* q) {
+pony_msg_t* ponyint_messageq_pop(messageq_t* q) {
 \end_layout
 
 \begin_layout Plain Layout
@@ -1581,7 +1581,7 @@ pony_msg_t* messageq_pop(messageq_t* q) {
 
 \begin_layout Plain Layout
 
-  pony_msg_t* next = _atomic_load(&tail->next);
+  pony_msg_t* next = atomic_load_explicit(&tail->next, memory_order_acquire);
 \end_layout
 
 \begin_layout Plain Layout
@@ -1596,7 +1596,7 @@ pony_msg_t* messageq_pop(messageq_t* q) {
 
 \begin_layout Plain Layout
 
-    pool_free(tail->size, tail);
+    ponyint_pool_free(tail->index, tail);
 \end_layout
 
 \begin_layout Plain Layout
@@ -1651,8 +1651,8 @@ reference "fig:Pushing-to-a"
 \end_inset
 
 , we see that pushing a message on to a queue is accomplished with a single
- atomic exchange operation (the atomic store is logically atomic, but on
- most common architectures, e.g.
+ atomic exchange operation (the atomic stores are logically atomic, but
+ on most common architectures, e.g.
  X86, X86-64, AArch32, AArch64, et al., all stores are inherently atomic).
  Critically, there is no compare-and-swap loop or other waiting construct.
  As a result, sending a message is lock-free and wait-free.
@@ -1680,7 +1680,7 @@ reference "fig:Popping-from-a"
  pushing, results in a normal load instruction on most common architectures),
  and without any loop or wait.
  This means that popping a message in order to begin a behaviour is lock-free,
- wait-free, and non-atomic.
+ wait-free, and uses no atomic operations.
  The memory management of queue nodes is discussed in section 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -1862,7 +1862,7 @@ status open
 
 \begin_layout Plain Layout
 
-bool messageq_markempty(messageq_t* q) {
+bool ponyint_messageq_markempty(messageq_t* q) {
 \end_layout
 
 \begin_layout Plain Layout
@@ -1872,7 +1872,7 @@ bool messageq_markempty(messageq_t* q) {
 
 \begin_layout Plain Layout
 
-  pony_msg_t* head = _atomic_load(&q->head);
+  pony_msg_t* head = atomic_load_explicit(&q->head, memory_order_relaxed);
 \end_layout
 
 \begin_layout Plain Layout
@@ -1902,7 +1902,12 @@ bool messageq_markempty(messageq_t* q) {
 
 \begin_layout Plain Layout
 
-  return _atomic_cas(&q->head, &tail, head);
+  return atomic_compare_exchange_strong_explicit(&q->head, &tail, head,
+\end_layout
+
+\begin_layout Plain Layout
+
+    memory_order_release, memory_order_relaxed);
 \end_layout
 
 \begin_layout Plain Layout
@@ -2951,11 +2956,11 @@ reference "sec:Sharing-GC"
 \begin_layout Standard
 In addition, the design decision to not use a copying collector means that
  stack references would not have to be changed to point to moved objects.
- This is also true of heap pointers, but is more significant for stack pointers.
- Changing a stack pointers requires the single static assignment (SSA) intermedi
-ate representation (IR) of the program used by LLVM to generate machine
- code to account for relocations, which can impede certain compiler optimisation
-s.
+ This is also true of heap pointers, but is arguably more significant for
+ stack pointers.
+ Changing stack pointers requires the single static assignment (SSA) intermediat
+e representation (IR) of the program used by LLVM to generate machine code
+ to account for relocations, which can impede certain compiler optimisations.
 \end_layout
 
 \begin_layout Subsection
@@ -4681,7 +4686,31 @@ struct view_t {
 
 \begin_layout Plain Layout
 
-}; 
+};
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+typedef struct viewref_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  view_t* view;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t rc;
+\end_layout
+
+\begin_layout Plain Layout
+
+} viewref_t; 
 \end_layout
 
 \end_inset
@@ -5032,7 +5061,7 @@ Topology deltas are applied lazily, in order to avoid the work required
  to update a topology until the blocked actor's view of its own topology
  is required for a cycle detection attempt, or until the blocked actor sends
  another topology update to the cycle detector.
- The topology delta shown in figure 
+ The topology delta map shown in figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:Topology-delta-information"
@@ -5051,14 +5080,110 @@ reference "fig:A-view-of"
 \end_inset
 
 .
+ Each entry in the delta map sets a new reference count that some actor
+ 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ whose topology is being updated holds for some other actor 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+.
+ 
 \end_layout
 
 \begin_layout Standard
-The 
+If the cycle detector did not previously see 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ as holding a reference count for 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+, then 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ is added to the 
 \begin_inset Formula $\mathtt{viewrefmap\_t}$
 \end_inset
 
- uses a reference counted intermediary between TODO:
+ of 
+\begin_inset Formula $\alpha$
+\end_inset
+
+.
+ Doing so increments the 
+\begin_inset Formula $\mathtt{view\_rc}$
+\end_inset
+
+ field of the 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ the cycle detector holds for 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+.
+ This provides a simple acyclic reference count for 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ structures.
+ The purpose of the reference count is to allow a 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ to hold an out-of-date reference to an actor that has already been collected.
+\end_layout
+
+\begin_layout Standard
+For example, suppose 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ holds the only reference to 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ and both actors block.
+ Later, 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ unblocks and drops its reference to 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+, which remains blocked.
+ At this point, 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ can be collected, even though the cycle detector has an out-of-date topology
+ for 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ in which 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ still holds a reference for 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+.
+ By using a reference counted 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ structure, the cycle detector avoid keeping inverse reference lists for
+ actors or searching for all actors with out-of-date references to an actor
+ that is being collected.
 \end_layout
 
 \begin_layout Subsection
@@ -5071,6 +5196,37 @@ name "subsec:Unblock-Messages"
 Unblock Messages
 \end_layout
 
+\begin_layout Standard
+When an actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ unblocks, it notifies the cycle detector.
+ When the cycle detector receives an unblock message from 
+\begin_inset Formula $\alpha$
+\end_inset
+
+, it removes 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ from the 
+\begin_inset Formula $\mathtt{deferred}$
+\end_inset
+
+ map if it is present and cancels all perceived cycles that 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ is a member of.
+ Rather than search all perceived cycles, each 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ keeps a map of perceived cycle that the actor is a member of.
+ This allows the cycles to be cancelled directly.
+\end_layout
+
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
@@ -5079,6 +5235,182 @@ name "subsec:Finding-Isolated-Graphs"
 \end_inset
 
 Finding Isolated Graphs of Blocked Actors
+\end_layout
+
+\begin_layout Standard
+Detecting isolated graphs is done using a three-colour algorithm that combines
+ finding graphs with determining if the cycle's view of the graph topology
+ indicates that the graph is isolated.
+\end_layout
+
+\begin_layout Standard
+All 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ structures begin coloured black.
+ A 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ from the 
+\begin_inset Formula $\mathtt{deferred}$
+\end_inset
+
+ map is selected as the entry point and placed on a processing stack with
+ an incoming reference count of zero.
+ Elements are popped from the stack and processed until the stack is empty.
+\end_layout
+
+\begin_layout Standard
+For each element, when it is popped from the stack with some incoming reference
+ count:
+\end_layout
+
+\begin_layout Enumerate
+If the 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ has a deferred topology delta, it is applied.
+\end_layout
+
+\begin_layout Enumerate
+If the 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ is in the 
+\begin_inset Formula $\mathtt{deferred}$
+\end_inset
+
+ map, it is removed.
+ This is the key step in allowing the 
+\begin_inset Formula $\mathtt{deferred}$
+\end_inset
+
+ map to reduce the overall work performed by the cycle detector.
+\end_layout
+
+\begin_layout Enumerate
+The incoming reference count on the stack is subtracted from the cycle detector'
+s view of the actor's view of it's own reference count.
+\end_layout
+
+\begin_layout Enumerate
+If the 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ is not coloured grey, then it is coloured grey and the elements of its
+ 
+\begin_inset Formula $\mathtt{viewref}$
+\end_inset
+
+ map are pushed on the stack.
+ The outgoing reference count from the current actor is pushed as the incoming
+ reference count on the processing stack.
+\end_layout
+
+\begin_layout Standard
+When this process is complete, all actors reachable from the initially selected
+ 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ are marked grey, including the initial actor.
+ Another scan is performed, this time looking for 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ entries with zero reference counts.
+ The process begins with the same initial 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ being pushed on the processing stack.
+ Stack processing in this phase consists of:
+\end_layout
+
+\begin_layout Enumerate
+If the 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ is not marked grey, it is skipped.
+\end_layout
+
+\begin_layout Enumerate
+If the 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ has a reference count of zero, it is marked white.
+\end_layout
+
+\begin_layout Enumerate
+Otherwise, the 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ is marked black, and a scan using a new stack is begun starting from that
+ 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+.
+ This scan marks each reachable 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ black.
+\end_layout
+
+\begin_layout Standard
+Upon completion, all actors reachable from the initially selected 
+\begin_inset Formula $\mathtt{view\_t}$
+\end_inset
+
+ will be marked black or white.
+ The actors marked white form a 
+\emph on
+perceived cycle
+\emph default
+ and are candidates for collection.
+\end_layout
+
+\begin_layout Standard
+If no actors are marked white (i.e.
+ no perceived cycle is detected), the cycle detector will increase the threshold
+ of deferred actors required before another cycle detection attempt is made.
+ Similarly, if a perceived cycle is detected, the cycle detector will decrease
+ the threshold.
+ The result is an adaptive cycle detector that will collect more often when
+ a program has short-lived actors and less often when a program has long-lived
+ actors.
+\end_layout
+
+\begin_layout Subsection
+Confirmation Messages
+\end_layout
+
+\begin_layout Standard
+When a perceived cycle is detected, confirmation messages are sent to the
+ members of the perceived cycle.
+ Rather than send confirmation messages to all actors in the perceived cycle,
+ an initial subset is sent messages.
+ Additional messages are sent when acknowledgment messages arrive for a
+ perceived cycle that has not been cancelled.
+ This deferment reduces the number of confirmation messages sent when a
+ perceived cycle is cancelled.
+\end_layout
+
+\begin_layout Standard
+Confirmation messages carry a token identifying the perceived cycle.
+ Rather than use the perceived cycle's memory address, which could be reused
+ if a perceived cycle were cancelled and a new one detected, a 64 bit integer
+ is used as a monotonic counter.
+ A perceived cycle is simply assigned the next integer.
 \end_layout
 
 \begin_layout Subsection
@@ -5091,64 +5423,109 @@ name "subsec:Acknowledgement-Messages"
 Acknowledgement Messages
 \end_layout
 
-\begin_layout Section
-\begin_inset CommandInset label
-LatexCommand label
-name "sec:Scheduler-Queues"
-
-\end_inset
-
-Scheduler Queues
-\end_layout
-
-\begin_layout Section
-Scheduler
-\end_layout
-
-\begin_layout Subsection
-\begin_inset CommandInset label
-LatexCommand label
-name "subsec:Cache-Locality"
-
-\end_inset
-
-Cache Locality
-\end_layout
-
-\begin_layout Subsection
-\begin_inset CommandInset label
-LatexCommand label
-name "subsec:Back-Pressure"
-
-\end_inset
-
-Back Pressure
-\end_layout
-
-\begin_layout Section
-Asynchronous I/O
-\end_layout
-
-\begin_layout Section
-\begin_inset CommandInset label
-LatexCommand label
-name "sec:Object-Layout"
-
-\end_inset
-
-Object Layout
-\end_layout
-
-\begin_layout Section
-Virtual Dispatch
-\end_layout
-
-\begin_layout Section
-Pattern Matching
+\begin_layout Standard
+Actors respond to confirmation messages by echoing an acknowledgement message
+ with the perceived cycle token back to the cycle detector.
+ When the cycle detector receives an acknowledgement message, the acknowledgment
+ count for the perceived cycle is incremented.
+ In addition, if any actors in the perceived cycle have not yet been sent
+ a confirmation message, an additional confirmation message is sent.
 \end_layout
 
 \begin_layout Standard
-TODO: structural typing at runtime
+If the cycle detector receives an unblock message from any member of a perceived
+ cycle, that cycle is cancelled, as in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Unblock-Messages"
+
+\end_inset
+
+.
+ If an acknowledgement message arrives for a cancelled cycle, it is ignored.
+\end_layout
+
+\begin_layout Standard
+When a perceived cycle has received acknowledgement messages from all actors
+ in the perceived cycle, it is a 
+\emph on
+true cycle
+\emph default
+, and all actors in the cycle can be collected.
+\end_layout
+
+\begin_layout Subsection
+Actor Collection
+\end_layout
+
+\begin_layout Standard
+Actors are collected by the cycle detector when a perceived cycle is fully
+ acknowledged.
+ Each actor in the cycle is marked as 
+\emph on
+pending destruction 
+\emph default
+and its finaliser is run, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Finalisation"
+
+\end_inset
+
+.
+ Following this, each actor generates release messages for actors in its
+ foreign map that are not marked as pending destruction.
+ This avoids sending unnecessary release messages within the cycle, while
+ correctly releasing held reference count for actors and objects outside
+ the cycle.
+\end_layout
+
+\begin_layout Standard
+Each actor is then destroyed, freeing everything allocated on its heap as
+ well as the heap structure itself, any garbage collection data such as
+ local and foreign maps, and the remaining stub message in its message queue.
+ Importantly, before destruction of some actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ can proceed, it is necessary to wait in a tight loop until the message
+ queue head for 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ has had its lower bit marked, indicating that it is empty, as described
+ in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Empty-Queue-Detection"
+
+\end_inset
+
+.
+ This is required because it is possible for 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ to be finishing execution in some thread 
+\begin_inset Formula $t_{1}$
+\end_inset
+
+ while the cycle detector is collecting it in another thread 
+\begin_inset Formula $t_{2}$
+\end_inset
+
+.
+ Waiting until the queue is marked empty prevents 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ from failing to mark its queue as empty because the queue has itself been
+ collected.
+ Such a failure would result in spuriously rescheduling 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ for execution after it has been destroyed.
 \end_layout
 
 \begin_layout Section
@@ -5161,18 +5538,906 @@ name "sec:Finalisation"
 Finalisation
 \end_layout
 
-\begin_layout Section
-\begin_inset CommandInset label
-LatexCommand label
-name "sec:Foreign-Function-Inteface"
-
-\end_inset
-
-Foreign Function Interface
+\begin_layout Standard
+The runtime supports both actor and object finalisation.
+ This was a difficult decision to take, as finalisation can cause significant
+ problems, such as resurrection.
+ In addition, the non-deterministic finalisation that occurs in a garbage
+ collected environment interacts poorly with releasing non-memory resources,
+ which is the most common task of a finaliser.
 \end_layout
 
 \begin_layout Standard
-TODO: both directions, Pony->C, C->Pony
+However, for interacting with non-memory system resources, a finaliser provides
+ a guarantee that the resource will be 
+\emph on
+eventually
+\emph default
+ released, which is critical.
+ Designing interfaces that also encourage 
+\emph on
+explicit
+\emph default
+ resource release, using a 
+\begin_inset Formula $\mathtt{dispose}$
+\end_inset
+
+ method, allows the programmer to achieve deterministic resource management,
+ which combines well with a finaliser that acts as a backstop.
+\end_layout
+
+\begin_layout Standard
+Pony provides a less problematic finalisation sequence by using a combination
+ of reference capabilities and pessimistic static analysis.
+ Finalisers on both actors and objects run with a 
+\begin_inset Formula $\mathtt{box}$
+\end_inset
+
+ capability, with no arguments.
+ As a result, finalisers cannot cause resurrection by mutating the object
+ graph: the object being finalised can reach only itself and the transitive
+ closure of objects reachable via its fields, and due to viewpoint adaptation
+ has no write access to any part of that graph.
+ It is possible for finalisers to 
+\emph on
+create
+\emph default
+ new objects, and to mutate those objects, but such objects cannot outlive
+ the finaliser unless they are sent in a message to another actor, so they
+ do not result in resurrection.
+\end_layout
+
+\begin_layout Standard
+It is not only new objects that could outlive the finaliser if sent in a
+ message: any part of the object graph could be sent as a 
+\begin_inset Formula $\mathtt{tag}$
+\end_inset
+
+ in a message, resulting in resurrection.
+ To curtail this, pessimistic static analysis is used when compiling finaliser
+ methods.
+ Any expression that could result in sending a message is prohibited in
+ a finaliser.
+ This is extremely strict, as it prevents method calls on objects with an
+ 
+\begin_inset Formula $\mathtt{interface}$
+\end_inset
+
+ or 
+\begin_inset Formula $\mathtt{trait}$
+\end_inset
+
+ type, as the concrete implementation of the method is not known at compile
+ time.
+ However, in practice, objects and actors being finalised should be freeing
+ non-memory resources held by the instance itself, rather than interacting
+ with other parts of the objects graph (which can be independently finalised
+ if necessary).
+ As a result, this restriction has not been problematic in the standard
+ library or in end-user code.
+\end_layout
+
+\begin_layout Section
+Scheduler
+\end_layout
+
+\begin_layout Standard
+The Pony runtime uses a work-stealing scheduler built around single-producer
+ multi-consumer queues of actors with pending work.
+ The runtime can be started with any number of scheduler threads, defaulting
+ to the number of cores on the machine.
+ Threads are pinned to cores, and, on a NUMA machine, thread stacks are
+ allocated on the local NUMA node.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+struct scheduler_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  // These are rarely changed.
+\end_layout
+
+\begin_layout Plain Layout
+
+  pony_thread_id_t tid;
+\end_layout
+
+\begin_layout Plain Layout
+
+  uint32_t cpu;
+\end_layout
+
+\begin_layout Plain Layout
+
+  uint32_t node;
+\end_layout
+
+\begin_layout Plain Layout
+
+  bool terminate;
+\end_layout
+
+\begin_layout Plain Layout
+
+  bool asio_stopped;
+\end_layout
+
+\begin_layout Plain Layout
+
+  
+\end_layout
+
+\begin_layout Plain Layout
+
+  // These are changed primarily by the owning scheduler thread.
+  
+\end_layout
+
+\begin_layout Plain Layout
+
+  __pony_spec_align__(struct scheduler_t* last_victim, 64);
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+  pony_ctx_t ctx;
+\end_layout
+
+\begin_layout Plain Layout
+
+  uint32_t block_count;
+\end_layout
+
+\begin_layout Plain Layout
+
+  int32_t ack_token;
+\end_layout
+
+\begin_layout Plain Layout
+
+  uint32_t ack_count;
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+  // These are accessed by other scheduler threads.
+ The mpmcq_t is aligned.
+\end_layout
+
+\begin_layout Plain Layout
+
+  mpmcq_t q;
+\end_layout
+
+\begin_layout Plain Layout
+
+  messageq_t mq;
+\end_layout
+
+\begin_layout Plain Layout
+
+};
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Scheduler-thread-state"
+
+\end_inset
+
+Scheduler thread state
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+A scheduler thread has a queue of actors, described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Scheduler-Queues"
+
+\end_inset
+
+, a message queue that is used to detect quiescence, described in section
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Quiescence"
+
+\end_inset
+
+, and a victim indicator that is used for round-robin work-stealing, as
+ described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Work-Stealing"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Each scheduler thread also keeps a context, which holds per-thread runtime
+ information that would otherwise be encoded as thread-local storage.
+ This is done to improve performance on platforms where thread-local storage
+ is less efficient.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Scheduler-Queues"
+
+\end_inset
+
+Scheduler Queues
+\end_layout
+
+\begin_layout Standard
+Each scheduler has a single-producer multi-consumer queue of actors that
+ may have pending work.
+ These queues are effectively the inverse of actor message queues.
+ They are single-producer because only the owning scheduler thread will
+ place work (in the form of an actor that may have pending work) on the
+ queue, but any scheduler thread can remove work from the queue, in order
+ to enable work-stealing, as detailed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Work-Stealing"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+void ponyint_mpmcq_push_single(mpmcq_t* q,
+\end_layout
+
+\begin_layout Plain Layout
+
+  void* data) {
+\end_layout
+
+\begin_layout Plain Layout
+
+  mpmcq_node_t* node = POOL_ALLOC(mpmcq_node_t);
+\end_layout
+
+\begin_layout Plain Layout
+
+  atomic_store_explicit(&node->data, data,
+\end_layout
+
+\begin_layout Plain Layout
+
+    memory_order_relaxed);
+\end_layout
+
+\begin_layout Plain Layout
+
+  atomic_store_explicit(&node->next, NULL,
+\end_layout
+
+\begin_layout Plain Layout
+
+    memory_order_relaxed);
+\end_layout
+
+\begin_layout Plain Layout
+
+  mpmcq_node_t* prev = atomic_load_explicit(
+\end_layout
+
+\begin_layout Plain Layout
+
+    &q->head, memory_order_relaxed);
+\end_layout
+
+\begin_layout Plain Layout
+
+  atomic_store_explicit(&q->head, node,
+\end_layout
+
+\begin_layout Plain Layout
+
+    memory_order_relaxed);
+\end_layout
+
+\begin_layout Plain Layout
+
+  atomic_store_explicit(&prev->next, node,
+\end_layout
+
+\begin_layout Plain Layout
+
+    memory_order_release);
+\end_layout
+
+\begin_layout Plain Layout
+
+} 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Pushing-to-a-1"
+
+\end_inset
+
+Pushing to a scheduler queue
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+void* ponyint_mpmcq_pop(mpmcq_t* q) {
+\end_layout
+
+\begin_layout Plain Layout
+
+  mpmcq_node_t* cmp, xchg, next, tail;
+\end_layout
+
+\begin_layout Plain Layout
+
+  cmp = atomic_load_explicit(&q->tail,
+\end_layout
+
+\begin_layout Plain Layout
+
+    memory_order_acquire);
+\end_layout
+
+\begin_layout Plain Layout
+
+  uintptr_t mask = UINTPTR_MAX ^
+\end_layout
+
+\begin_layout Plain Layout
+
+    ((1 << (POOL_MIN_BITS +
+\end_layout
+
+\begin_layout Plain Layout
+
+      POOL_INDEX(sizeof(mpmcq_node_t*)))) - 1);
+\end_layout
+
+\begin_layout Plain Layout
+
+  do {
+\end_layout
+
+\begin_layout Plain Layout
+
+    uintptr_t aba = (uintptr_t)cmp & ~mask;
+\end_layout
+
+\begin_layout Plain Layout
+
+    tail = (mpmcq_node_t*)((uintptr_t)cmp & mask);
+\end_layout
+
+\begin_layout Plain Layout
+
+    next = atomic_load_explicit(&tail->next,
+\end_layout
+
+\begin_layout Plain Layout
+
+      memory_order_acquire);
+\end_layout
+
+\begin_layout Plain Layout
+
+    if(next == NULL)
+\end_layout
+
+\begin_layout Plain Layout
+
+      return NULL;
+\end_layout
+
+\begin_layout Plain Layout
+
+    xchg = (mpmcq_node_t*)((uintptr_t)next
+\end_layout
+
+\begin_layout Plain Layout
+
+      | ((aba + 1) & ~mask));
+\end_layout
+
+\begin_layout Plain Layout
+
+  } while(!atomic_compare_exchange_weak_explicit(
+\end_layout
+
+\begin_layout Plain Layout
+
+      &q->tail, &cmp, xchg, memory_order_acq_rel,
+\end_layout
+
+\begin_layout Plain Layout
+
+      memory_order_relaxed));
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+  void* data = atomic_load_explicit(&next->data, 
+\end_layout
+
+\begin_layout Plain Layout
+
+    memory_order_relaxed);
+\end_layout
+
+\begin_layout Plain Layout
+
+  atomic_store_explicit(&next->data, NULL, 
+\end_layout
+
+\begin_layout Plain Layout
+
+    memory_order_release);
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+  while(atomic_load_explicit(&tail->data,
+\end_layout
+
+\begin_layout Plain Layout
+
+    memory_order_acquire) != NULL)
+\end_layout
+
+\begin_layout Plain Layout
+
+    ponyint_cpu_relax();
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+  POOL_FREE(mpmcq_node_t, tail);
+\end_layout
+
+\begin_layout Plain Layout
+
+  return data;
+\end_layout
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Popping-from-a-1"
+
+\end_inset
+
+Popping from a scheduler queue
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+As seen in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Pushing-to-a-1"
+
+\end_inset
+
+, pushing to a scheduler queue is lock-free, wait-free, and requires zero
+ atomic operations (aligned stores always being atomic on common architectures).
+ However, in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Popping-from-a-1"
+
+\end_inset
+
+ we see that popping from a scheduler queue is more complex.
+ A compare-and-swap loop is necessary, to allow multiple schedulers to pop
+ actors from a scheduler queue.
+ This necessitates an ABA counter to avoid a situation where a CAS succeeds
+ on queue node, but should fail, as the queue node has actually been popped
+ and replaced on the queue.
+ In addition, there is a second loop, where the data pointer of the queue
+ node must be 
+\begin_inset Formula $\mathtt{NULL}$
+\end_inset
+
+ in order to continue.
+ This is because the pop operation frees the 
+\emph on
+previous
+\emph default
+ queue node.
+ For that to be safe, any previous consumer must be finished reading the
+ data pointer from the queue node.
+ By setting the data pointer to 
+\begin_inset Formula $\mathtt{NULL}$
+\end_inset
+
+ and testing for the previous data pointer being 
+\begin_inset Formula $\mathtt{NULL}$
+\end_inset
+
+, consumers can coordinate memory management without locks.
+\end_layout
+
+\begin_layout Standard
+If this step were to happen on every queue pop, the coordination cost would
+ be very high.
+ However, it occurs only when a scheduler thread successfully steals work
+ from another thread.
+ Otherwise, a scheduler thread will only be coordinating with itself, and
+ no cost will be paid.
+\end_layout
+
+\begin_layout Standard
+Like message queues, it is important that scheduler queues are unbounded.
+ An actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ executing on a scheduler thread 
+\begin_inset Formula $t$
+\end_inset
+
+ may generate an unbounded number of messages.
+ In doing so, an unbounded number of previously unscheduled actors may need
+ to be scheduled.
+ A bounded scheduler queue would make this impossible, resulting in situations
+ similar to those outlined for message queues in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Unbounded-Message-Queues"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Work-Stealing"
+
+\end_inset
+
+Work-Stealing
+\end_layout
+
+\begin_layout Standard
+If a scheduler thread's queue is empty, it will attempt to steal an actor
+ from another thread's queue.
+ The victim thread is selected in round robin fashion.
+ Other selection algorithms, such as preferring scheduler threads running
+ on cores in the same NUMA node or preferring scheduler threads running
+ on cores with the same L3 cache, have not as yet performed as well as simple
+ round robin selection.
+\end_layout
+
+\begin_layout Standard
+Once a victim is selected, an actor is popped from the victim's scheduler
+ queue.
+ This actor is then processed by the stealing scheduler thread.
+ If the victim's queue is empty, the stealing thread checks for quiescence
+ (as detailed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Quiescence"
+
+\end_inset
+
+).
+ If the program is not quiescent, the stealing thread may pause in order
+ to avoid excessive work-stealing attempts.
+\end_layout
+
+\begin_layout Standard
+A scheduler thread's back-off pause length is based on the time since the
+ scheduler thread last performed useful work.
+ In practice, this is estimated with a processor cycle count when possible,
+ using 
+\begin_inset Formula $\mathtt{RDTSC}$
+\end_inset
+
+ on x86/x64, or a fast monotonic system clock if 
+\begin_inset Formula $\mathtt{RDTSC}$
+\end_inset
+
+ is not available.
+ This pause also allows the runtime to avoid spinning a core when there
+ is no work to do, avoiding unnecessary energy expenditure.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Quiescence"
+
+\end_inset
+
+Quiescence
+\end_layout
+
+\begin_layout Standard
+Rather than waiting for the cycle detector to collect all actors in the
+ program, the runtime determines quiescence by detecting when all scheduler
+ threads have empty queues and no actors are awaiting asynchronous I/O (as
+ detailed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Asynchronous-I/O"
+
+\end_inset
+
+).
+ To do this without locks, scheduler threads have message queues: effectively,
+ the scheduler threads are also actors.
+\end_layout
+
+\begin_layout Standard
+When a scheduler thread 
+\begin_inset Formula $t$
+\end_inset
+
+ has an empty queue, before 
+\begin_inset Formula $t$
+\end_inset
+
+ attempts to steal work from another scheduler thread 
+\begin_inset Formula $t'$
+\end_inset
+
+, it sends a message to the the 
+\emph on
+coordinating thread 
+\emph default
+
+\begin_inset Formula $t_{0}$
+\end_inset
+
+ indicating that it is blocked.
+ The coordinating thread is simply the first thread spawned by the runtime.
+ Similarly, if 
+\begin_inset Formula $t$
+\end_inset
+
+ then successfully steals work, it will send a message to 
+\begin_inset Formula $t_{0}$
+\end_inset
+
+ indicating that it has unblocked.
+\end_layout
+
+\begin_layout Standard
+When 
+\begin_inset Formula $t_{0}$
+\end_inset
+
+ has received block messages from all other scheduler threads and is itself
+ blocked, it engages in the same CNF-ACK protocol that the cycle detector
+ uses, sending CNF messages to the other scheduler threads and expecting
+ ACK messages.
+ If an unblock messages is received before all ACK messages (or if 
+\begin_inset Formula $t_{0}$
+\end_inset
+
+ itself unblocks), the attempt at quiescence is cancelled.
+\end_layout
+
+\begin_layout Standard
+If ACK messages from all scheduler threads are received, 
+\begin_inset Formula $t_{0}$
+\end_inset
+
+ will attempt to shut down the asynchronous I/O thread.
+ If this is not possible, due to actors still awaiting asynchronous I/O,
+ then the attempt at quiescence is cancelled.
+ Otherwise, another CNF-ACK series is run.
+ The second CNF-ACK ensures that a scheduler thread that was woken up by
+ asynchronous I/O before it was shut down has now reached quiescence.
+\end_layout
+
+\begin_layout Standard
+At this point, the runtime can terminate without needing to collect all
+ remaining actors.
+ The quiescence protocol improves program termination performance by short-circu
+iting the actor garbage collection algorithm with a scheduler thread collection
+ algorithm, which operates on fewer participants.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Cache-Locality"
+
+\end_inset
+
+Cache Locality
+\end_layout
+
+\begin_layout Standard
+When some actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ is sent a message and the actor is already scheduled on some scheduler
+ thread 
+\begin_inset Formula $t$
+\end_inset
+
+, 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ remains on 
+\begin_inset Formula $t$
+\end_inset
+
+.
+ This is because the working set of 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ is more likely to be in the cache on 
+\begin_inset Formula $t$
+\end_inset
+
+ than on any other thread.
+ Conversely, if 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ is not currently scheduled on any thread, it is unlikely that the working
+ set of 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ is in the cache of any core.
+ In this case, 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ is scheduled on the thread where the message send takes place, as the message
+ is in the cache of the sending core.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Asynchronous-I/O"
+
+\end_inset
+
+Asynchronous I/O
+\end_layout
+
+\begin_layout Standard
+TODO:
 \end_layout
 
 \end_body
