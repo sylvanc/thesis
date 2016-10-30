@@ -184,9 +184,9 @@ Acknowledgements
 \end_layout
 
 \begin_layout Standard
-Although I developed the type system, semantics, and garbage collector,
- and implemented the compiler and runtime, many other people have contributed
- to Pony.
+Although I developed the type system, operational semantics, and garbage
+ collector protocols, and implemented the compiler and runtime, many other
+ people have contributed to Pony.
  Sophia Drossopoulou has contributed to every part of the formalisation
  of Pony, especially the proofs, and has literally taught me everything
  I know about formal methods.
@@ -203,10 +203,11 @@ ndent types), George Steed (formalisation of type expressions), and the
 
 \begin_layout Standard
 More recently, the Pony open-source community has been amazing, including
- Sean Allen, Joe Eli McIlvain, Benoit Vey, Theo Butler, Perelandric, Reini
- Urban, Gordon Tisher, Dipin Hora, Jonas Lasauskas, John Mumm, Andy Turley,
- George Marrows, Darach Ennis, Tommy McGuire, Carl Quinn, Malthe Borch,
- Kevin Cantú, Markus Fix, Chris Double, Dan Connolly, and many others.
+ (in no particular order) Sean Allen, Joe Eli McIlvain, Benoit Vey, Theo
+ Butler, Perelandric, Reini Urban, Gordon Tisher, Dipin Hora, Jonas Lasauskas,
+ John Mumm, Andy Turley, George Marrows, Darach Ennis, Tommy McGuire, Carl
+ Quinn, Malthe Borch, Kevin Cantú, Markus Fix, Chris Double, Dan Connolly,
+ and many others.
  I owe them all a beer, and I owe anyone I've failed to mention two beers.
 \end_layout
 
