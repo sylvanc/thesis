@@ -187,9 +187,10 @@ Acknowledgements
 Although I developed the type system, operational semantics, and garbage
  collector protocols, and implemented the compiler and runtime, many other
  people have contributed to Pony.
- Sophia Drossopoulou has contributed to every part of the formalisation
- of Pony, especially the proofs, and has literally taught me everything
- I know about formal methods.
+ Sophia Drossopoulou, my advisor, has contributed to every part of the formalisa
+tion of Pony, especially the proofs, and has literally taught me everything
+ I know about formal methods, as well as being a constant source of help
+ and inspiration.
  This project could not possibly have happened without her.
  Other key contributors have been Sebastian Blessing (masters thesis on
  distributed Pony), Andy McNeil (implementation work on the compiler), Juliana
@@ -199,15 +200,16 @@ ndent types), George Steed (formalisation of type expressions), and the
  Also of special note are Tobias Wrigstad, Dave Clarke, and the Upscale
  Project, who have bravely used the Pony runtime for their own language,
  Encore.
+ Additional special thanks are due to Constantine Goulimis and Justin Fry.
 \end_layout
 
 \begin_layout Standard
 More recently, the Pony open-source community has been amazing, including
  (in no particular order) Sean Allen, Joe Eli McIlvain, Benoit Vey, Theo
- Butler, Perelandric, Reini Urban, Gordon Tisher, Dipin Hora, Jonas Lasauskas,
- John Mumm, Andy Turley, George Marrows, Darach Ennis, Tommy McGuire, Carl
- Quinn, Malthe Borch, Kevin Cantú, Markus Fix, Chris Double, Dan Connolly,
- and many others.
+ Butler, Vid Jain, Chuck Blake, Perelandric, Reini Urban, Gordon Tisher,
+ Dipin Hora, Jonas Lasauskas, John Mumm, Andy Turley, George Marrows, Darach
+ Ennis, Tommy McGuire, Carl Quinn, Malthe Borch, Kevin Cantú, Markus Fix,
+ Chris Double, Dan Connolly, and many others.
  I owe them all a beer, and I owe anyone I've failed to mention two beers.
 \end_layout
 

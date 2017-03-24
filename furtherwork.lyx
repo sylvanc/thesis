@@ -83,44 +83,151 @@ name "chap:Evaluation-and-Further"
 
 \end_inset
 
-Evaluation and Further Work
+Conclusion and Further Work
 \end_layout
 
 \begin_layout Standard
-Evaluation is:
-\end_layout
-
-\begin_layout Itemize
-what conclusions from doing the work
-\end_layout
-
-\begin_layout Itemize
-what I learned
-\end_layout
-
-\begin_layout Itemize
-what other might have learned
-\end_layout
-
-\begin_layout Itemize
-what surprises were encountered
-\end_layout
-
-\begin_layout Itemize
-what would I advise someone else
-\end_layout
-
-\begin_layout Itemize
-what I think about the work itself: is it worthwhile
+This thesis has presented a new programming language, Pony, that is the
+ result of co-designing a data-race free type system and a scalable, lock-free
+ runtime.
+ We have presented several novel type system and runtime elements, and combined
+ them in a working open source compiler and runtime.
+ Specifically, we have detailed a unified actor-model operational semantics
+ for concurrent and distributed execution, a novel type system for data-race
+ freedom based on 
+\emph on
+reference capabilities
+\emph default
+, a novel no-stop-the-world garbage collection algorithm for actors, a novel
+ no-stop-the-world garbage collection algorithm for zero-copy message passing,
+ and a complete runtime implementation.
 \end_layout
 
 \begin_layout Standard
-Further work, like dropping causality (useful for proving stuff before,
- but new proto), language features (reflection), distributed runtime, etc.
+The operational semantics define a unified semantics for concurrent and
+ distributed execution of an actor-model language that accounts for differences
+ in message causality.
+ The semantics provides an extensible framework for the remainder of the
+ thesis.
 \end_layout
 
 \begin_layout Standard
-REPL (separate compilation)
+Reference capabilities, and the related concepts of viewpoint adaptation,
+ safe-to-write, and aliased and unaliased types, provide a statically data-race
+ free type system in which concepts such as isolation and immutability are
+ derived rather than fundamental.
+ This approach both enables and informs the design of the runtime, for example
+ by allowing safe zero-copy message passing and no-stop-the-world garbage
+ collection.
+\end_layout
+
+\begin_layout Standard
+The 
+\emph on
+MAC
+\emph default
+ protocol, message-based actor collection, allows actors themselves to be
+ safely garbage collected fully concurrently.
+ The underlying Conf-Ack protocol, which establishes that a possibly out-of-date
+ view of global state was up-to-date at the time it was generated, is also
+ used for quiescence detection and program termination.
+ In the distributed setting, the Conf-Ack protocol can be extended for distribut
+ed actor collection and migration.
+\end_layout
+
+\begin_layout Standard
+The 
+\emph on
+ORCA 
+\emph default
+protocol, ownership and reference counting for actors, is an extension of
+ 
+\emph on
+MAC
+\emph default
+ that allows for no-stop-the-world garbage collection of passive objects
+ that have been shared by reference across actors with independent heaps.
+ This enables both zero-copy message passing and scalable garbage collection.
+\end_layout
+
+\begin_layout Standard
+The runtime implementation is also described, showing the impact of the
+ type system and the garbage collection protocols on other areas, such as
+ the memory allocator, the scheduler, and asynchronous I/O.
+ The feedback loop between type system and runtime design decisions is shown
+ through the examination of details of the implementation.
+\end_layout
+
+\begin_layout Section
+Further Work
+\end_layout
+
+\begin_layout Standard
+There are several avenues of further work that present themselves.
+\end_layout
+
+\begin_layout Standard
+The extensions for distributed computing discussed for 
+\emph on
+MAC 
+\emph default
+and 
+\emph on
+ORCA
+\emph default
+ are a starting point for a distributed runtime.
+ Other essential elements for a distributed runtime include a machine-specific
+ data type system that can distinguish data that is meaningful when sent
+ to another node from data which is not (for example, a file descriptor
+ is serialisable but meaningless or worse to the receiver).
+ This also requires a notion of locality: that is, machine-specific data
+ can be sent to an actor that is on the same node, but that actor must 
+\emph on
+remain
+\emph default
+ on the same node in the future.
+\end_layout
+
+\begin_layout Standard
+As in all distributed computation projects, a strong approach to node failure
+ must be adopted, whether in the form of Erlang-like supervision, or EROS-like
+ orthogonal persistence.
+ Similarly difficult is the development of heuristics for distributed work-steal
+ing that are useful for many classes of workload.
+\end_layout
+
+\begin_layout Standard
+Other open questions include the nature of reflection in a capabilities-secure
+ environment, the integration of live programming in the form of a REPL
+ and hot code loading, and tools for software engineering actor-model distribute
+d systems, including distributed debugging and message tracing.
+\end_layout
+
+\begin_layout Section
+Continuing Efforts
+\end_layout
+
+\begin_layout Standard
+Finally, we would like to quote Mark S.
+ Miller: 
+\begin_inset Quotes eld
+\end_inset
+
+Any dissertation necessarily reflects the state of an ongoing project at
+ a particular point in time.
+\begin_inset Quotes erd
+\end_inset
+
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "miller2006robust"
+
+\end_inset
+
+ Work on Pony is continuing, both academically and in the open source community,
+ and while it is our hope that this thesis is valuable to the reader, it
+ is also our hope that it becomes outdated.
 \end_layout
 
 \end_body

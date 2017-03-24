@@ -78,6 +78,12 @@ theorems-ams-bytype
 \begin_body
 
 \begin_layout Chapter
+\begin_inset CommandInset label
+LatexCommand label
+name "chap:Runtime-Implementation"
+
+\end_inset
+
 Runtime Implementation
 \end_layout
 
@@ -1813,19 +1819,6 @@ Unbounded message queues transforms a temporary resource exhaustion problem
 ble program error, rather than a transient and recoverable condition.
 \end_layout
 
-\begin_layout Standard
-Allowing message sends to always succeed (modulo memory exhaustion) results
- in a need for a generalised runtime back pressure mechanism.
- This is discussed in section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "subsec:Back-Pressure"
-
-\end_inset
-
-.
-\end_layout
-
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
@@ -2111,16 +2104,9 @@ Actors
 \end_layout
 
 \begin_layout Standard
-In the runtime, an actor is represented as an object header (as described
- in section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sec:Object-Layout"
-
-\end_inset
-
-), a message queue, a heap, information for tracking cross-actor garbage
- collection (as discussed in sections 
+In the runtime, an actor is represented as an object header, a message queue,
+ a heap, information for tracking cross-actor garbage collection (as discussed
+ in sections 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sec:Sharing-GC"
@@ -2239,14 +2225,7 @@ It is important to note that an actor has no stack associated with it.
  the execution speed penalties associated with segmented stacks.
  In addition, the foreign-function interface (FFI) can use the same unsegmented
  stack that the actor executing the FFI call is currently using, providing
- a simple and efficient FFI mechanism, as discussed in section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sec:Foreign-Function-Inteface"
-
-\end_inset
-
-.
+ a simple and efficient FFI mechanism.
 \end_layout
 
 \begin_layout Subsection
@@ -2319,15 +2298,7 @@ In the current implementation, actors are asked by the scheduler thread
  In addition, any number of interleaved internal, garbage collection related,
  messages can be processed without counting against the batch limit.
  In future work, the number of application messages an actor is asked to
- handle will fluctuate dynamically based on back pressure, as discussed
- in section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "subsec:Back-Pressure"
-
-\end_inset
-
-.
+ handle will fluctuate dynamically based on back-pressure.
 \end_layout
 
 \begin_layout Standard

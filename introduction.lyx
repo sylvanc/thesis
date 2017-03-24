@@ -85,44 +85,375 @@ With the end of the free-lunch era of ever increasing single-core performance,
  parallel computing has become a mainstream requirement.
  The multi-core era requires high-performance programs to be highly parallel:
  Moore's law is still being expressed, but the increase in transistor count
- is resulting in an increasing number of cores rather than faster cores.
+ is resulting in an increasing number of cores rather than faster individual
+ cores.
 \end_layout
 
 \begin_layout Standard
-(Intro/Motivation/Background)
-\end_layout
-
-\begin_layout Itemize
-Can keep this to less than 3 pages, do some why and some background.
-\end_layout
-
-\begin_layout Itemize
-Interest in parallel/distributed from the 60s, much larger machines now.
-\end_layout
-
-\begin_layout Itemize
-Don't try to cover all parallel/distributed approaches.
-\end_layout
-
-\begin_layout Itemize
-Changes in machine, machine architecture, cache coherency, core count, expensive
- locking, shared memory available.
-\end_layout
-
-\begin_layout Itemize
-Finish with a thesis outline.
-\end_layout
-
-\begin_layout Itemize
-Possibly mention what's in the language that is left out.
+To borrow the terminology of distributed computing, this shift, from 
+\emph on
+scaling-up 
+\emph default
+processor performance to 
+\emph on
+scaling-out 
+\emph default
+processors for overall system performance, has been problematic for software
+ developers.
+ Algorithms and patterns that were efficient on single-core or small core
+ count machines may become inefficient when asked to scale-out further,
+ much as patterns that are efficient on a single node may be infeasible
+ in a distributed context.
+ The comparison with distributed computing is particularly apt in that cores
+ on a single node share hardware resources, such as memory, via message
+ passing.
+ In effect, a multi- or many-core node can be considered as a distributed
+ system with fast transport links.
 \end_layout
 
 \begin_layout Standard
-Single core processor performance has, for the time being, stopped keeping
- pace with Moore's Law.
- On the other hand, Moore's Law still appears to hold in the form of increasing
- per-node core counts.
- 
+In this context, a programming language that draws from approaches that
+ may have been viewed as more suited for distributed systems, such as the
+ actor-model and capabilities security, can be designed to scale efficiently
+ as single-node core counts increase.
+ This thesis introduces Pony, a programming language designed for this purpose.
+ Pony is an actor-model, capabilities secure language, that allows the user
+ to easily write fast, safe, parallel programs.
+\end_layout
+
+\begin_layout Standard
+Pony uses a powerful and novel static type system to guarantee properties
+ of a program in order to eliminate many runtime checks.
+ This includes eliminating all forms of locking, as well as enabling a novel
+ fully concurrent garbage collection protocol for both objects and actors
+ that has no stop-the-world step, while also having no read or write barriers.
+ Essentially, the type system is used to enable not just safer computation
+ but faster computation.
+\end_layout
+
+\begin_layout Section
+Co-design
+\end_layout
+
+\begin_layout Standard
+Designing Pony has involved a tight feedback loop between the type system
+ and the runtime.
+ We began with runtime requirements, such as no-stop-the-world garbage collectio
+n, an efficient work-stealing scheduler, and a lock-free runtime implementation.
+ These requirements informed the design of the type system, necessitating
+ a data-race free type system with strong aliasing guarantees.
+ The existence of a data-race free type system allowed further refinement
+ of the runtime, enabling features such as zero-copy message passing across
+ per-actor heaps, a more efficient underlying memory allocator, and a zero-copy
+ asynchronous I/O model.
+\end_layout
+
+\begin_layout Standard
+This co-design process has continued as both the type system and the runtime
+ have developed, and has been one of the most rewarding aspects of this
+ work.
+ In the language of participatory design 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "spinuzzi2005methodology"
+
+\end_inset
+
+, neither the type system nor the runtime is an isolated system.
+\end_layout
+
+\begin_layout Section
+Content and Contribution
+\end_layout
+
+\begin_layout Standard
+This is an overview of the content of this thesis and the contributions
+ made.
+\end_layout
+
+\begin_layout Paragraph
+Chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Language-Design-Decisions"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This chapter explains the design decisions made during the development of
+ Pony.
+ We discuss the decision to build a single model for concurrent and distributed
+ execution based on the 
+\emph on
+introduction requirement 
+\emph default
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "agha1986actors"
+
+\end_inset
+
+.
+ We examine the tools for reasoning and correctness provided by Pony, specifical
+ly the novel data-race free type system, logically atomic behaviours, capabiliti
+es-security, and causal messaging.
+ We also present some of the decisions made in the interest of performance,
+ such as modelling behaviours as methods, exceptions as partial functions,
+ the use of a single compilation unit, and maintaining C ABI compatibility.
+ Finally, we introduce the development philosophy that has guided us, 
+\begin_inset Quotes eld
+\end_inset
+
+get-stuff-done
+\begin_inset Quotes erd
+\end_inset
+
+, with apologies to Richard Gabriel.
+\end_layout
+
+\begin_layout Paragraph
+Chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Syntax-and-Operational"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This chapter provides a syntax and operational semantics for Pony, in the
+ form of a small-step operational semantics for both concurrent and distributed
+ execution.
+ A distinction is drawn in the semantics between environments where causal
+ order is cheaply guaranteed (i.e.
+ shared memory concurrent systems) and environments where only pairwise
+ FIFO ordering can be cheaply guaranteed (i.e.
+ distributed systems).
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+Contribution: 
+\emph default
+a unified actor-model operational semantics for concurrent and distributed
+ execution.
+\end_layout
+
+\begin_layout Paragraph
+Chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In this chapter, we develop the concept of 
+\emph on
+reference capabilities
+\emph default
+, a novel approach to static data-race freedom based on a matrix of 
+\emph on
+deny properties
+\emph default
+.
+ The concepts of 
+\emph on
+aliased and unaliased types
+\emph default
+, 
+\emph on
+viewpoint adaptation
+\emph default
+, 
+\emph on
+safe-to-write
+\emph default
+, 
+\emph on
+capability recovery
+\emph default
+, and 
+\emph on
+capability compatibility
+\emph default
+ are introduced.
+ The type system is explained both formally and informally, including descriptio
+ns of well-formedness and consistent heap visibility, requiring an interesting
+ treatment of 
+\emph on
+temporary 
+\emph default
+(i.e.
+ unnamed) values, and a proof of soundness is provided.
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+Contribution: 
+\emph default
+a novel type system for data-race freedom based on 
+\emph on
+reference capabilities
+\emph default
+, wherein concepts such as isolation and immutability are derived rather
+ than fundamental, the use of 
+\emph on
+aliased and unaliased types
+\emph default
+, and the formalisation and proof of soundness.
+\end_layout
+
+\begin_layout Paragraph
+Chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Actor-Collection"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This chapter details 
+\emph on
+MAC
+\emph default
+: message-based actor collection, a high-performance no-stop-the-world protocol
+ for garbage collecting actors.
+ The operational semantics from chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Syntax-and-Operational"
+
+\end_inset
+
+ is extended to express a formal model of 
+\emph on
+MAC
+\emph default
+.
+ Completeness and robustness are discussed, as well as modifications that
+ would allow 
+\emph on
+MAC
+\emph default
+ to collect distributed actors.
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+Contribution: 
+\emph default
+a novel no-stop-the-world garbage collection algorithm for actors and its
+ formalisation.
+\end_layout
+
+\begin_layout Paragraph
+Chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Object-Collection"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In this chapter, the 
+\emph on
+MAC
+\emph default
+ algorithm from chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Actor-Collection"
+
+\end_inset
+
+ is used as a basis for 
+\emph on
+ORCA
+\emph default
+: ownership and reference counting for actors, a no-stop-the-world garbage
+ collection protocol for passive objects that allows actors to communicate
+ using zero-copy message passing for both mutable and immutable messages.
+ The formal model in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Actor-Collection"
+
+\end_inset
+
+ is extended to cover passive object collection, and completeness, robustness,
+ and distribution are discussed.
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+Contribution:
+\emph default
+ a novel no-stop-the-world garbage collection algorithm for zero-copy message
+ passing and its formalisation.
+\end_layout
+
+\begin_layout Paragraph
+Chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Runtime-Implementation"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This chapter offers a detailed description and explanation of the implementation
+ of the runtime library.
+ Topics covered include the memory allocator, size-classed per-actor heaps,
+ message queues, actors, the tracing garbage collector, the cross-actor
+ garbage collector, the actor garbage collector and cycle detector, finalisation
+, the work-stealing scheduler, and asynchronous I/O.
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+Contribution:
+\emph default
+ a complete runtime implementation.
+\end_layout
+
+\begin_layout Paragraph
+Chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Evaluation-and-Further"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This chapter concludes the thesis, and provides a brief summary of some
+ of the opportunities for further work.
 \end_layout
 
 \end_body

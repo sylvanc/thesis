@@ -282,7 +282,6 @@ key "agha1986actors"
 \end_inset
 
 .
- 
 \end_layout
 
 \begin_layout Standard
@@ -803,9 +802,70 @@ A capability is an unforgeable token that both designates an object and
  Capabilities security uses the possession of such tokens to control access
  to resources.
  Capabilities have a long history, stretching from operating system research
- (such as KeyKOS, EROS, Coyotos, and seL4) to programming languages (such
- as Joule, E, AmbientTalk, Caja, and BitC).
- 
+ (such as KeyKOS 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "hardy1985keykos"
+
+\end_inset
+
+, EROS
+\begin_inset CommandInset citation
+LatexCommand cite
+key "shapiro2002eros"
+
+\end_inset
+
+, Coyotos 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "shapiro2007coyotos"
+
+\end_inset
+
+, and seL4 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "klein2009sel4"
+
+\end_inset
+
+) to programming languages (such as Joule 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "tribble1995joule"
+
+\end_inset
+
+, E 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "miller2005concurrency"
+
+\end_inset
+
+, AmbientTalk 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "van2007ambienttalk"
+
+\end_inset
+
+, Caja 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "miller2008safe"
+
+\end_inset
+
+, and BitC 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "shapiro2008bitc"
+
+\end_inset
+
+).
 \end_layout
 
 \begin_layout Standard
