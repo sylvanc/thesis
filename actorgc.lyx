@@ -2427,11 +2427,22 @@ Reference Count Invariant
 \begin_layout Standard
 To ensure that no actor is prematurely collected, but all actors are eventually
  collected, a reference count invariant is maintained.
- This invariant has the form 
-\begin_inset Formula $\mathit{LRC}(\alpha)+\mathit{INC}(\alpha)=\mathit{AMC}(\alpha)+\mathit{FRC}(\alpha)+\mathit{DEC}(\alpha)$
+ This invariant has the form:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\mathit{LRC}(\alpha)+\mathit{INC}(\alpha)-\mathit{DEC}(\alpha)=\mathit{AMC}(\alpha)+\mathit{FRC}(\alpha)
+\]
+
 \end_inset
 
-, all evaluated in the context of some heap 
+
+\end_layout
+
+\begin_layout Standard
+This invariant is evaluated in the context of some heap 
 \begin_inset Formula $\chi$
 \end_inset
 
@@ -2543,7 +2554,7 @@ Additionally, each actor maintains another invariant: if an actor
 \end_layout
 
 \begin_layout Definition
-Reachability reference count invariant
+Reachability invariant
 \end_layout
 
 \begin_layout Definition
@@ -2756,7 +2767,7 @@ Sending a reference
 \mathit{Send}(\chi,\alpha,\emptyset) & = & \chi\\
 \mathit{Send}(\chi,\alpha,\mathit{null}) & = & \chi\\
 \mathit{Send}(\chi,\alpha,\omega) & = & \chi\\
-\mathit{Send}(\chi,\alpha,\alpha') & = & \mathit{Adj}(\chi,\alpha,\alpha',-1)
+\mathit{Send}(\chi,\alpha,\alpha') & = & \mathit{Adj}(\chi,\alpha,\alpha',1)
 \end{array}$
 \end_inset
 
@@ -2774,6 +2785,48 @@ Note that for actor garbage collection,
 LatexCommand ref
 reference "chap:Object-Collection"
 
+\end_inset
+
+.
+ 
+\begin_inset Formula $\mathit{Adj}$
+\end_inset
+
+ is defined such that if 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ sends a reference to itself, then 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ adds 
+\begin_inset Formula $n$
+\end_inset
+
+ (here, 
+\begin_inset Formula $-1$
+\end_inset
+
+ ) to its local reference count.
+ On the other hand, if 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ sends a reference to another actor 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+, then 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ subtracts 
+\begin_inset Formula $n$
+\end_inset
+
+ from its foreign reference count for 
+\begin_inset Formula $\alpha'$
 \end_inset
 
 .
@@ -2891,7 +2944,7 @@ Receiving a reference
 \mathit{Recv}(\chi,\alpha,\emptyset) & = & \chi\\
 \mathit{Recv}(\chi,\alpha,\mathit{null}) & = & \chi\\
 \mathit{Recv}(\chi,\alpha,\omega) & = & \chi\\
-\mathit{Recv}(\chi,\alpha,\alpha') & = & \mathit{Adj}(\chi,\alpha,\alpha',1)
+\mathit{Recv}(\chi,\alpha,\alpha') & = & \mathit{Adj}(\chi,\alpha,\alpha',-1)
 \end{array}$
 \end_inset
 
@@ -3037,10 +3090,10 @@ textwidth][c]{
 \\
 \dfrac{\begin{array}{c}
 \neg\chi(\alpha)\downarrow_{9}\quad\mathit{INC}(\rho)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
-\chi'=\mathit{Adj}(\chi,\alpha,\alpha,-\rho)
+\chi'=\mathit{Adj}(\chi,\alpha,\alpha,\rho)
 \end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\overline{\mu}],\alpha,\varepsilon}\;\textrm{\textsc{Inc}} &  & \dfrac{\begin{array}{c}
 \neg\chi(\alpha)\downarrow_{9}\quad\mathit{DEC}(\rho)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
-\chi'=\mathit{Adj}(\chi,\alpha,\alpha,\rho)
+\chi'=\mathit{Adj}(\chi,\alpha,\alpha,-\rho)
 \end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\overline{\mu}],\alpha,\varepsilon}\;\textrm{\textsc{Dec}}\\
 \\
 \dfrac{\begin{array}{c}
@@ -3057,7 +3110,7 @@ textwidth][c]{
 \neg\chi(\alpha)\downarrow_{9}\quad\alpha\neq\alpha'\\
 \chi(\alpha)\downarrow_{8}(\alpha')>0\\
 \chi'=\chi[\alpha,\alpha'++\mathit{INC}(n)]\\
-\chi''=\mathit{Adj}(\chi',\alpha,\alpha',n)
+\chi''=\mathit{Adj}(\chi',\alpha,\alpha',-n)
 \end{array}}{\chi,\alpha\cdot\overline{\varphi},\mathtt{e}\rightsquigarrow\chi'',\alpha\cdot\overline{\varphi},\mathtt{e}}\;\textrm{\textsc{Acquire}} &  & \dfrac{\begin{array}{c}
 \neg\chi(\alpha)\downarrow_{9}\quad\alpha\neq\alpha'\\
 \chi(\alpha)\downarrow_{8}(\alpha')>0\\
@@ -3121,10 +3174,10 @@ status open
  &  & \quad\chi''=\chi'[\alpha\mapsto\mathit{Inc}(\chi,\alpha,\alpha',n),\\
  &  & \quad\quad\alpha'\mapsto(\mathtt{A},\mathtt{{\cal F}s(\mathtt{A})}\mapsto\mathit{null},(\mathtt{k},\overline{v}),\alpha,\varepsilon,\emptyset,n,\emptyset,\mathit{false})]\\
 \mathit{Adj}(\chi,\alpha,\alpha',n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{7},\\
- &  & \quad\chi(\alpha)\downarrow_{8}[\alpha'\mapsto(\chi(\alpha)\downarrow_{8}(\alpha')+n)],\chi(\alpha)\downarrow_{9})]\\
- &  & \quad\mathit{if}\,\alpha\neq\alpha'\wedge\chi(\alpha)\downarrow_{8}(\alpha')>-n\\
+ &  & \quad\chi(\alpha)\downarrow_{8}[\alpha'\mapsto(\chi(\alpha)\downarrow_{8}(\alpha')-n)],\chi(\alpha)\downarrow_{9})]\\
+ &  & \quad\mathit{if}\,\alpha\neq\alpha'\wedge\chi(\alpha)\downarrow_{8}(\alpha')>n\\
 \mathit{Adj}(\chi,\alpha,\alpha',n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{6},\\
- &  & \quad\chi(\alpha)\downarrow_{7}-n,\chi(\alpha)\downarrow_{8},\chi(\alpha)\downarrow_{9})]\\
+ &  & \quad\chi(\alpha)\downarrow_{7}+n,\chi(\alpha)\downarrow_{8},\chi(\alpha)\downarrow_{9})]\\
  &  & \quad\mathit{if}\,\alpha=\alpha'\\
 \mathit{Rel}(\chi,\alpha,\iota) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{7},\\
  &  & \quad\chi(\alpha)\downarrow_{8}[\iota\mapsto0],\chi(\alpha)\downarrow_{9})]\\
@@ -3354,6 +3407,35 @@ rule allows an actor
 \end_inset
 
  .
+ Note that 
+\noun on
+Acquire
+\noun default
+ uses 
+\begin_inset Formula $-n$
+\end_inset
+
+ rather than 
+\begin_inset Formula $n$
+\end_inset
+
+, as 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ wishes to add to, rather than subtract from, its foreign reference count
+ for 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+.
+ Since 
+\begin_inset Formula $\mathit{Adj}$
+\end_inset
+
+ is defined in terms of sending and receiving, it must be reversed for 
+\noun on
+Acquire.
 \end_layout
 
 \begin_layout Standard

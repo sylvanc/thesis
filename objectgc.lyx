@@ -794,10 +794,63 @@ Sending a reference
 
 \begin_layout Definition
 \begin_inset Formula $\begin{array}{lcl}
-\mathit{Send}(\chi,\alpha,\omega) & = & \mathit{Adj}(\chi,\alpha,\omega,-1)\end{array}$
+\mathit{Send}(\chi,\alpha,\omega) & = & \mathit{Adj}(\chi,\alpha,\omega,1)\end{array}$
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+Note that 
+\begin_inset Formula $\mathit{Adj}$
+\end_inset
+
+ is defined such that if 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ is the owner of 
+\begin_inset Formula $\omega$
+\end_inset
+
+, then 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ adds 
+\begin_inset Formula $n$
+\end_inset
+
+ (here, 
+\begin_inset Formula $-1$
+\end_inset
+
+ ) to its local reference count for 
+\begin_inset Formula $\omega$
+\end_inset
+
+.
+ On the other hand, if 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ is not the owner of 
+\begin_inset Formula $\omega$
+\end_inset
+
+, then 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ subtracts 
+\begin_inset Formula $n$
+\end_inset
+
+ from its foreign reference count for 
+\begin_inset Formula $\omega$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Subsection
@@ -839,7 +892,7 @@ Receiving a reference
 
 \begin_layout Definition
 \begin_inset Formula $\begin{array}{lcl}
-\mathit{Recv}(\chi,\alpha,\omega) & = & \mathit{Adj}(\chi,\alpha,\omega,1)\end{array}$
+\mathit{Recv}(\chi,\alpha,\omega) & = & \mathit{Adj}(\chi,\alpha,\omega,-1)\end{array}$
 \end_inset
 
 
@@ -914,7 +967,7 @@ textwidth][c]{
 \iota s\subseteq\mathit{dom}(\chi(\alpha)\downarrow_{8})\\
 \forall\iota\in\iota s.[\mathcal{O}(\iota)=\alpha'\wedge\chi(\alpha)\downarrow_{8}(\iota)>0]\\
 \xi=[\iota\mapsto n\,|\,\iota\in\iota s]\\
-\chi'=\mathit{Adj}(\chi[\alpha,\alpha'++\mathit{INC}(\xi)],\alpha,\xi)
+\chi'=\mathit{Adj}(\chi[\alpha,\alpha'++\mathit{INC}(\xi)],\alpha,-\xi)
 \end{array}}{\chi,\alpha\cdot\overline{\varphi},\mathtt{e}\rightsquigarrow\chi',\alpha\cdot\overline{\varphi},\mathtt{e}}\;\textrm{\textsc{Acquire}} &  & \dfrac{\begin{array}{c}
 \neg\chi(\alpha)\downarrow_{9}\quad\alpha\neq\alpha'\\
 \iota s\subseteq\mathit{dom}(\chi(\alpha)\downarrow_{8})\backslash\mathit{Reach}(\chi,\alpha,\mathtt{ref})\\
@@ -992,8 +1045,8 @@ status open
 \mathit{Adj}(\chi,\alpha,\xi) & = & \mathit{Adj}(\mathit{Adj}(\chi,\alpha,\iota,\xi(\iota)),\alpha,\xi\backslash\iota)\,\mathit{where}\,\iota\in\mathit{dom}(\xi)\\
 \mathit{Adj}(\chi,\alpha,\emptyset) & = & \chi\\
 \mathit{Adj}(\chi,\alpha,\omega,n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{7},\\
- &  & \quad\chi(\alpha)\downarrow_{8}[\omega\mapsto(\chi(\alpha)\downarrow_{8}(\omega)+n)],\chi(\alpha)\downarrow_{9})]\\
- &  & \quad\mathit{if}\,\alpha\neq\mathcal{O}(\omega)\wedge\chi(\alpha)\downarrow_{8}(\omega)>-n\\
+ &  & \quad\chi(\alpha)\downarrow_{8}[\omega\mapsto(\chi(\alpha)\downarrow_{8}(\omega)-n)],\chi(\alpha)\downarrow_{9})]\\
+ &  & \quad\mathit{if}\,\alpha\neq\mathcal{O}(\omega)\wedge\chi(\alpha)\downarrow_{8}(\omega)>n\\
 \mathit{Adj}(\chi,\alpha,\omega,n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{7},\\
  &  & \quad\chi(\alpha)\downarrow_{8}[\omega\mapsto(\chi(\alpha)\downarrow_{8}(\iota)+n)],\chi(\alpha)\downarrow_{9})]\\
  &  & \quad\mathit{if}\,\alpha=\mathcal{O}(\omega)\\
@@ -1163,6 +1216,38 @@ MAC
  an address in order to acquire more reference count weight, and must both
  hold a foreign reference count weight and not be able to reach the address
  in order to release that weight.
+\end_layout
+
+\begin_layout Standard
+Note that 
+\noun on
+Acquire
+\noun default
+ uses 
+\begin_inset Formula $-\xi$
+\end_inset
+
+ rather than 
+\begin_inset Formula $\xi$
+\end_inset
+
+, as 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ wishes to add to, rather than subtract from, its foreign reference counts
+ for 
+\begin_inset Formula $\iota s$
+\end_inset
+
+.
+ Since 
+\begin_inset Formula $\mathit{Adj}$
+\end_inset
+
+ is defined in terms of sending and receiving, it must be reversed for 
+\noun on
+Acquire.
 \end_layout
 
 \begin_layout Standard
