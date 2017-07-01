@@ -87,14 +87,28 @@ Object Collection
 \end_layout
 
 \begin_layout Standard
-Many actor-model languages have non-actor entities, in the form of passive
- objects or other non-actor data structures.
- Such objects can be passed between actors in messages.
+As discussed in chapters 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Syntax-and-Operational"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
+, Pony, like many actor-model languages, has non-actor entities, in the
+ form of passive (synchronous) objects, and such objects can be passed between
+ actors in messages.
  Garbage collecting such objects in an actor-model language face similar
  problems to garbage collecting actors themselves.
  The inability to examine the global state of the program without pausing
  the program results in existing approaches to object garbage collection
- suffering performance problems, particularly when stop-the-world phases
+ suffering performance problems, particularly when stop-the-world pauses
  cause the program to become unresponsive.
 \end_layout
 
@@ -346,7 +360,19 @@ ORCA
 MAC
 \emph default
  by tracking object references in external maps as well as actor references.
- To do so, the operational semantics are altered to perform reference count
+ Through message receipt, actors may acquire references to objects allocated
+ by other actors, which we term 
+\emph on
+foreign objects
+\emph default
+, and during execution they may release those references.
+ Therefore, to keep track of this, they acquire and release reference counts.
+ Importantly, such reference counts are not dependent on the shape of the
+ heap, but instead change only when messages are sent and received.
+\end_layout
+
+\begin_layout Standard
+To do so, the operational semantics are altered to perform reference count
  adjustments for passive objects as well as for actor references when sending
  and receiving messages.
  Similarly, actors can acquire and release reference counts for objects
@@ -389,26 +415,27 @@ reference "sec:Actor-GC"
  However, alternate mechanisms for collecting a local heap, such as an increment
 al garbage collector, or even a concurrent collector that examines a single
  actor's local state and local heap at any given time, could be used.
- The operational semantics accounts for this with a high level description
+\end_layout
+
+\begin_layout Standard
+The operational semantics accounts for this with a high level description
  of when objects are unreachable by an actor 
 \begin_inset Formula $\alpha$
 \end_inset
 
- and so eligible either for releasing any foreign reference count held by
- 
+.
+ If such objects are owned by 
 \begin_inset Formula $\alpha$
 \end_inset
 
- if they are not owned by 
+, they may be collected if they have a local reference count of zero (or
+ have never had a local reference count).
+ If such objects are owned by some other actor, the foreign reference count
+ held by 
 \begin_inset Formula $\alpha$
 \end_inset
 
-, or for collection if they are owned by 
-\begin_inset Formula $\alpha$
-\end_inset
-
- and have a local reference count of zero (or have never had a local reference
- count).
+ can be released.
 \end_layout
 
 \begin_layout Subsection
@@ -614,11 +641,22 @@ Reference Count Invariant
 
 \begin_layout Standard
 The reference count invariant for passive objects takes the same form as
- the invariant for actors, and so can be stated for both as 
-\begin_inset Formula $\mathit{LRC}(\iota)+\mathit{INC}(\iota)=\mathit{AMC}(\iota)+\mathit{FRC}(\iota)+\mathit{DEC}(\iota)$
+ the invariant for actors, and so can be stated for both as:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\mathit{LRC}(\iota)+\mathit{INC}(\iota)-\mathit{DEC}(\iota)=\mathit{AMC}(\iota)+\mathit{FRC}(\iota)
+\]
+
 \end_inset
 
-, all evaluated in the context of some heap 
+
+\end_layout
+
+\begin_layout Standard
+This invariant is evaluated in the context of some heap 
 \begin_inset Formula $\chi$
 \end_inset
 
@@ -701,11 +739,11 @@ DEC
 \end_layout
 
 \begin_layout Definition
-Reachability reference count invariant
+Reachability invariant
 \end_layout
 
 \begin_layout Definition
-\begin_inset Formula $\forall\alpha,\omega.\alpha\neq\mathcal{O}(\omega)\wedge\omega\in\mathit{Reach}(\chi,\alpha,\mathtt{ref})\Rightarrow\chi(\mathcal{O}(\omega))\downarrow_{8}(\omega)>0\wedge\chi(\alpha)\downarrow_{8}(\omega)>0$
+\begin_inset Formula $\forall\alpha,\omega.[\alpha\neq\mathcal{O}(\omega)\wedge\omega\in\mathit{Reach}(\chi,\alpha,\mathtt{ref})\Rightarrow\chi(\mathcal{O}(\omega))\downarrow_{8}(\omega)>0\wedge\chi(\alpha)\downarrow_{8}(\omega)>0]$
 \end_inset
 
 
@@ -865,27 +903,25 @@ textwidth][c]{
 \begin_inset Formula $\begin{array}{ccc}
 \dfrac{\begin{array}{c}
 \neg\chi(\alpha)\downarrow_{9}\quad\mathit{INC}(\xi)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
-\chi'=\mathit{Adj}(\chi,\alpha,-\xi)
+\chi'=\mathit{Adj}(\chi,\alpha,\xi)
 \end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\overline{\mu}],\alpha,\varepsilon}\;\textrm{\textsc{Inc}} &  & \dfrac{\begin{array}{c}
 \neg\chi(\alpha)\downarrow_{9}\quad\mathit{DEC}(\xi)\cdot\overline{\mu}=\chi(\alpha)\downarrow_{3}\\
-\chi'=\mathit{Adj}(\chi,\alpha,\xi)
+\chi'=\mathit{Adj}(\chi,\alpha,-\xi)
 \end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'[\alpha\mapsto\overline{\mu}],\alpha,\varepsilon}\;\textrm{\textsc{Dec}}\\
 \\
 \dfrac{\begin{array}{c}
 \neg\chi(\alpha)\downarrow_{9}\quad\alpha\neq\alpha'\\
 \iota s\subseteq\mathit{dom}(\chi(\alpha)\downarrow_{8})\\
-\forall\iota\in\iota s.\mathcal{O}(\iota)=\alpha'\wedge\chi(\alpha)\downarrow_{8}(\iota)>0\\
+\forall\iota\in\iota s.[\mathcal{O}(\iota)=\alpha'\wedge\chi(\alpha)\downarrow_{8}(\iota)>0]\\
 \xi=[\iota\mapsto n\,|\,\iota\in\iota s]\\
-\chi'=\chi[\alpha,\alpha'++\mathit{INC}(\xi)]\\
-\chi''=\mathit{Adj}(\chi',\alpha,\xi)
-\end{array}}{\chi,\alpha\cdot\overline{\varphi},\mathtt{e}\rightsquigarrow\chi'',\alpha\cdot\overline{\varphi},\mathtt{e}}\;\textrm{\textsc{Acquire}} &  & \dfrac{\begin{array}{c}
+\chi'=\mathit{Adj}(\chi[\alpha,\alpha'++\mathit{INC}(\xi)],\alpha,\xi)
+\end{array}}{\chi,\alpha\cdot\overline{\varphi},\mathtt{e}\rightsquigarrow\chi',\alpha\cdot\overline{\varphi},\mathtt{e}}\;\textrm{\textsc{Acquire}} &  & \dfrac{\begin{array}{c}
 \neg\chi(\alpha)\downarrow_{9}\quad\alpha\neq\alpha'\\
-\iota s\notin\mathit{Reach}(\chi,\alpha,\mathtt{ref})\\
-\forall\iota\in\iota s.\mathcal{O}(\iota)=\alpha'\wedge\chi(\alpha)\downarrow_{8}(\iota)>0\\
+\iota s\subseteq\mathit{dom}(\chi(\alpha)\downarrow_{8})\backslash\mathit{Reach}(\chi,\alpha,\mathtt{ref})\\
+\forall\iota\in\iota s.[\mathcal{O}(\iota)=\alpha'\wedge\chi(\alpha)\downarrow_{8}(\iota)>0]\\
 \xi=[\iota\mapsto\chi(\alpha)\downarrow_{8}(\iota)\,|\,\iota\in\iota s]\\
-\chi'=\chi[\alpha,\alpha'++\mathit{DEC}(\xi)]\\
-\chi''=\mathit{Rel}(\chi',\alpha,\iota s)
-\end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi'',\alpha,\varepsilon}\;\textrm{\textsc{Release}}
+\chi'=\mathit{Rel}(\chi[\alpha,\alpha'++\mathit{DEC}(\xi)],\alpha,\iota s)
+\end{array}}{\chi,\alpha,\varepsilon\rightsquigarrow\chi',\alpha,\varepsilon}\;\textrm{\textsc{Release}}
 \end{array}$
 \end_inset
 
@@ -914,7 +950,7 @@ status open
 \align center
 \begin_inset Formula $\dfrac{\begin{array}{c}
 \omega\in\mathit{dom}(\chi)\quad\omega\notin\mathit{Reach}(\chi,\alpha,\mathtt{ref})\\
-\mathcal{O}(\omega)=\alpha\wedge\chi(\alpha)\downarrow_{8}(\omega)\not>0
+\mathcal{O}(\omega)=\alpha\quad\chi(\alpha)\downarrow_{8}(\omega)\not>0
 \end{array}}{\chi,\alpha\cdot\overline{\varphi},\mathtt{e}\rightsquigarrow\chi\backslash\omega,\alpha\cdot\overline{\varphi},\mathtt{e}}\;\textrm{\textsc{Collect}}$
 \end_inset
 
@@ -957,9 +993,9 @@ status open
 \mathit{Adj}(\chi,\alpha,\emptyset) & = & \chi\\
 \mathit{Adj}(\chi,\alpha,\omega,n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{7},\\
  &  & \quad\chi(\alpha)\downarrow_{8}[\omega\mapsto(\chi(\alpha)\downarrow_{8}(\omega)+n)],\chi(\alpha)\downarrow_{9})]\\
- &  & \quad\mathit{if}\,\alpha\neq\mathcal{O}(\omega)\wedge\chi(\alpha)\downarrow_{8}(\alpha')>-n\\
+ &  & \quad\mathit{if}\,\alpha\neq\mathcal{O}(\omega)\wedge\chi(\alpha)\downarrow_{8}(\omega)>-n\\
 \mathit{Adj}(\chi,\alpha,\omega,n) & = & \chi[\alpha\mapsto(\chi(\alpha)\downarrow_{1}...\chi(\alpha)\downarrow_{7},\\
- &  & \quad\chi(\alpha)\downarrow_{8}[\omega\mapsto(\chi(\alpha)\downarrow_{8}(\iota)-n)],\chi(\alpha)\downarrow_{9})]\\
+ &  & \quad\chi(\alpha)\downarrow_{8}[\omega\mapsto(\chi(\alpha)\downarrow_{8}(\iota)+n)],\chi(\alpha)\downarrow_{9})]\\
  &  & \quad\mathit{if}\,\alpha=\mathcal{O}(\omega)\\
 -\xi & = & [\iota\mapsto-\rho\,|\,\xi(\iota)=\rho]\\
 \chi(\alpha)\downarrow_{8}(\omega)\not>0 & \mathit{iff} & \omega\notin\mathit{dom}(\chi(\alpha)\downarrow_{8})\vee\chi(\alpha)\downarrow_{8}(\omega)=0
@@ -1016,16 +1052,85 @@ DEC
 \emph default
 message to carry reference count adjustment information for a collection
  of addresses.
- In practice, this is some set of passive objects owned all owned by the
- same actor 
+ In practice, this is some set of passive objects all owned by the same
+ actor 
 \begin_inset Formula $\alpha$
 \end_inset
 
-, and possible 
+, and possibly 
 \begin_inset Formula $\alpha$
 \end_inset
 
  itself.
+ Passive objects owned by other actors, and indeed other actors themselves,
+ will not appear in 
+\emph on
+INC
+\emph default
+ or 
+\emph on
+DEC
+\emph default
+ messages delivered to 
+\begin_inset Formula $\alpha$
+\end_inset
+
+, as they are not owned by 
+\begin_inset Formula $\alpha$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Note that both 
+\noun on
+Inc
+\noun default
+ and 
+\noun on
+Dec
+\noun default
+ require the actor to 
+\noun on
+Unblock
+\noun default
+ if they are blocked.
+ This is to ensure that an actor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ does not send a 
+\emph on
+MAC
+\emph default
+\noun on
+ 
+\emph on
+\noun default
+ACK
+\emph default
+ message to the cycle detector when in fact the cycle detector's view of
+ the reference count of 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ is out of date.
+ This requirement can be optimised away by keeping a per-actor flag indicating
+ when the actor has altered its reference count due to an 
+\emph on
+INC 
+\emph default
+or 
+\emph on
+DEC
+\emph default
+ while blocked.
+ When this flag is set, 
+\emph on
+ACK
+\emph default
+ messages are suppressed, and the flag is unset when the actor unblocks.
 \end_layout
 
 \begin_layout Standard
@@ -1038,7 +1143,7 @@ and
 Release 
 \noun default
 rules are modified to allow the executing actor to acquire and release reference
- count weight for passive objects as well as actors.
+ counts for passive objects as well as actors.
  Each rule allows generating a single message (
 \emph on
 INC
@@ -1104,7 +1209,7 @@ reference "fig:Auxiliary-definitions-for-object-gc"
 \begin_inset Formula $\xi$
 \end_inset
 
- does not affect the result.
+ are applied does not affect the result.
 \end_layout
 
 \begin_layout Section
@@ -1279,6 +1384,53 @@ ORCA
  In Pony, individual actors and messages in the concurrent setting (or on
  a single node in the distributed setting) do not fail, removing even the
  completeness impact.
+\end_layout
+
+\begin_layout Standard
+Interestingly, another possible failure mode is integer overflow in reference
+ counts.
+ In the formal model, unbounded integers are used, and this problem does
+ not occur.
+ In the implementation, bounded integers are used, and it might be possible
+ to overflow a reference count, for example if the owner 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ of 
+\begin_inset Formula $\omega$
+\end_inset
+
+ sends 
+\begin_inset Formula $\omega$
+\end_inset
+
+ to some other actor 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ 
+\begin_inset Formula $2^{64}$
+\end_inset
+
+ times without 
+\begin_inset Formula $\alpha'$
+\end_inset
+
+ performing a 
+\noun on
+Release
+\noun default
+ for 
+\begin_inset Formula $\omega$
+\end_inset
+
+.
+ In this circumstance, the implementation should treat the reference count
+ of 
+\begin_inset Formula $\omega$
+\end_inset
+
+ as infinite, preserving robustness, but not completeness.
 \end_layout
 
 \begin_layout Section

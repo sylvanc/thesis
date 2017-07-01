@@ -120,9 +120,9 @@ A
 \emph on
 reference capability
 \emph default
- is an annotation on a reference, rather than an object, that modifies the
- capabilities available on the underlying object when it is accessed through
- that reference.
+ is a type qualifier annotation on a reference, rather than an object, that
+ modifies the capabilities available on the underlying object when it is
+ accessed through that reference.
  In Pony, reference capabilities are used to statically ensure data-race
  freedom.
  The term 
@@ -141,8 +141,8 @@ key "clebsch2015deny"
 \end_layout
 
 \begin_layout Standard
-In previous work, reference capabilities for data-race freedom have been
- expressed as 
+In previous work, type qualifiers for data-race freedom have been expressed
+ as 
 \emph on
 permissions
 \emph default
@@ -223,8 +223,7 @@ key "clarke2003external"
 \end_layout
 
 \begin_layout Standard
-These approaches use reference capabilities to describe what a reference
- is 
+These approaches use type qualifiers to describe what a reference is 
 \emph on
 allowed
 \emph default
