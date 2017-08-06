@@ -598,6 +598,12 @@ DEC
 \end_layout
 
 \begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Reachability-1"
+
+\end_inset
+
 Reachability
 \end_layout
 
@@ -739,6 +745,12 @@ DEC
 \end_layout
 
 \begin_layout Definition
+\begin_inset CommandInset label
+LatexCommand label
+name "Reachability-invariant"
+
+\end_inset
+
 Reachability invariant
 \end_layout
 

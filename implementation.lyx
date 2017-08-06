@@ -88,7 +88,24 @@ Runtime Implementation
 \end_layout
 
 \begin_layout Standard
-The Pony runtime is composed of several core components.
+TODO: The purpose of this chapter is to serve as an artefact evaluation
+ guide?
+\end_layout
+
+\begin_layout Standard
+TODO: glossary of compile-time constants, such as chunk size
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\begin_layout Section
+Component Architecture
+\end_layout
+
+\begin_layout Standard
+The Pony runtime consists of several core components.
  Figure 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -98,12 +115,40 @@ reference "fig:Runtime-architecture"
 
  shows the structure of those components.
  At the bottom is the memory allocator.
- On top of this is built the Single-Producer Multiple-Consumer queue, the
- Multiple-Producer Single-Consumer queue, and the heap.
- The SPMC and MPSC queues are used to build the scheduler, the MPSC queue
- is used to build the asynchronous I/O handler, and the MPSC queue and the
- heap are used to build the actors themselves.
- Tracing GC, sharing GC, and actor GC are built on top of the actors.
+ On top of this is built the Single-Producer Multiple-Consumer (SPMC) queue,
+ the Multiple-Producer Single-Consumer (MPSC) queue, and the heap.
+ SPMC and MPSC queues are used to build the scheduler, an MPSC queue is
+ used to build the asynchronous I/O handler, and another MPSC queue and
+ the heap are used to build the actors themselves.
+ Tracing garbage collection (GC), sharing GC, and actor GC are built on
+ top of actors, heaps, the page map, and the pool allocator.
+\end_layout
+
+\begin_layout Standard
+Sharing GC uses tracing GC during message send and receive, and actor GC
+ relies on sharing GC in order to track from some actor 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ to some actor 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ that arise due to 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ having a reference to some object 
+\begin_inset Formula $\omega$
+\end_inset
+
+ that is owned by 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+.
+ In addition, tracing GC calls into sharing GC when objects owned by other
+ actors are encountered during the trace.
 \end_layout
 
 \begin_layout Standard
@@ -153,20 +198,74 @@ Runtime architecture
 
 \begin_layout Standard
 Every component's design is influenced by the type system.
- This influence is most obvious in, for example, the garbage collection
- components, but the impact is felt at every level, including the memory
- allocator.
+ This influence is particularly felt in the garbage collection components,
+ but the impact is felt at every level, including the memory allocator.
 \end_layout
 
 \begin_layout Section
-Memory Allocator
+Runtime Invariants
+\end_layout
+
+\begin_layout Standard
+TODO: write invariants?
+\end_layout
+
+\begin_layout Standard
+TODO: principles? spmc and mpsc?
+\end_layout
+
+\begin_layout Section
+Pool Allocator
 \end_layout
 
 \begin_layout Standard
 General purpose memory allocation is a complex problem.
  Manual memory management allocators have seen significant research in malloc-li
-ke allocators that scale better as core counts increase, including tcmalloc,
- jemalloc, llalloc, the Intel TBB allocator, and most recently scalloc.
+ke allocators that scale better as core counts increase, including 
+\family typewriter
+tcmalloc
+\family default
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ghemawat2009tcmalloc"
+
+\end_inset
+
+, 
+\family typewriter
+jemalloc
+\family default
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "evans2011scalable"
+
+\end_inset
+
+, the 
+\family typewriter
+Intel TBB
+\family default
+ allocator
+\begin_inset CommandInset citation
+LatexCommand cite
+key "reinders2007intel"
+
+\end_inset
+
+, and most recently 
+\family typewriter
+scalloc
+\family default
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "aigner2015fast"
+
+\end_inset
+
+.
  This category of memory allocator face several related problems: finding
  free memory large enough to fulfil the requested allocation size without
  wasting excessive memory, coalescing freed memory to allow larger allocations
@@ -179,9 +278,15 @@ ke allocators that scale better as core counts increase, including tcmalloc,
 \end_layout
 
 \begin_layout Standard
-The Pony memory allocator is divided into two stages: an underlying pool
- allocator and a heap implementation built on top of it.
+The Pony memory allocator is divided into three parts: an underlying pool
+ allocator, a page map, and a heap implementation built on top.
  We'll begin by examining the pool allocator.
+ It is important to note that the pool allocator is not directly used for
+ language-level allocation.
+ That is, when a new object is allocated in Pony, it is allocated from the
+ currently executing actor's heap, rather than directly from the pool allocator.
+ The pool allocator is used for runtime data structures, including actor
+ heaps themselves.
 \end_layout
 
 \begin_layout Standard
@@ -189,7 +294,7 @@ To reduce contention, the pool allocator operates as a thread-local allocator.
  When we examine the scheduler, we'll see that this results in each core
  having a pool allocator that is pinned to that core.
  This pool allocator is responsible for pulling new pages from the kernel
- when necessary, managing size-classed free lists, and making free lists
+ when necessary, managing size classed free lists, and making free lists
  available to other thread-local pool allocators when possible.
 \end_layout
 
@@ -199,12 +304,12 @@ When a pool allocator is asked to allocate memory, it tries three sources,
 \end_layout
 
 \begin_layout Enumerate
-The thread-local size-classed free list for amount of memory requested,
- rounded to the next higher size-class.
+The thread-local size classed free list for amount of memory requested,
+ rounded to the next higher size class.
 \end_layout
 
 \begin_layout Enumerate
-The global size-classed list of free lists for that size-class, which is
+The global size classed list of free lists for that size class, which is
  used to prevent producer-consumer allocation starvation.
 \end_layout
 
@@ -216,8 +321,14 @@ The thread-local free block.
 The operating system, by allocating new pages.
 \end_layout
 
+\begin_layout Subsection
+Size Classes
+\end_layout
+
 \begin_layout Standard
 Size classes are used to simplify free list management.
+ This approach segregates free lists by the size of the allocation, and
+ limits the available allocation sizes.
  The implementation currently uses power-of-two sized classes ranging from
  
 \begin_inset Formula $2^{5}$
@@ -232,19 +343,108 @@ Size classes are used to simplify free list management.
  free block.
 \end_layout
 
-\begin_layout Subsection
-Thread-local Free List
+\begin_layout Standard
+Such segregated free lists have a cost, in that allocations sizes are rounded
+ up to a size class.
+ For example, using power-of-two size classes, a 65 byte allocation request
+ will instead allocate 128 bytes.
+ However, in return, allocations do not require that memory in the allocated
+ block be used to indicate the allocated size, and allocations are always
+ cache line aligned.
 \end_layout
 
 \begin_layout Standard
-Each pool allocator keeps a linked list of free memory for each size-class.
- The memory for the object is used as the linked list node.
- Initially, these free lists are empty.
- When the pool allocator is told to free memory within a size class, it
- prepends that memory to the appropriate free list.
- The memory is prepended to improve cache locality: if memory of that size
- class is quickly allocated and used again, it is more likely that the memory
- remains in cache.
+In addition, no free list searching is required on allocation.
+ Using the head of the free list for a size class approximates a best-fit
+ search of all free memory, which improves memory utilisation and reduces
+ fragmentation.
+\end_layout
+
+\begin_layout Subsection
+Thread-local Size Classed Free List
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+typedef struct pool_item_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  struct pool_item_t* next;
+\end_layout
+
+\begin_layout Plain Layout
+
+} pool_item_t; 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:A-thread-local-free"
+
+\end_inset
+
+A thread-local free list node
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Each pool allocator keeps a linked list of free memory for each size class.
+ Initially, these free lists are empty, which is encoded as a 
+\family typewriter
+null
+\family default
+ pointer.
+\end_layout
+
+\begin_layout Standard
+When the pool allocator is told to free memory within a size class, it prepends
+ that memory to the appropriate free list.
+ The memory being freed is reused as the linked list node, so that there
+ is no memory overhead associated with free memory, as shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:A-thread-local-free"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The memory is prepended, following a last-in first-out strategy, in order
+ to improve cache locality: if memory of that size class is quickly allocated
+ and used again, it is more likely that the memory remains in cache.
 \end_layout
 
 \begin_layout Standard
@@ -252,39 +452,158 @@ When memory is freed to a thread-local free list, the provenance of the
  memory is not examined.
  Any pool allocator can place memory allocated by any other pool allocator
  on its thread-local free list for that size class.
+ As a result, it is not necessary to perform any checks as to the origin
+ of memory when it is freed.
+ This differs from 
+\emph on
+arena
+\emph default
+ based allocators that must return free memory to the allocating arena.
+ For the Pony runtime, this behaviour is critical, as it allows both runtime
+ data structures and heap chunks be efficiently freed regardless of which
+ thread an actor executes on.
 \end_layout
 
 \begin_layout Subsection
-Global List of Free Lists
+Global List of Size Classed Free Lists
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+typedef struct pool_central_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  pool_item_t* next;
+\end_layout
+
+\begin_layout Plain Layout
+
+  uintptr_t length;
+\end_layout
+
+\begin_layout Plain Layout
+
+  struct pool_central_t* central; 
+\end_layout
+
+\begin_layout Plain Layout
+
+} pool_central_t; 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:A-global-list"
+
+\end_inset
+
+A global list of free lists node
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
 The system as a whole also keeps a single global list of free lists for
- each size-class.
+ each size class.
  This is to avoid memory starvation in a producer-consumer scenario where
  one scheduler thread is consistently allocating memory and another scheduler
  thread is consistently freeing it.
 \end_layout
 
 \begin_layout Standard
-When a thread-local free list exceed a certain size, defaulting to 
+When a thread-local free list exceeds a certain size, defaulting to 
 \begin_inset Formula $2^{20}$
 \end_inset
 
  bytes, that free list is pushed to a global list of free lists.
- The memory for the node at the head of the list is used to record the size
- of the list being pushed to the global list of lists, and to store a pointer
- to the next free list.
- An atomic compare-and-swap loop is used to change the global list of free
- lists pointer, so that any number of pool allocators can safely attempt
- to push a free list to the global area simultaneously.
+ The maximum size of a thread-local free list is a global compile-time constant,
+ rather than being adaptive.
+ It is possible that an adaptive approach could yield additional performance
+ benefits, at the cost of evaluating some heuristic.
+\end_layout
+
+\begin_layout Standard
+The first linked list node in the thread-local free list is reinterpreted
+ as the first node in a global list of lists.
+ This involves reusing available space in the node 
+\emph on
+after
+\emph default
+ the pointer to the next node in the thread-local free list to record both
+ the length of the current list and a pointer to the next global list, as
+ shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:A-global-list"
+
+\end_inset
+
+.
+ Note that a 
+\family typewriter
+pool_central_t
+\family default
+ maintains the same initial structure as a 
+\family typewriter
+pool_item_t
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+To make this possible, the minimum allocation size must be sufficient to
+ hold all three values, i.e.
+ 24 bytes in a 64-bit runtime or 12 bytes in a 32-bit runtime.
+ The minimum allocation size is a compile-time constant that defaults to
+ 32 bytes.
+\end_layout
+
+\begin_layout Standard
+An atomic compare-and-swap loop is used to change the global list of free
+ lists pointer for the size class being pushed, so that any number of pool
+ allocators can safely attempt to push a free list to the global list of
+ lists simultaneously.
 \end_layout
 
 \begin_layout Standard
 Similarly, when a pool allocator's thread-local free list is empty, it examines
  the global list of free lists.
- Crucially, if that global list is empty, no atomic operation is required,
- and the pool allocator tries its next source of free memory.
+ Crucially, if that global list is empty, which is encoded as a 
+\family typewriter
+null
+\family default
+ pointer, no atomic operation is required, and the pool allocator tries
+ its next source of free memory.
  If the global list of free lists contains one or more lists, an atomic
  compare-and-swap loop is used to remove one list from global list.
  That list is then used as the thread-local free list, allowing memory to
@@ -296,10 +615,10 @@ Thread-local Free Block
 \end_layout
 
 \begin_layout Standard
-A pool allocator also keep a thread-local free block.
+A pool allocator also keeps a thread-local free block.
  This is a list of free memory, insert-sorted by size, that is initially
  empty.
- If no size-classed memory is available, the first free block in this list
+ If no size classed memory is available, the first free block in this list
  large enough to fulfil the allocation is used.
  If a block is available, it is fragmented into the requested size and any
  remaining memory, with any remaining memory being insert-sorted back into
@@ -308,7 +627,7 @@ A pool allocator also keep a thread-local free block.
 
 \begin_layout Standard
 This approach allows large allocations to be reused for future large allocations
-, or fragmented into future size-classed allocations.
+, or fragmented into future size classed allocations.
  It also allows freed large allocations to coexist with new pages pulled
  from the operating system.
 \end_layout
@@ -318,11 +637,19 @@ New Pages
 \end_layout
 
 \begin_layout Standard
-If the thread-local and global size-classed pools are empty, and the free
+If the thread-local and global size classed pools are empty, and the free
  block is either empty or contains no memory block large enough to fulfil
  the allocation request, the pool allocator uses an underlying system call
- (mmap on UNIX-like operating systems, VirtualAlloc on Windows) to request
- a number of pages mapped as a contiguous chunk of address space.
+ (
+\family typewriter
+mmap
+\family default
+ on UNIX-like operating systems, 
+\family typewriter
+VirtualAlloc
+\family default
+ on Windows) to request a number of pages mapped as a contiguous chunk of
+ address space.
  Some empirical testing with various work loads has lead to choosing a 128
  megabyte chunk in a 64-bit address space and a 16 megabyte chunk in a 32-bit
  address space as the default.
@@ -373,736 +700,8 @@ reference "subsec:Small-Allocation-Fragmentation"
  to coalesce free memory.
 \end_layout
 
-\begin_layout Subsection
-Performance
-\end_layout
-
 \begin_layout Standard
-Overall, allocation performance is similar to a bump allocator, while not
- requiring a compaction phase.
- We will discuss the choice not to use a compacting garbage collector in
- section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "subsec:Tracing-GC"
-
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Subsection
-Type System Influence
-\end_layout
-
-\begin_layout Standard
-The type system has an indirect effect on the design of the pool allocator.
- No per-allocation header is required at the pool allocator level, as the
- program always knows the size of any memory being freed.
-\end_layout
-
-\begin_layout Section
-\begin_inset CommandInset label
-LatexCommand label
-name "sec:Heaps"
-
-\end_inset
-
-Heaps
-\end_layout
-
-\begin_layout Standard
-Memory allocated by the runtime is handled directly by the thread-local
- pool allocator.
- This includes all runtime data structures that are not visible to the program,
- such as message queue nodes, scheduler queue nodes, and garbage collection
- management data.
-\end_layout
-
-\begin_layout Standard
-However, memory allocated by the application is not.
- Instead, it is handled by per-actor heaps.
-\end_layout
-
-\begin_layout Standard
-Each actor has its own heap, composed of lists of size-classed chunks, a
- list of oversized chunks, and information used to determine if the heap
- may be in need of garbage collection, as shown in figure 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:A-heap"
-
-\end_inset
-
-.
- A chunk is a small (24 bytes on a 32-bit architecture, 40 bytes on a 64-bit
- architecture) descriptor that stores the owning actor for an allocation
- (i.e.
- the actor whose heap the chunk is associated with), a base memory address,
- a size class or byte size, and garbage collection information, as shown
- in figure 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:A-chunk-descriptor"
-
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-\begin_inset listings
-inline false
-status open
-
-\begin_layout Plain Layout
-
-typedef struct heap_t {
-\end_layout
-
-\begin_layout Plain Layout
-
-  chunk_t* small_free[HEAP_SIZECLASSES];
-\end_layout
-
-\begin_layout Plain Layout
-
-  chunk_t* small_full[HEAP_SIZECLASSES];
-\end_layout
-
-\begin_layout Plain Layout
-
-  chunk_t* large;
-\end_layout
-
-\begin_layout Plain Layout
-
-  size_t used;
-\end_layout
-
-\begin_layout Plain Layout
-
-  size_t next_gc;
-\end_layout
-
-\begin_layout Plain Layout
-
-} heap_t; 
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption Standard
-
-\begin_layout Plain Layout
-\begin_inset CommandInset label
-LatexCommand label
-name "fig:A-heap"
-
-\end_inset
-
-A heap
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-\begin_inset listings
-inline false
-status open
-
-\begin_layout Plain Layout
-
-typedef struct chunk_t {
-\end_layout
-
-\begin_layout Plain Layout
-
-  // immutable
-\end_layout
-
-\begin_layout Plain Layout
-
-  pony_actor_t* actor;
-\end_layout
-
-\begin_layout Plain Layout
-
-  char* m;
-\end_layout
-
-\begin_layout Plain Layout
-
-  size_t size;
-\end_layout
-
-\begin_layout Plain Layout
-
-  // mutable
-\end_layout
-
-\begin_layout Plain Layout
-
-  uint32_t slots;
-\end_layout
-
-\begin_layout Plain Layout
-
-  uint32_t shallow;
-\end_layout
-
-\begin_layout Plain Layout
-
-  struct chunk_t* next;
-\end_layout
-
-\begin_layout Plain Layout
-
-} chunk_t; 
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption Standard
-
-\begin_layout Plain Layout
-\begin_inset CommandInset label
-LatexCommand label
-name "fig:A-chunk-descriptor"
-
-\end_inset
-
-A chunk descriptor
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Subsection
-Small Allocation
-\end_layout
-
-\begin_layout Standard
-A heap keeps two singly-linked lists of chunks for each small allocation
- size class.
- The first is a list of chunks with memory available for allocation, and
- the second is a list of chunks with no available memory.
- These are segregated to ensure that the heap never has to walk a linked
- list when allocating memory.
- Initially, both lists are empty for every size class.
-\end_layout
-
-\begin_layout Standard
-When the program requests memory less than the configured small allocation
- size (defaulting to 
-\begin_inset Formula $2^{10}$
-\end_inset
-
- bytes), the heap uses size classed memory to fulfil the allocation.
- The requested memory size is turned into a size class using a bit shift
- and a table lookup on a small (16-byte) static table, as in figure 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:Determining-a-size"
-
-\end_inset
-
-.
- The resulting size class index is then used to determine the correct linked
- list of chunks with free memory.
- If that list is non-empty, the first element is guaranteed to have free
- memory of the correct size.
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-\begin_inset listings
-inline false
-status open
-
-\begin_layout Plain Layout
-
-static const uint8_t sizeclass_table[] = {
-\end_layout
-
-\begin_layout Plain Layout
-
-  0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4
-\end_layout
-
-\begin_layout Plain Layout
-
-};
-\end_layout
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\begin_layout Plain Layout
-
-uint32_t heap_index(size_t size) {
-\end_layout
-
-\begin_layout Plain Layout
-
-  return sizeclass_table[(size - 1) >> HEAP_MINBITS];
-\end_layout
-
-\begin_layout Plain Layout
-
-}
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption Standard
-
-\begin_layout Plain Layout
-\begin_inset CommandInset label
-LatexCommand label
-name "fig:Determining-a-size"
-
-\end_inset
-
-Determining a size class
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Subsection
-Small Chunk Bitmaps
-\end_layout
-
-\begin_layout Standard
-Each chunk keeps a bitmap of free memory addresses in the memory it manages.
- The default configuration uses a single 32-bit integer to map a 
-\begin_inset Formula $2^{10}$
-\end_inset
-
- byte memory area.
- This bitmap uses set bits to indicate addresses in the memory area that
- are both free and valid for the size class, and unset bits to indicate
- addresses that are either in use or invalid for the size class.
- For example, using the default configuration, a chunk managing a 32 byte
- size class has an empty bitmap that consisted of all bits being set, whereas
- a chunk managing a 64 byte size class has an empty bitmap consisting of
- every other bit being set.
-\end_layout
-
-\begin_layout Standard
-To find a free and valid address, the runtime finds the first set bit in
- the bitmap (a cheap instruction on a modern processor), unsets the bit
- in the bitmap, and returns the base memory address offset by the bit position
- multiplied by the minimum allocation size, as in figure 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:Finding-free-small"
-
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset listings
-inline false
-status open
-
-\begin_layout Plain Layout
-
-uint32_t bit = __pony_ffs(chunk->slots) - 1;
-\end_layout
-
-\begin_layout Plain Layout
-
-chunk->slots &= ~(1 << bit);
-\end_layout
-
-\begin_layout Plain Layout
-
-void* m = chunk->m + (bit << HEAP_MINBITS);
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption Standard
-
-\begin_layout Plain Layout
-\begin_inset CommandInset label
-LatexCommand label
-name "fig:Finding-free-small"
-
-\end_inset
-
-Finding free small allocation memory
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Subsection
-Allocating on an Existing Chunk
-\end_layout
-
-\begin_layout Standard
-When a small allocation is performed and there is a non-empty linked list
- of chunks with free memory for that size class, the allocation can always
- be fulfilled using memory available in the first element of that linked
- list.
- That is, there is guaranteed to be at least one bit set in the chunk's
- bitmap.
-\end_layout
-
-\begin_layout Standard
-If allocation results in all memory in the chunk being exhausted (i.e.
- there was only one bit set before allocation, and so no bits set after
- allocation), the chunk is moved from the linked list of chunks with available
- memory to the linked list of chunks with no available memory.
- This is a cheap operation: it involves popping the head of a singly-linked
- list and pushing it to the head of another singly-linked list.
- This operation is critical.
- Without it, small allocation would be an 
-\begin_inset Formula $O(n)$
-\end_inset
-
- operation, with 
-\begin_inset Formula $n$
-\end_inset
-
- being the amount of memory allocated in a size class.
- By keeping segregated lists, small allocation is 
-\begin_inset Formula $O(1)$
-\end_inset
-
-, with at most one pointer dereference at the heap level.
-\end_layout
-
-\begin_layout Subsection
-Allocating on a New Chunk
-\end_layout
-
-\begin_layout Standard
-If there are no non-empty chunks for a given size class, the linked list
- head will be 
-\begin_inset Formula $\mathtt{NULL}$
-\end_inset
-
-.
- This indicates that a new chunk is required, without a pointer dereference.
-\end_layout
-
-\begin_layout Standard
-At this point, two pool allocations are required.
- The first is for a chunk descriptor, and the second is for the memory area
- to be managed by the new chunk.
- These are allocated separately in order to maintain address alignment for
- memory areas (a requirement for the page map, as detailed in section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "subsec:Page-Map"
-
-\end_inset
-
-) while also avoiding wasting memory.
- For example, a 
-\begin_inset Formula $2^{10}$
-\end_inset
-
- byte memory area used for a 
-\begin_inset Formula $2^{8}$
-\end_inset
-
- byte size class would have to use 
-\begin_inset Formula $2^{8}$
-\end_inset
-
- bytes to store the chunk descriptor.
-\end_layout
-
-\begin_layout Standard
-An additional concern is to keep chunk descriptors in separate cache lines
- from program data, and, where efficient, on separate operating system pages.
- This is important to reduce cache pollution and page faults during garbage
- collection, as detailed in section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "subsec:Tracing-GC"
-
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Standard
-The new chunk is initialised as an empty chunk and registered with the page
- map (c.f.
- section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "subsec:Page-Map"
-
-\end_inset
-
-).
- The first valid bit is initialised as unset, so that the new chunk can
- be placed on the list of chunks with available memory and the base memory
- address for the chunk can be used to fulfil the allocation.
-\end_layout
-
-\begin_layout Subsection
-\begin_inset CommandInset label
-LatexCommand label
-name "subsec:Small-Allocation-Fragmentation"
-
-\end_inset
-
-Small Allocation Fragmentation
-\end_layout
-
-\begin_layout Standard
-A major concern in memory allocators is avoiding fragmentation.
- This problem has two manifestations: internal fragmentation and external
- fragmentation.
-\end_layout
-
-\begin_layout Standard
-Internal fragmentation occurs when an allocator must return more memory
- than is requested by the application in order to fulfil an allocation.
- This can have two sources: headers related to the allocation itself (as
- opposed to object headers in the programming language) and the need to
- align memory.
-\end_layout
-
-\begin_layout Standard
-Because the type system is integrated with the runtime, the Pony allocator
- does not require memory allocation headers, and so avoids the first problem
- on a per-object basis.
- However, a chunk descriptor is still required for each memory area.
- This descriptor is allocated separately from the memory area to avoid internal
- fragmentation, although it still imposes a worst case memory size overhead
- of 3.125% (32-bit architecture) or 6.25% (64-bit architecture).
- This overhead can be configured by using a memory area size larger than
- 
-\begin_inset Formula $2^{10}$
-\end_inset
-
- bytes.
- The trade off is that an actor reserves memory for future small allocations
- in these block sizes.
- If the actor does not perform those future allocations, some fraction of
- that space is wasted, although this is always less than the memory area
- size multiplied by the number of size classes (i.e.
- it is 
-\begin_inset Formula $O(1)$
-\end_inset
-
- rather than 
-\begin_inset Formula $O(n)$
-\end_inset
-
- on allocation count).
- 
-\end_layout
-
-\begin_layout Standard
-Internal fragmentation due to memory alignment is sometimes a net performance
- benefit, due to cache line alignment and machine word alignment (e.g.
- 64-bit floating point or SSE data alignment).
- The Pony runtime aligns all small allocations on the size of the allocation
- to take best advantage of this.
- This creates a worst case internal fragmentation cost approaching 50%.
- For example, if all allocated objects in a program were 65 bytes, they
- would all be fulfilled with 128 byte allocations.
- Some allocators, tcmalloc 
-\emph on
-inter alia
-\emph default
-, use more finely grained size classes to reduce this form of internal fragmenta
-tion.
- The trade off is that more data structure overhead is required to keep
- track of the size classes themselves.
- For a thread-specific allocator such as tcmalloc, this overhead is only
- multiplied by the number of threads in a program (where a large number
- is on the order of thousands), whereas for the Pony runtime, the overhead
- would be multiplied by the number of actors in a program (where a large
- number is on the order of tens of millions).
-\end_layout
-
-\begin_layout Standard
-External fragmentation occurs when free memory is interspersed with allocated
- memory, resulting in a situation whereby sufficient memory is available
- to fulfil an allocation request, but that memory is non-contiguous, and
- the allocation fails.
- In a garbage collected language, this can be addressed with a compacting
- collector.
- Pony does not use a compacting collector, as explained in section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "subsec:Tracing-GC"
-
-\end_inset
-
-.
- Instead, external fragmentation is addressed in two ways: chunk bitmap
- management and pool allocator reuse.
-\end_layout
-
-\begin_layout Standard
-By using a chunk bitmap, free memory of a given size class is reused when
- a new allocation occurs, without the need to search through or coalesce
- a free list.
- This addresses the most common cause of external fragmentation: repeated
- allocation and freeing of objects of a finite number of sizes in an interleaved
- manner.
- Essentially, space in a chunk is back-filled when new objects of that size
- class are allocated.
-\end_layout
-
-\begin_layout Standard
-In addition, when all of the memory in a chunk is marked as free, that chunk
- descriptor and the memory area it manages are returned to the pool allocator.
- This allows a chunk to be reused for a different size class.
- As a result, repeated small allocations of any size are always defragmented,
- even if those allocations are temporally disparate or have an unpredictable
- layout.
- The worst case behaviour for a given size class is to free all but one
- object per chunk, preventing the chunk itself from being returned to the
- pool, without ever allocating additional memory in that size class.
- However, even this worst case is strictly bounded: any additional allocation
- in that size class will use memory available in the existing chunks.
-\end_layout
-
-\begin_layout Subsection
-Large Allocation
-\end_layout
-
-\begin_layout Standard
-When a program requests contiguous memory larger than the maximum size that
- can be handled by a small allocation, the heap performs a large allocation.
- This involves allocating a chunk descriptor and a single contiguous space
- for the full allocation, both using the underlying pool allocator.
- Unlike small allocations, there is no list of free large allocations, as
- those are managed entirely by the pool allocator.
-\end_layout
-
-\begin_layout Standard
-A large allocation chunk descriptor may need to be registered with the page
- allocator for more than one address, as detailed in section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "subsec:Page-Map"
-
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Subsection
-Large Allocation Fragmentation
-\end_layout
-
-\begin_layout Standard
-Since the contiguous memory areas required for large allocations are handled
- by the pool allocator, and each chunk descriptor represents a single allocation
-, there is no chunk bitmap and no cross-size defragmentation performed by
- the heap.
- Instead, fragmentation is handled by the pool allocator.
-\end_layout
-
-\begin_layout Standard
-The pool allocator uses many more size classes than the heap, ranging up
- to 
-\begin_inset Formula $2^{20}$
-\end_inset
-
- bytes by default.
- When large allocations up to this limit are freed, they use the pool allocators
- mechanism of thread-local free lists and global lists of free lists to
- manage the free memory.
- This memory is not coalesced in the existing implementation.
- A key area of future work is to add a coalescing mechanism for large allocation
+A key area of future work is to add a coalescing mechanism for pool allocator
  fragmentation that does not overly adversely affect common cases that do
  not require coalescing, such as repeatedly allocating and freeing buffers
  used for I/O operations.
@@ -1113,20 +712,43 @@ reference "subsec:Page-Map"
 
 \end_inset
 
-) can be extended to cheaply track free contiguous large allocations.
+) can be extended to cheaply track free contiguous allocations.
  The challenge is to cheaply coalesce these even when they are allocated
  and freed by different threads.
 \end_layout
 
 \begin_layout Standard
-Large allocations that exceed the size class limit of the underlying pool
- allocator are added to the insert-sorted list of free blocks for the local
- pool allocator.
+Allocations that exceed the size class limit of the pool allocator are added
+ to the insert-sorted list of free blocks for the local pool allocator.
  For these very large allocations, the pool allocator performs no better
  than existing allocators.
 \end_layout
 
 \begin_layout Subsection
+Role of the Type System
+\end_layout
+
+\begin_layout Standard
+The type system has an indirect effect on the design of the pool allocator.
+ The use of size classed allocations that do not record their size within
+ the allocated memory is made possible because the program always knows
+ the size of any memory being freed.
+ This approach, which does not conform to the 
+\family typewriter
+malloc
+\family default
+ interface, could be used seamlessly in any language that knows allocation
+ sizes, either statically or dynamically.
+ It can also be used in languages where sizes are not known if the program
+ explicitly tracks allocation sizes.
+ For example, the Pony compiler, although implemented in 
+\family typewriter
+C
+\family default
+, uses the pool allocator.
+\end_layout
+
+\begin_layout Section
 \begin_inset CommandInset label
 LatexCommand label
 name "subsec:Page-Map"
@@ -1137,14 +759,56 @@ Page Map
 \end_layout
 
 \begin_layout Standard
-In addition to the pool allocator and the heap, the runtime keeps a radix
- tree (two-level on 32-bit architectures, three-level on 64-bit architectures).
- This map associates memory addresses with chunk descriptors.
+The runtime keeps a radix tree (two-level on 32-bit architectures, three-level
+ on 64-bit architectures).
+ Page map levels are described in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Page-map-levels"
+
+\end_inset
+
+.
+ The bottom level of the radix tree refers to 
+\begin_inset Formula $2^{10}$
+\end_inset
+
+ byte regions, allowing the page map to associate a pointer to a chunk descripto
+r with each one.
+ These regions are the 
+\emph on
+pages
+\emph default
+ for the Pony runtime, although they are smaller than either the standard
+ (4 kilobyte) or huge (2 megabyte) pages used by some CPUs, such as 
+\family typewriter
+ARM64
+\family default
+ and 
+\family typewriter
+x86
+\family default
+.
+ Using a radix tree allows the page map to associate a pointer with every
+ 
+\begin_inset Formula $2^{10}$
+\end_inset
+
+ byte region with a total memory overhead of 0.39% on a 32-bit architecture,
+ or 0.78% on a 64-bit architecture.
 \end_layout
 
 \begin_layout Standard
-The alignment of the memory areas managed by chunks is exploited to give
- a simple mask-based lookup to find the chunk descriptor for any address.
+The alignment of the memory areas managed by chunks, as described in section
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Heaps"
+
+\end_inset
+
+, is exploited to give a simple mask-based lookup to find the chunk descriptor
+ for any address.
  This is used during garbage collection to find the chunk descriptor for
  an object, as detailed in sections 
 \begin_inset CommandInset ref
@@ -1166,17 +830,34 @@ reference "sec:Sharing-GC"
 \begin_layout Standard
 A page map is used rather than embedding a chunk descriptor in allocated
  memory as an allocation header.
- Doing so significantly reduces the memory overhead for small allocations.
+ Doing so significantly reduces the memory overhead for small allocations,
+ as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Small-Allocation"
+
+\end_inset
+
+.
  In addition, it allows the runtime to allocate and garbage collect objects
- that conform to C/C++ layout conventions on a particular platform, which
- is important for an efficient foreign function interface.
+ that conform to 
+\family typewriter
+C/C++
+\family default
+ layout conventions on a particular platform, which is important for an
+ efficient foreign function interface.
+ Pony also follows these platform specific layout conventions.
 \end_layout
 
 \begin_layout Standard
-The page map is a global rather than a thread local data structure.
+The page map is a global rather than a thread-local data structure, with
+ the root of the page map being a single global pointer.
  Because it can be written to for any allocation, and is read from during
  garbage collection, thread contention must be minimised.
- In figure 
+\end_layout
+
+\begin_layout Standard
+In figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:Reading-from-the"
@@ -1198,6 +879,75 @@ reference "fig:Writing-to-the"
  This results in worst case behaviour of three atomic instructions on write,
  which happens only when the page map is entirely empty.
  The common case involves no atomic instructions and no thread coordination.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+typedef struct pagemap_level_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  int shift;
+\end_layout
+
+\begin_layout Plain Layout
+
+  int mask;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t size;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t size_index;
+\end_layout
+
+\begin_layout Plain Layout
+
+} pagemap_level_t; 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Page-map-levels"
+
+\end_inset
+
+Page map levels
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1438,8 +1188,899 @@ Writing to the page map
 
 \end_layout
 
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Heaps"
+
+\end_inset
+
+Per-Actor Heaps
+\end_layout
+
+\begin_layout Standard
+All memory allocated by the runtime is handled by the thread-local pool
+ allocator.
+ This includes all runtime data structures that are not visible to the program,
+ such as message queue nodes, scheduler queue nodes, and garbage collection
+ management data, as well as memory allocated for actors themselves.
+ However, when an actor allocates objects, it does so via a per-actor heap,
+ rather than by using the pool allocator directly.
+\end_layout
+
+\begin_layout Standard
+Each actor has its own heap, composed of lists of size classed chunks, a
+ list of oversized chunks, and information used to determine if the heap
+ may be in need of garbage collection, as shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:A-heap"
+
+\end_inset
+
+.
+ Each standard chunk is a 
+\begin_inset Formula $2^{10}$
+\end_inset
+
+ byte area of contiguous memory that is used to allocate multiple objects,
+ each of the same size.
+ An oversized chunk is an area of contiguous memory larger than 
+\begin_inset Formula $2^{10}$
+\end_inset
+
+ bytes that is used to allocate a single large object.
+ In both cases, an allocation may represent an array of objects as well
+ as a single object.
+ An allocation is a 
+\emph on
+small allocation
+\emph default
+ if it is less than the standard chunk size, otherwise it is a 
+\emph on
+large allocation
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+A chunk descriptor is a small (24 bytes on a 32-bit architecture, 40 bytes
+ on a 64-bit architecture) structure that stores the owning actor for chunk
+ (i.e.
+ the actor whose heap the chunk is associated with), a base memory address,
+ a size class or byte size, and garbage collection information, as shown
+ in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:A-chunk-descriptor"
+
+\end_inset
+
+.
+ Chunk descriptors are used for both small allocations and large allocations.
+\end_layout
+
+\begin_layout Standard
+The garbage collection information is contained in the 
+\family typewriter
+slots
+\family default
+ and 
+\family typewriter
+shallow
+\family default
+ fields.
+ The use of these fields as bitmaps of free memory, and the need for separate
+ fields, will be discussed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Deep-vs.-Shallow"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+typedef struct heap_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  chunk_t* small_free[HEAP_SIZECLASSES];
+\end_layout
+
+\begin_layout Plain Layout
+
+  chunk_t* small_full[HEAP_SIZECLASSES];
+\end_layout
+
+\begin_layout Plain Layout
+
+  chunk_t* large;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t used;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t next_gc;
+\end_layout
+
+\begin_layout Plain Layout
+
+} heap_t; 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:A-heap"
+
+\end_inset
+
+A heap
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+typedef struct chunk_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  // immutable
+\end_layout
+
+\begin_layout Plain Layout
+
+  pony_actor_t* actor;
+\end_layout
+
+\begin_layout Plain Layout
+
+  char* m;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t size;
+\end_layout
+
+\begin_layout Plain Layout
+
+  // mutable
+\end_layout
+
+\begin_layout Plain Layout
+
+  uint32_t slots;
+\end_layout
+
+\begin_layout Plain Layout
+
+  uint32_t shallow;
+\end_layout
+
+\begin_layout Plain Layout
+
+  struct chunk_t* next;
+\end_layout
+
+\begin_layout Plain Layout
+
+} chunk_t; 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:A-chunk-descriptor"
+
+\end_inset
+
+A chunk descriptor
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
 \begin_layout Subsection
-Type System Influence
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Small-Allocation"
+
+\end_inset
+
+Small Allocation
+\end_layout
+
+\begin_layout Standard
+A heap keeps two singly-linked lists of chunks for each small allocation
+ size class.
+ The first is a list of chunks with memory available for allocation, and
+ the second is a list of chunks with no available memory.
+ Initially, both lists are empty for every size class.
+\end_layout
+
+\begin_layout Standard
+When the program requests memory less than the configured small allocation
+ size (defaulting to 
+\begin_inset Formula $2^{10}$
+\end_inset
+
+ bytes), the heap uses size classed memory to fulfil the allocation.
+ The amount of requested memory is turned into a size class using a bit
+ shift and a table lookup on a small (16-byte) static table, as in figure
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Determining-a-size"
+
+\end_inset
+
+.
+ The resulting size class index is then used to determine the correct linked
+ list of chunks with free memory, also in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Determining-a-size"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+static const uint8_t sizeclass_table[] = {
+\end_layout
+
+\begin_layout Plain Layout
+
+  0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4
+\end_layout
+
+\begin_layout Plain Layout
+
+};
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+uint32_t heap_index(size_t size) {
+\end_layout
+
+\begin_layout Plain Layout
+
+  return sizeclass_table[(size - 1) >> HEAP_MINBITS];
+\end_layout
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Determining-a-size"
+
+\end_inset
+
+Determining a size class
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The 
+\family typewriter
+small_free
+\family default
+ and 
+\family typewriter
+small_full
+\family default
+ lists are segregated to ensure that the heap never has to walk a linked
+ list when allocating memory.
+ To do so, an important invariant is maintained:
+\end_layout
+
+\begin_layout Itemize
+All chunks allocated by this heap with free space are in the 
+\family typewriter
+small_free
+\family default
+ list for their size class.
+\end_layout
+
+\begin_layout Itemize
+All chunks allocated by this heap without free space are in the 
+\family typewriter
+small_full
+\family default
+ list for their size class.
+\end_layout
+
+\begin_layout Standard
+As a result, when an allocation for some size class is requested, it will
+ come from the first element of the 
+\family typewriter
+small_free
+\family default
+ list, if there is one.
+ Otherwise, a new chunk will be allocated and the allocation will come from
+ this new chunk.
+\end_layout
+
+\begin_layout Standard
+This invariant is important for performance.
+ Without it, small allocation would be an 
+\begin_inset Formula $O(n)$
+\end_inset
+
+ operation, with 
+\begin_inset Formula $n$
+\end_inset
+
+ being the amount of memory allocated in a size class.
+ By keeping segregated lists, small allocation is 
+\begin_inset Formula $O(1)$
+\end_inset
+
+, with at most one pointer dereference at the heap level.
+\end_layout
+
+\begin_layout Subsection
+Small Chunk Bitmaps
+\end_layout
+
+\begin_layout Standard
+Each chunk keeps a bitmap of free memory addresses in the memory it manages.
+ This is called 
+\family typewriter
+slots
+\family default
+ in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:A-chunk-descriptor"
+
+\end_inset
+
+.
+ The default configuration uses a single 32-bit integer to map a 
+\begin_inset Formula $2^{10}$
+\end_inset
+
+ byte memory area.
+ This gives enough bits to describe free memory for a 32 objects of the
+ minimum allocation size of 32 bytes, which is size class 
+\family typewriter
+0
+\family default
+.
+ Similarly, a chunk can hold 16 objects with a 64 byte allocation size,
+ which is size class 
+\family typewriter
+1
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+The bitmap uses set bits to indicate addresses in the memory area that are
+ both free and valid for the size class, and unset bits to indicate addresses
+ that are either in use or invalid for the size class.
+ For example, using the default configuration, a chunk managing a 32 byte
+ size class has an empty bitmap that consists of all bits being set, whereas
+ a chunk managing a 64 byte size class has an empty bitmap consisting of
+ every other bit being set.
+\end_layout
+
+\begin_layout Standard
+To find a free and valid address, the runtime finds the first set bit in
+ the bitmap (a cheap instruction on a modern processor), unsets the bit
+ in the bitmap, and returns the base memory address offset by the bit position
+ multiplied by the minimum allocation size, as in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Finding-free-small"
+
+\end_inset
+
+.
+ Note that 
+\family typewriter
+__pony_ffs
+\family default
+ (
+\begin_inset Quotes eld
+\end_inset
+
+find-first-set
+\begin_inset Quotes erd
+\end_inset
+
+) is a cross-platform macro for the platform specific code that finds the
+ first set bit.
+ Also note that no conditional branches are required.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+uint32_t bit = __pony_ffs(chunk->slots) - 1;
+\end_layout
+
+\begin_layout Plain Layout
+
+chunk->slots &= ~(1 << bit);
+\end_layout
+
+\begin_layout Plain Layout
+
+void* m = chunk->m + (bit << HEAP_MINBITS);
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Finding-free-small"
+
+\end_inset
+
+Finding free small allocation memory
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Allocating on an Existing Chunk
+\end_layout
+
+\begin_layout Standard
+When a small allocation is performed and there is a non-empty linked list
+ of chunks with free memory for that size class, i.e.
+ 
+\family typewriter
+heap->small_free[sizeclass] != NULL
+\family default
+, the allocation can always be fulfilled using memory available in the first
+ element of that linked list.
+ That is, there is guaranteed to be at least one bit set in the chunk's
+ bitmap.
+\end_layout
+
+\begin_layout Standard
+If allocation results in all memory in the chunk being exhausted (i.e.
+ there was only one bit set before allocation, and so no bits set after
+ allocation), the chunk is moved from the linked list of chunks with available
+ memory to the linked list of chunks with no available memory.
+ This is a cheap operation: it involves popping the head of a singly-linked
+ list and pushing it to the head of another singly-linked list.
+ This maintains the invariant in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Small-Allocation"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Allocating on a New Chunk
+\end_layout
+
+\begin_layout Standard
+If there are no non-empty chunks for a given size class, the linked list
+ head will be 
+\begin_inset Formula $\mathtt{NULL}$
+\end_inset
+
+.
+ This indicates that a new chunk is required, without a pointer dereference.
+\end_layout
+
+\begin_layout Standard
+At this point, two pool allocations are required.
+ The first is for a chunk descriptor, and the second is for the chunk itself,
+ i.e.
+ the memory area to be managed by the new chunk descriptor.
+ These are allocated separately in order to maintain address alignment for
+ memory areas (a requirement for the page map, as detailed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Page-Map"
+
+\end_inset
+
+) while also avoiding wasting memory.
+ To illustrate the advantage of this approach, a 
+\begin_inset Formula $2^{10}$
+\end_inset
+
+ byte memory area used for a 
+\begin_inset Formula $2^{8}$
+\end_inset
+
+ byte size class has space for four objects.
+ If the chunk descriptor were embedded in the chunk memory, it would use
+ the space one object would otherwise occupy, which in this case would require
+ using 
+\begin_inset Formula $2^{8}$
+\end_inset
+
+ bytes to store the chunk descriptor.
+ With split allocation, a chunk descriptor is a fixed size.
+\end_layout
+
+\begin_layout Standard
+An additional concern is to keep chunk descriptors in separate cache lines
+ from program data, and, where efficient, on separate operating system pages.
+ This is important to reduce cache pollution and page faults during garbage
+ collection, as detailed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Tracing-GC"
+
+\end_inset
+
+.
+ The pool allocator ensures that chunk descriptors are cache-line aligned,
+ and will prefer placing different size classes on separate operating system
+ pages where practicable, accomplishing both goals.
+\end_layout
+
+\begin_layout Standard
+The new chunk is initialised as an empty chunk and registered with the page
+ map (c.f.
+ section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Page-Map"
+
+\end_inset
+
+).
+ As an optimisation, the first valid bit in 
+\family typewriter
+slots 
+\family default
+is initialised as unset, so that the base memory address for the chunk can
+ be used to fulfil the allocation without first checking for the first set
+ bit.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Small-Allocation-Fragmentation"
+
+\end_inset
+
+Small Allocation Fragmentation
+\end_layout
+
+\begin_layout Standard
+A major concern in memory allocators is avoiding fragmentation.
+ This problem has two manifestations: internal fragmentation and external
+ fragmentation.
+\end_layout
+
+\begin_layout Standard
+Internal fragmentation occurs when an allocator must return more memory
+ than is requested by the application in order to fulfil an allocation.
+ This can have two causes: headers related to the allocation itself (as
+ opposed to object headers in the programming language) and the need to
+ align memory.
+\end_layout
+
+\begin_layout Standard
+Because the type system is integrated with the runtime, the Pony allocator
+ does not require memory allocation headers, and so avoids the first problem
+ on a per-object basis.
+ However, a chunk descriptor is still required for each memory area.
+ This descriptor is allocated separately from the memory area to avoid internal
+ fragmentation, although it still imposes a worst case memory size overhead
+ of 3.125% (32-bit architecture) or 6.25% (64-bit architecture).
+ This overhead can be configured by using a chunk size larger than 
+\begin_inset Formula $2^{10}$
+\end_inset
+
+ bytes.
+ The trade off is that an actor reserves memory for future small allocations
+ in these block sizes.
+ If the actor does not perform those future allocations, some fraction of
+ that space is wasted, although this is always less than the memory area
+ size multiplied by the number of size classes (i.e.
+ it is 
+\begin_inset Formula $O(1)$
+\end_inset
+
+ rather than 
+\begin_inset Formula $O(n)$
+\end_inset
+
+ on allocation count).
+ 
+\end_layout
+
+\begin_layout Standard
+Internal fragmentation due to memory alignment is sometimes a net performance
+ benefit, due to cache line alignment and machine word alignment (e.g.
+ 64-bit floating point or SSE data alignment).
+ The Pony runtime aligns all small allocations on the size of the allocation
+ to take best advantage of this.
+ This creates a worst case internal fragmentation cost approaching 50%.
+ For example, if all allocated objects in a program were 65 bytes, they
+ would all be fulfilled with 128 byte allocations.
+ Some allocators, 
+\family typewriter
+tcmalloc
+\family default
+ 
+\emph on
+inter alia
+\emph default
+, use more finely grained size classes to reduce this form of internal fragmenta
+tion.
+ The trade off is that more data structure overhead is required to keep
+ track of the size classes themselves.
+ For a thread-specific allocator such as 
+\family typewriter
+tcmalloc
+\family default
+, this overhead is only multiplied by the number of threads in a program
+ (where a large number is on the order of thousands), whereas for the Pony
+ runtime, the overhead would be multiplied by the number of actors in a
+ program (where a large number is on the order of tens of millions).
+\end_layout
+
+\begin_layout Standard
+External fragmentation occurs when free memory is interspersed with allocated
+ memory, resulting in a situation where sufficient memory is available to
+ fulfil an allocation request, but that memory is non-contiguous, and the
+ allocation fails.
+ In a garbage collected language, this can be addressed with a compacting
+ collector.
+ Pony does not use a compacting collector, as explained in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Tracing-GC"
+
+\end_inset
+
+.
+ Instead, external fragmentation is addressed in two ways: chunk bitmap
+ management and pool allocator reuse.
+\end_layout
+
+\begin_layout Standard
+By using a chunk bitmap, free memory of a given size class is reused when
+ a new allocation occurs, without the need to search through or coalesce
+ a free list.
+ This addresses the most common cause of external fragmentation: repeated
+ allocation and freeing of objects of a finite number of sizes in an interleaved
+ manner.
+ Essentially, space in a chunk is back-filled when new objects of that size
+ class are allocated.
+\end_layout
+
+\begin_layout Standard
+In addition, when all of the memory in a chunk is marked as free, that chunk
+ descriptor and the memory area it manages are returned to the pool allocator.
+ This allows a chunk to be reused for a different size class.
+ As a result, repeated small allocations of any size are always defragmented,
+ even if those allocations are temporally disparate or have an unpredictable
+ layout.
+ The worst case behaviour for a given size class is to free all but one
+ object per chunk, preventing the chunk itself from being returned to the
+ pool, without ever allocating additional memory in that size class.
+ However, even this worst case is strictly bounded: any additional allocation
+ in that size class will use memory available in the existing chunks.
+\end_layout
+
+\begin_layout Subsection
+Large Allocation
+\end_layout
+
+\begin_layout Standard
+When a program requests contiguous memory larger than the maximum size that
+ can be handled by a small allocation, by default 
+\begin_inset Formula $2^{10}$
+\end_inset
+
+ bytes, the heap performs a large allocation.
+ This includes allocating a chunk descriptor and a single contiguous space
+ for the full allocation, both using the underlying pool allocator.
+ The requested contiguous memory area size is rounded up to be a multiple
+ of the chunk size.
+ This is done to allow large allocations that are later freed to be efficiently
+ subdivided into chunks by the pool allocator if the pool allocator determines
+ that doing so would be more efficient than pulling new pages from the operating
+ system to fulfil an allocation request.
+\end_layout
+
+\begin_layout Standard
+Aligning large allocations in this way also allows the memory used by a
+ large allocation to be efficiently represented in the page map, as described
+ in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Page-Map"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Unlike the chunk descriptors for small allocations, there is no list of
+ chunk descriptors for large allocations that contain free space, as each
+ large allocation is either entirely in-use or entirely free.
+ When garbage collection determines that a large allocation is no longer
+ required, both the chunk descriptor and the contiguous memory area is describes
+ are returned to the pool allocator.
+\end_layout
+
+\begin_layout Standard
+Large allocations occur primarily for contiguous arrays, including strings.
+ It is unusual for a single object to require more than 
+\begin_inset Formula $2^{10}$
+\end_inset
+
+ bytes of storage.
+\end_layout
+
+\begin_layout Subsection
+Large Allocation Fragmentation
+\end_layout
+
+\begin_layout Standard
+Since the contiguous memory areas required for large allocations are handled
+ by the pool allocator, and each chunk descriptor represents a single allocation
+, there is no chunk bitmap and no cross-size defragmentation performed by
+ the heap.
+ Instead, fragmentation is handled by the pool allocator.
+\end_layout
+
+\begin_layout Subsection
+Role of the Type System
+\end_layout
+
+\begin_layout Standard
+TODO: notes from here 8.2.9
 \end_layout
 
 \begin_layout Standard
@@ -1464,7 +2105,7 @@ The other influence of the type system is that the heaps exist at all.
 \end_layout
 
 \begin_layout Section
-Message Queues
+MPSC Queues
 \end_layout
 
 \begin_layout Standard
@@ -2012,7 +2653,19 @@ reference "fig:Pushing-to-a"
 \end_inset
 
  now has pending work.
- Critically, this empty queue detection and rescheduling will happen only
+ Rescheduling involves pushing the actor onto the scheduler queue of the
+ currently executing scheduler thread, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Scheduler"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Critically, this empty queue detection and rescheduling will happen only
  once, regardless of contention on 
 \begin_inset Formula $\alpha_{2}$
 \end_inset
@@ -2104,9 +2757,27 @@ Actors
 \end_layout
 
 \begin_layout Standard
-In the runtime, an actor is represented as an object header, a message queue,
- a heap, information for tracking cross-actor garbage collection (as discussed
- in sections 
+In the runtime, an actor is represented as an object header 
+\family typewriter
+type
+\family default
+, a message queue 
+\family typewriter
+q
+\family default
+, a set of operational 
+\family typewriter
+flags
+\family default
+, a 
+\family typewriter
+heap
+\family default
+, and information for tracking cross-actor garbage collection 
+\family typewriter
+gc 
+\family default
+(as discussed in sections 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sec:Sharing-GC"
@@ -2120,7 +2791,7 @@ reference "sec:Actor-GC"
 
 \end_inset
 
-) and a set of operational flags, as seen in figure 
+), as seen in figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:Internal-actor-description"
@@ -2128,8 +2799,6 @@ reference "fig:Internal-actor-description"
 \end_inset
 
 .
- For a concrete actor type, this structure is extended with the fields of
- the actor.
 \end_layout
 
 \begin_layout Standard
@@ -2219,6 +2888,17 @@ The heap and garbage collection structure are aligned on a 64 byte boundary
 \end_layout
 
 \begin_layout Standard
+For a concrete actor type, this structure is extended with the fields of
+ the actor.
+ For example, if the concrete actor type has 16 bytes of field data on a
+ 64-bit architecture, an instance of the type will be allocated with a single
+ 256 byte allocation, i.e.
+ 240 bytes of actor description plus 16 bytes of field data.
+ This is done to avoid a memory indirection when reading from or writing
+ to the fields of an actor.
+\end_layout
+
+\begin_layout Standard
 It is important to note that an actor has no stack associated with it.
  Instead, only scheduler threads have stacks.
  This allows actors to consume significantly less memory, while avoiding
@@ -2251,7 +2931,14 @@ reference "sec:Actor-GC"
 \end_inset
 
 , and messages explicitly generated by the program, which are termed application
- messages.
+ messages, as in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Object-Collection"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -2291,6 +2978,15 @@ reference "fig:Popping-from-a"
 \end_layout
 
 \begin_layout Standard
+Actors are not asked to flush their queue entirely when they are scheduled
+ as this would lead to starvation.
+ For example, an actor could send itself one or more messages in a behaviour,
+ resulting in the actor never yielding execution, or a producer-consumer
+ pattern could result in a consumer receiving messages as or more quickly
+ than it could handle them, again resulting in starvation.
+\end_layout
+
+\begin_layout Standard
 In the current implementation, actors are asked by the scheduler thread
  to handle up to a fixed number of application messages (defaulting to 100)
  each time they are scheduled, amortising the cost of a scheduler queue
@@ -2299,15 +2995,6 @@ In the current implementation, actors are asked by the scheduler thread
  messages can be processed without counting against the batch limit.
  In future work, the number of application messages an actor is asked to
  handle will fluctuate dynamically based on back-pressure.
-\end_layout
-
-\begin_layout Standard
-Actors are not asked to flush their queue entirely when they are scheduled
- as this would lead to starvation.
- For example, an actor could send itself one or more messages in a behaviour,
- resulting in the actor never yielding execution, or a producer-consumer
- pattern could result in a consumer receiving messages as or more quickly
- than it could handle them, again resulting in starvation.
 \end_layout
 
 \begin_layout Subsection
@@ -2439,7 +3126,7 @@ reference "sec:Heaps"
 \begin_layout Standard
 The algorithm begins by setting all the valid bits in every chunk descriptor
  on the heap.
- This effectively frees all memory allocated by the object, without releasing
+ This tentatively frees all memory allocated by the actor, without releasing
  chunk descriptors or the memory areas managed by those chunks.
  The counter for the amount of memory in use by the actor is also reset
  to zero.
@@ -2447,15 +3134,24 @@ The algorithm begins by setting all the valid bits in every chunk descriptor
 
 \begin_layout Standard
 While this phase involves the chunk descriptors for all memory allocated
- on the actor's heap, it does not actually touch the allocated memory.
- This is important to avoid unnecessary cache pollution and page faults
+ on the actor's heap, it does not actually touch the allocated memory itself.
+ This is important as it avoids unnecessary cache pollution and page faults
  that can result from reading unreachable memory.
 \end_layout
 
 \begin_layout Standard
 In the next phase, the garbage collection roots are marked as reachable,
- and any root with a trace function is pushed on to a stack of objects that
- have not yet been traced.
+ and any root with a trace function, as detailed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Trace-Functions"
+
+\end_inset
+
+, is pushed on to a stack of objects that have not yet been traced.
+ If the trace function can be determined statically, the code generator
+ inserts it directly.
+ Otherwise, it is dynamically determined by reading from the object header.
  While additional roots are introduced by the sharing protocol in section
  
 \begin_inset CommandInset ref
@@ -2496,12 +3192,14 @@ When the stack of objects and their trace functions is empty, every reachable
  An empty chunk, i.e.
  one with all valid bits set indicating the memory is free, is returned
  to the pool allocator along with the memory area it manages.
-\end_layout
+ This maintains the invariant in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Small-Allocation"
 
-\begin_layout Standard
-This approach maintains an invariant important for performance: if a heap
- has a chunk with free memory for a given size class, then the first chunk
- in the linked list for that size class will have free memory.
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Subsection
@@ -2531,16 +3229,51 @@ A distinction is made when clearing bits (to indicate that memory is in
  on the reachable object stack.
  In this case, if the object is reachable via some other path with a readable
  reference capability, the object's fields will be correctly traced.
+ The distinction between deep and shallow mark bits is shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:A-chunk-descriptor"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
-This calculation treats internal pointers (pointers inside a small allocation
+This approach treats internal pointers (pointers inside a small allocation
  as opposed to a pointer to the beginning of a small allocation) as shallow
  marks, even if their fields are reachable.
- By doing so, other internal pointers, or the enclosing external pointer,
- will be correctly traced if they are reached after an internal pointer.
- This allows pointers to embedded fields to be used without restriction
- in the language.
+ This is because internal pointers do not have bitmap entries of their own,
+ but rather all internal pointers within an allocation share the bitmap
+ entry of the external pointer.
+ By using shallow marks, other internal pointers, or the enclosing external
+ pointer, will be correctly traced if they are reached after an internal
+ pointer has been traced.
+\end_layout
+
+\begin_layout Standard
+Correctly accounting for internal pointers allows optimisations at the language
+ level.
+ Array and string slices, which use internal pointers to arrays of objects,
+ can be naturally expressed.
+ In addition, complex object layouts, such as embedded fields (in a similar
+ manner as would be done in C by defining a field as a 
+\family typewriter
+struct
+\family default
+ instead of a pointer to a 
+\family typewriter
+struct
+\family default
+), or the transformation of an array of 
+\family typewriter
+struct
+\family default
+s to a 
+\family typewriter
+struct
+\family default
+ of arrays, can be handled without specialising the garbage collector.
 \end_layout
 
 \begin_layout Subsection
@@ -2561,7 +3294,22 @@ Each concrete type generated by the compiler has a trace function.
 
 \begin_layout Standard
 Fields are traced based on the field type visible from the object, without
- taking into account any viewpoint adaptation in the type system.
+ taking into account any viewpoint adaptation in the type system, as detailed
+ in sections 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Reachability"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Reachability-1"
+
+\end_inset
+
+.
  In other words, the trace function for a type implicitly treats the instance
  being traced as a 
 \begin_inset Formula $\mathtt{ref}$
@@ -2599,7 +3347,7 @@ interface I
 
 \begin_layout Plain Layout
 
-class C1
+class C1 // No fields
 \end_layout
 
 \begin_layout Plain Layout
@@ -2720,7 +3468,7 @@ reference "subsec:Deep-vs.-Shallow"
 
 , then the object's header is examined at runtime to determine if it is
  actually an actor.
- If so, it is handles via the actor garbage collector, as described in section
+ If so, it is handled via the actor garbage collector, as described in section
  
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -2732,8 +3480,15 @@ reference "sec:Actor-GC"
 \end_layout
 
 \begin_layout Standard
-If the field has a known concrete type, that is, a struct or class, and
- does not have a 
+If the field has a known concrete type, that is, a 
+\family typewriter
+struct
+\family default
+ or 
+\family typewriter
+class
+\family default
+, and does not have a 
 \begin_inset Formula $\mathtt{tag}$
 \end_inset
 
@@ -2834,7 +3589,30 @@ Handling this case requires the code generator to use the type system to
 \begin_inset Formula $\mathtt{C1\,ref}$
 \end_inset
 
-.
+, or indeed as an readable capability.
+\end_layout
+
+\begin_layout Standard
+This particular example is somewhat counterintuitive, as it results in the
+ fields of 
+\begin_inset Formula $\mathtt{C2.f7}$
+\end_inset
+
+ not being traced, and so possibly garbage collected if they are not reachable
+ via some other path.
+ This initially appears to be unsound.
+ However, the inability to pattern match on 
+\begin_inset Formula $\mathtt{C2.f7}$
+\end_inset
+
+ as any readable capability, which is enforced by the type checker, prevents
+ the fields of 
+\begin_inset Formula $\mathtt{C2.f7}$
+\end_inset
+
+ from being read or written to.
+ As such, it is safe to garbage collect those fields if they are not otherwise
+ reachable.
 \end_layout
 
 \begin_layout Standard
@@ -2859,9 +3637,12 @@ Generating trace functions that can make these distinctions at runtime is
  be encoded in objects.
  That is, any given object may be viewed with a collection of reference
  capabilities, depending on the path used to reach the object.
- As a result, if reference capabilities had to be encoded at runtime, every
+ As a result, if reference capabilities were to be encoded at runtime, every
  object reference would have to include both a pointer and a capability,
  which would impose both a memory overhead and an execution speed overhead.
+ In addition, such an encoding would still require adapted capabilities
+ to be calculated at runtime based on the encoded field or local variable
+ capabilities.
 \end_layout
 
 \begin_layout Subsection
@@ -2914,10 +3695,10 @@ The stack map on its own is sufficient to allow garbage collection during
  of safe-points.
  This is possible because each actor heap is independently collectable (no
  safe-points required), and because concurrent garbage collection is handled
- through the message-based protocol described in section 
+ through the message-based protocol described in chapter 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "sec:Sharing-GC"
+reference "chap:Object-Collection"
 
 \end_inset
 
@@ -2926,7 +3707,8 @@ reference "sec:Sharing-GC"
 
 \begin_layout Standard
 In addition, the design decision to not use a copying collector means that
- stack references would not have to be changed to point to moved objects.
+ stack references do not need to be changed to point to objects moved to
+ new addresses by the copying collector.
  This is also true of heap pointers, but is arguably more significant for
  stack pointers.
  Changing stack pointers requires the single static assignment (SSA) intermediat
@@ -2935,11 +3717,12 @@ e representation (IR) of the program used by LLVM to generate machine code
 \end_layout
 
 \begin_layout Subsection
-Type System Influence
+Role of the Type System
 \end_layout
 
 \begin_layout Standard
-The tracing collector is heavily dependent on the type system.
+The tracing phase of the garbage collector is heavily dependent on the type
+ system.
  The use of a data-race free type system enables independent heap tracing.
  It also allows normal program execution to proceed without read or write
  barriers.
@@ -2952,9 +3735,10 @@ In addition, the existence of object references that do not allow reading
 \begin_inset Formula $\mathtt{tag}$
 \end_inset
 
- reference capability) requires the use of both shallow and deep marking,
- as well as the generation of trace functions which can distinguish, either
- statically or dynamically, between readable and unreadable object references.
+ reference capability) requires the distinction between shallow and deep
+ marking, as well as the generation of trace functions which can distinguish,
+ either statically or dynamically, between readable and unreadable object
+ references.
 \end_layout
 
 \begin_layout Section
@@ -2968,14 +3752,16 @@ Sharing GC
 \end_layout
 
 \begin_layout Standard
-The per-actor tracing garbage collector, described in section 
+The per-actor tracing phase of the garbage collector, described in section
+ 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "subsec:Tracing-GC"
 
 \end_inset
 
-, is unsafe: it would garbage collect memory allocated by some actor 
+, is unsafe if used alone: it would garbage collect memory allocated by
+ some actor 
 \begin_inset Formula $\alpha_{1}$
 \end_inset
 
@@ -2988,8 +3774,7 @@ reference "subsec:Tracing-GC"
 \end_inset
 
  .
- To avoid this situation, the message-based protocol described in chapter
- 
+ The message-based protocol described in chapter 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "chap:Object-Collection"
@@ -3028,11 +3813,6 @@ typedef struct gc_t {
 \begin_layout Plain Layout
 
   size_t rc;
-\end_layout
-
-\begin_layout Plain Layout
-
-  size_t finalisers;
 \end_layout
 
 \begin_layout Plain Layout
@@ -3110,22 +3890,12 @@ typedef struct object_t {
 
 \begin_layout Plain Layout
 
-  pony_final_fn final;
-\end_layout
-
-\begin_layout Plain Layout
-
   size_t rc;
 \end_layout
 
 \begin_layout Plain Layout
 
   uint32_t mark;
-\end_layout
-
-\begin_layout Plain Layout
-
-  bool reachable;
 \end_layout
 
 \begin_layout Plain Layout
@@ -3245,10 +4015,22 @@ reference "fig:Tracking-local-and"
 \end_inset
 
 .
- Specifically, the 
-\begin_inset Formula $\mathtt{local}$
+ Each actor has a 
+\family typewriter
+gc_t 
+\family default
+to track its view of shared objects, as shows in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Internal-actor-description"
+
 \end_inset
 
+.
+ The 
+\family typewriter
+local
+\family default
  map associates locally owned pointers with a reference count, as shown
  in figure 
 \begin_inset CommandInset ref
@@ -3258,23 +4040,11 @@ reference "fig:Object-GC-information"
 \end_inset
 
 .
- The map data structure used is a quadratic probing hash map where the key
- is embedded in the same data structure as the value.
- In this case, the key is the 
-\begin_inset Formula $\mathtt{address}$
-\end_inset
-
- field.
- 
-\end_layout
-
-\begin_layout Standard
-In addition, the 
-\begin_inset Formula $\mathtt{foreign}$
-\end_inset
-
- map associates other actors with objects they own that this actor has a
- foreign reference count for, as shown in figure 
+ The 
+\family typewriter
+foreign
+\family default
+ map associates actors with objects they own, as shown in figure 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:Actor-GC-information"
@@ -3282,21 +4052,52 @@ reference "fig:Actor-GC-information"
 \end_inset
 
 .
- Here, the 
-\begin_inset Formula $\mathtt{map}$
+ Note that this is a map of actors to a map of objects, i.e.
+ 
+\begin_inset Formula $[\mathit{Actor}\mapsto(\mathit{RC},\mathit{Mark,}\mathit{Object}\mapsto(\mathit{RC},\mathit{Mark},\mathit{Immutable})]$
 \end_inset
 
- field is another 
-\begin_inset Formula $\mathtt{objectmap\_t}$
-\end_inset
-
- that maintains the needed per-object foreign reference counts.
+, allowing foreign object GC information to be kept segregated by owner.
 \end_layout
 
 \begin_layout Standard
-This information is kept outside of the object itself because it is not
- intrinsic to the object: it is information about an object from the perspective
- of some actor.
+This per-object and per-actor GC information is kept outside of the object
+ itself, i.e.
+ in a separately allocated data structure rather than in fields of the object,
+ because it is not intrinsic to the object: it is information about an object
+ from the perspective of some actor.
+ As such, each actor has GC map entries only for the local objects it has
+ sent and the foreign actors and objects it has received.
+\end_layout
+
+\begin_layout Standard
+The map algorithm used for both 
+\family typewriter
+actormap_t 
+\family default
+and 
+\family typewriter
+objectmap_t 
+\family default
+is a linear probing Robin Hood hash map where the key is embedded in the
+ same data structure as the value.
+ In an 
+\family typewriter
+objectmap_t
+\family default
+, the key is the 
+\family typewriter
+address
+\family default
+ field, and in an 
+\family typewriter
+actormap_t
+\family default
+, the key is the 
+\family typewriter
+actor
+\family default
+ field.
 \end_layout
 
 \begin_layout Subsection
@@ -3311,11 +4112,11 @@ Mark, Send, and Receive Phases
 
 \begin_layout Standard
 There are three distinct phases when the 
-\begin_inset Formula $\mathtt{gc\_t}$
-\end_inset
-
+\family typewriter
+gc_t
+\family default
  for an actor is used.
- The first is during mark phase of the tracing garbage collection described
+ The first is during the mark phase of the tracing garbage collection described
  in section 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -3340,6 +4141,14 @@ reference "subsec:Tracing-GC"
  fields of the actor.
  That is, when a message is sent or received, the arguments to the message
  are traced to determine what garbage collection information must be updated.
+ This is used to determine reachability as defined in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Reachability-1"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Subsection
@@ -3402,7 +4211,6 @@ Because the number of objects tracked in an actor's
 
  indicates the current generation, with this number being incremented after
  the completion of any mark, send, or receive phase.
- 
 \end_layout
 
 \begin_layout Standard
@@ -3531,7 +4339,14 @@ The result of this is that an object's local
 
  is incremented by one each time it is sent in a message, where being sent
  in a message means that the object is a message argument or is reachable
- from some message argument.
+ from some message argument, as defined in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Reachability-1"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -3654,7 +4469,7 @@ The more complex case occurs when a foreign object is sent in a message.
 \end_inset
 
  is decremented by one.
- The complexity occurs when owning actors foreign 
+ The complexity occurs when the sending actor's foreign 
 \begin_inset Formula $\mathtt{rc}$
 \end_inset
 
@@ -3669,7 +4484,14 @@ The more complex case occurs when a foreign object is sent in a message.
 \begin_inset Formula $\mathtt{rc}$
 \end_inset
 
- for that object of at least one.
+ for that object of at least one, as required by definition 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Reachability-invariant"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -3688,12 +4510,27 @@ reference "chap:Object-Collection"
 
 , a message must be sent to the owning actor informing it of the increased
  reference count.
- To do so, the object is added to the set of objects for which an acquire
- message will be sent when the current garbage collection phase finishes,
- as detailed in section 
+ To do so, the object is added to the set of objects for which an 
+\emph on
+acquire message
+\emph default
+ will be sent when the current garbage collection phase finishes, as detailed
+ in section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "subsec:Acquire-and-Release"
+
+\end_inset
+
+.
+ This is the implementation of the 
+\noun on
+Acquire
+\noun default
+ rule from figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:opsem-for-object-GC"
 
 \end_inset
 
@@ -3708,6 +4545,11 @@ name "subsec:Sending-and-Receiving-2"
 \end_inset
 
 Sending and Receiving Immutable Objects
+\end_layout
+
+\begin_layout Standard
+TODO: notes from here p.
+ 125
 \end_layout
 
 \begin_layout Standard
@@ -4062,9 +4904,9 @@ The local map is used by an actor to mark memory on its heap that it cannot
 \end_inset
 
  greater than zero is marked.
- If the object is also marked as immutable, it is placed placed on the trace
- stack with its trace function, so that its fields are traced as well, as
- described in section 
+ If the object is also marked as immutable, it is placed on the trace stack
+ with its trace function, so that its fields are traced as well, as described
+ in section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "subsec:Sending-and-Receiving-2"
@@ -4105,17 +4947,30 @@ Tracing the Foreign Map
 \end_layout
 
 \begin_layout Standard
-The foreign map is used by an actor to track the weighted reference count
- it holds for objects it does not own.
- After an actor's reachable objects and local map are traced, the weighted
+After an actor's reachable objects and local map are traced, the weighted
  reference count held for any objects in the actors foreign map that have
  not been marked can be released.
  The object garbage collection information for an unreachable foreign object
- is removed from the foreign map and sent to the owning actor as a release
- message, as described in section 
+ is removed from the foreign map and sent to the owning actor as a 
+\emph on
+release message
+\emph default
+, as described in section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "subsec:Acquire-and-Release"
+
+\end_inset
+
+.
+ This is the implementation of the 
+\noun on
+Release
+\noun default
+ rule from figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:opsem-for-object-GC"
 
 \end_inset
 
@@ -4152,12 +5007,12 @@ An owning actor adjusts the local
 \end_inset
 
  for an object both implicitly when sending or receiving the object in a
- message, and explicitly when other actors generate acquire and release
- messages.
+ message, and explicitly when it receives acquire and release messages generated
+ by other actors.
 \end_layout
 
 \begin_layout Standard
-Acquire messages are generated when a some actor 
+Acquire messages are generated when some actor 
 \begin_inset Formula $\alpha$
 \end_inset
 
@@ -4199,7 +5054,7 @@ Acquire messages are generated when a some actor
 \begin_inset Formula $\omega_{1}$
 \end_inset
 
- by an arbitrary amount and inform the the owner of 
+ by an arbitrary amount and inform the owner of 
 \begin_inset Formula $\omega_{1}$
 \end_inset
 
@@ -4233,8 +5088,8 @@ reference "fig:Actor-GC-information"
 \begin_layout Standard
 Release messages are generated when an actor finishes a garbage collection
  pass.
- In specific, unmarked objects in the foreign map are removed and sent to
- their owning actor.
+ Unmarked objects in the foreign map are removed and sent to their owning
+ actor.
  Like acquire messages, these are aggregated, so that each owning actor
  is sent at most a single release message as the result of a garbage collection
  pass.
@@ -4281,7 +5136,7 @@ reference "sec:Sharing-GC"
 \end_layout
 
 \begin_layout Standard
-Each actor keep track of a local 
+Each actor keeps track of a local 
 \begin_inset Formula $\mathtt{rc}$
 \end_inset
 
@@ -4401,6 +5256,22 @@ In addition to the local and foreign maps, each actor keeps an additional
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "subsec:Topology-Deltas"
+
+\end_inset
+
+.
+ Note that these are stored in the 
+\family typewriter
+deltamap_t
+\family default
+ contained in each actor's 
+\family typewriter
+gc_t
+\family default
+, as shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Tracking-local-and"
 
 \end_inset
 
@@ -4543,7 +5414,7 @@ The Cycle Detector
 
 \begin_layout Standard
 Unlike shared object collection, it is possible to have an isolated cyclic
- graph of actors where all of the actors in the graph are blocked, and their
+ graph of actors where all the actors in the graph are blocked, and their
  local 
 \begin_inset Formula $\mathtt{rc}$
 \end_inset
@@ -4553,11 +5424,14 @@ Unlike shared object collection, it is possible to have an isolated cyclic
 \begin_inset Formula $\mathtt{rc}$
 \end_inset
 
- is not zero.
- This can occur with actors because the actors themselves are responsible
- for the weighted reference counts, whereas with objects, no such cycles
- can occur, as the shape of the heap does not determine object reference
- counts.
+ is not zero, as detailed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Cycle-Detection"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -4569,29 +5443,6 @@ The cycle detector is implemented as an actor in the runtime.
  The memory it uses is manually managed, and its references to actors that
  have reported their topology do not influence local or foreign reference
  counts.
-\end_layout
-
-\begin_layout Standard
-The cycle detector builds a view of the actor topology based on block and
- unblock messages it receives from actors.
- This view is by definition out of date, as described in chapter 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "chap:Actor-Collection"
-
-\end_inset
-
-.
- To correct for this, the cycle detector incrementally checks for isolated
- graphs of blocked actors and uses the confirmation-acknowledgement protocol
- described in chapter 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "chap:Actor-Collection"
-
-\end_inset
-
- to determine when its view of the topology is the true topology.
 \end_layout
 
 \begin_layout Standard
@@ -5589,6 +6440,12 @@ It is not only new objects that could outlive the finaliser if sent in a
 \end_layout
 
 \begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Scheduler"
+
+\end_inset
+
 Scheduler
 \end_layout
 
@@ -5781,7 +6638,7 @@ name "sec:Scheduler-Queues"
 
 \end_inset
 
-Scheduler Queues
+SPMC Queues
 \end_layout
 
 \begin_layout Standard
@@ -5902,10 +6759,6 @@ Pushing to a scheduler queue
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Plain Layout
 
 \end_layout
 
