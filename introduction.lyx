@@ -416,6 +416,22 @@ Contribution:
 Chapter 
 \begin_inset CommandInset ref
 LatexCommand ref
+reference "chap:Evaluation-and-Further"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This chapter concludes the thesis, and provides a brief summary of some
+ of the opportunities for further work.
+\end_layout
+
+\begin_layout Paragraph
+Appendix 
+\begin_inset CommandInset ref
+LatexCommand ref
 reference "chap:Runtime-Implementation"
 
 \end_inset
@@ -438,22 +454,6 @@ This chapter offers a detailed description and explanation of the implementation
 Contribution:
 \emph default
  a complete runtime implementation.
-\end_layout
-
-\begin_layout Paragraph
-Chapter 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "chap:Evaluation-and-Further"
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-This chapter concludes the thesis, and provides a brief summary of some
- of the opportunities for further work.
 \end_layout
 
 \end_body

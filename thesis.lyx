@@ -301,7 +301,7 @@ filename "objectgc.lyx"
 \begin_layout Standard
 \begin_inset CommandInset include
 LatexCommand include
-filename "implementation.lyx"
+filename "furtherwork.lyx"
 
 \end_inset
 
@@ -311,7 +311,7 @@ filename "implementation.lyx"
 \begin_layout Standard
 \begin_inset CommandInset include
 LatexCommand include
-filename "furtherwork.lyx"
+filename "implementation.lyx"
 
 \end_inset
 

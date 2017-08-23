@@ -78,6 +78,7 @@ theorems-ams-bytype
 \begin_body
 
 \begin_layout Chapter
+\start_of_appendix
 \begin_inset CommandInset label
 LatexCommand label
 name "chap:Runtime-Implementation"
@@ -88,16 +89,16 @@ Runtime Implementation
 \end_layout
 
 \begin_layout Standard
-TODO: The purpose of this chapter is to serve as an artefact evaluation
- guide?
-\end_layout
-
-\begin_layout Standard
-TODO: glossary of compile-time constants, such as chunk size
-\end_layout
-
-\begin_layout Standard
-
+The implementation of the ideas presented in this thesis, in the form of
+ the Pony compiler and the Pony runtime, represents a significant amount
+ of software engineering as well as a certain amount of systems research.
+ The purpose of this appendix is to serve as a guide to some of the subtler
+ aspects of the implementation of the Pony runtime library.
+ The elements of the runtime explained here are those most influenced by
+ the type system and garbage collection work that represent the bulk of
+ this thesis.
+ The dissection of the subtler aspects of the Pony compiler is left as an
+ exercise for the reader.
 \end_layout
 
 \begin_layout Section
@@ -200,18 +201,6 @@ Runtime architecture
 Every component's design is influenced by the type system.
  This influence is particularly felt in the garbage collection components,
  but the impact is felt at every level, including the memory allocator.
-\end_layout
-
-\begin_layout Section
-Runtime Invariants
-\end_layout
-
-\begin_layout Standard
-TODO: write invariants?
-\end_layout
-
-\begin_layout Standard
-TODO: principles? spmc and mpsc?
 \end_layout
 
 \begin_layout Section
