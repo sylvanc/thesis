@@ -1188,6 +1188,43 @@ Writing to the page map
 
 \end_layout
 
+\begin_layout Subsection
+Role of the Type System
+\end_layout
+
+\begin_layout Standard
+The type system does not allow the allocating actor for an object to be
+ known statically.
+ As a result, when the allocating actor is needed, for example during garbage
+ collection as detailed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Determining-Ownership"
+
+\end_inset
+
+, it must be determined dynamically.
+ The page map provides an efficient way to do this.
+\end_layout
+
+\begin_layout Standard
+The page map points to a chunk descriptor, which in turn points to the allocatin
+g actor, in order to allow the size class for an arbitrary pointer to memory
+ to be determined.
+ This allows internal pointers to be easily distinguished from external
+ pointers, and allows the runtime to efficiently determine the external
+ pointer for any internal pointer.
+ This is used to distinguish between deep and shallow marking, as shown
+ in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Deep-vs.-Shallow"
+
+\end_inset
+
+.
+\end_layout
+
 \begin_layout Section
 \begin_inset CommandInset label
 LatexCommand label
@@ -2080,28 +2117,21 @@ Role of the Type System
 \end_layout
 
 \begin_layout Standard
-TODO: notes from here 8.2.9
-\end_layout
+Explicitly annotating types as actors allows the runtime to distinguish
+ possibly concurrent allocations (i.e.
+ those occurring in different actors) from allocations guaranteed to be
+ sequential (i.e.
+ those occurring in the same actor).
+ Per-actor heaps allow both allocation and garbage collection without contention
+, even when memory is shared by pointer across actors, as detailed in section
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Sharing-GC"
 
-\begin_layout Standard
-There are two key ways the type system influences the heap design.
- The first is the use of a page map instead of embedding a chunk descriptor
- in an object.
- While this trade off could be made simply for performance reasons, it is
- also made in order to enable the type system to cope with objects that
- must conform to a C-like 
-\begin_inset Formula $\mathtt{struct}$
 \end_inset
 
- layout in order to provide a highly efficient foreign function interface.
-\end_layout
-
-\begin_layout Standard
-The other influence of the type system is that the heaps exist at all.
- Most allocators use a single stage allocator with a single logical heap
- for a program.
- In contrast, the Pony runtime provides for every actor to have a logically
- independent heap, with no contention during allocation or garbage collection.
+.
 \end_layout
 
 \begin_layout Section
@@ -4548,11 +4578,6 @@ Sending and Receiving Immutable Objects
 \end_layout
 
 \begin_layout Standard
-TODO: notes from here p.
- 125
-\end_layout
-
-\begin_layout Standard
 The process of tracing message arguments leads to an 
 \begin_inset Formula $O(n)$
 \end_inset
@@ -4577,8 +4602,8 @@ The purpose of tracing the message arguments is to protect the contents
 \end_layout
 
 \begin_layout Standard
-The type system can be used to provide an important optimisation.
- When some immutable object 
+The type system can be used to provide an important optimisation: when some
+ immutable object 
 \begin_inset Formula $\omega$
 \end_inset
 
@@ -4596,7 +4621,7 @@ The type system can be used to provide an important optimisation.
 \begin_inset Formula $\omega$
 \end_inset
 
- when tracing the local map, as described in section 
+ when it traces its local object map, as described in section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "subsec:Tracing-the-Local"
@@ -4634,8 +4659,11 @@ reference "fig:Object-GC-information"
 
 \end_inset
 
- includes a flag that indicates that the owner knows the object was immutable
- when it was sent in a message.
+ includes the flag 
+\family typewriter
+immutable
+\family default
+, which indicates the object is immutable and that the owner knows this.
  When that flag is set, the owner traces the fields of the object.
 \end_layout
 
@@ -4658,7 +4686,11 @@ Maintaining this flag is trivial if the owner initially sends the immutable
 \begin_inset Formula $\omega$
 \end_inset
 
- as an immutable object.
+ as an immutable object to some receiver 
+\begin_inset Formula $\alpha_{3}$
+\end_inset
+
+.
  In this case, 
 \begin_inset Formula $\alpha_{1}$
 \end_inset
@@ -4680,19 +4712,7 @@ Maintaining this flag is trivial if the owner initially sends the immutable
 \end_layout
 
 \begin_layout Standard
-To address this, the 
-\begin_inset Formula $\mathtt{immutable}$
-\end_inset
-
- flag in figure 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:Object-GC-information"
-
-\end_inset
-
- is also maintained in the foreign map.
- When 
+When 
 \begin_inset Formula $\alpha_{2}$
 \end_inset
 
@@ -4735,7 +4755,11 @@ reference "fig:Object-GC-information"
 \begin_inset Formula $\alpha_{1}$
 \end_inset
 
- with the immutable flag set, as described in section 
+ with the 
+\family typewriter
+immutable
+\family default
+ flag set, as described in section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "subsec:Acquire-and-Release"
@@ -4747,6 +4771,28 @@ reference "subsec:Acquire-and-Release"
 \end_inset
 
  for the current message.
+ Note that this process is recursive: all objects 
+\begin_inset Formula $\omega'$
+\end_inset
+
+ reachable from 
+\begin_inset Formula $\omega$
+\end_inset
+
+ that 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ sees as mutable are also marked as immutable, and the owners of such objects
+ 
+\begin_inset Formula $\omega'$
+\end_inset
+
+ are sent acquire messages with the 
+\family typewriter
+immutable
+\family default
+ flag set.
 \end_layout
 
 \begin_layout Standard
@@ -4762,8 +4808,11 @@ This will result in
 \begin_inset Formula $\omega$
 \end_inset
 
- as immutable in its local map before it receives any reference count decrement
- for 
+ as immutable in its local map 
+\emph on
+before
+\emph default
+ it receives any reference count decrement for 
 \begin_inset Formula $\omega$
 \end_inset
 
@@ -4772,21 +4821,58 @@ This will result in
 \end_inset
 
 .
- As a result, 
+ At this point, 
+\begin_inset Formula $\alpha_{2}$
+\end_inset
+
+ can safely send 
 \begin_inset Formula $\omega$
 \end_inset
 
- and its fields remain protected from premature garbage collection, and
- some actor 
+ to 
 \begin_inset Formula $\alpha_{3}$
 \end_inset
 
- that receives 
+ without tracing 
 \begin_inset Formula $\omega$
 \end_inset
 
- as immutable object from 
+.
+ The object graph reachable by 
+\begin_inset Formula $\omega$
+\end_inset
+
+ will be protected from premature collection because 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ will trace the fields of 
+\begin_inset Formula $\omega$
+\end_inset
+
+ during garbage collection as long as 
+\begin_inset Formula $\omega$
+\end_inset
+
+ itself is live, i.e.
+ has a positive reference count.
+\end_layout
+
+\begin_layout Standard
+When 
+\begin_inset Formula $\alpha_{3}$
+\end_inset
+
+ receives 
+\begin_inset Formula $\omega$
+\end_inset
+
+ as an immutable object from 
 \begin_inset Formula $\alpha_{2}$
+\end_inset
+
+, 
+\begin_inset Formula $\alpha_{3}$
 \end_inset
 
  can safely mark 
@@ -4797,11 +4883,53 @@ This will result in
 \begin_inset Formula $\omega$
 \end_inset
 
- either when receiving 
+ when receiving 
 \begin_inset Formula $\omega$
 \end_inset
 
- or during future garbage collection phases.
+.
+ Indeed, all future sends of 
+\begin_inset Formula $\omega$
+\end_inset
+
+, any corresponding receives, and future garbage collection phases by any
+ actor other than 
+\begin_inset Formula $\alpha_{1}$
+\end_inset
+
+ (the owner of 
+\begin_inset Formula $\omega$
+\end_inset
+
+) need not trace 
+\begin_inset Formula $\omega$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Effectively, freezing some isolated 
+\begin_inset Formula $\omega$
+\end_inset
+
+ requires a single 
+\begin_inset Formula $O(n)$
+\end_inset
+
+ tracing phase in order to replace future 
+\begin_inset Formula $O(n)$
+\end_inset
+
+ tracing phases with an 
+\begin_inset Formula $O(1)$
+\end_inset
+
+ change in the reference count of 
+\begin_inset Formula $\omega$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -4814,7 +4942,7 @@ A similar situation arises if
 \end_inset
 
  in a message, then reads some field 
-\begin_inset Formula $\omega_{1}$
+\begin_inset Formula $\omega'$
 \end_inset
 
  from 
@@ -4831,12 +4959,12 @@ A similar situation arises if
 \end_inset
 
  while continuing to hold a reference to 
-\begin_inset Formula $\omega_{1}$
+\begin_inset Formula $\omega'$
 \end_inset
 
 .
  To protect 
-\begin_inset Formula $\omega_{1}$
+\begin_inset Formula $\omega'$
 \end_inset
 
  from premature collection, 
@@ -4844,15 +4972,15 @@ A similar situation arises if
 \end_inset
 
  treats 
-\begin_inset Formula $\omega_{1}$
+\begin_inset Formula $\omega'$
 \end_inset
 
  as described above: an acquire message for 
-\begin_inset Formula $\omega_{1}$
+\begin_inset Formula $\omega'$
 \end_inset
 
  is sent to the owner of 
-\begin_inset Formula $\omega_{1}$
+\begin_inset Formula $\omega'$
 \end_inset
 
  (which may or may not be 
@@ -4860,7 +4988,7 @@ A similar situation arises if
 \end_inset
 
 ).
- This acquire message will be sent before the release message for 
+ This message is sent before the release message for 
 \begin_inset Formula $\omega$
 \end_inset
 
@@ -4871,8 +4999,8 @@ reference "subsec:Acquire-and-Release"
 
 \end_inset
 
-, which will correctly protect 
-\begin_inset Formula $\omega_{1}$
+, which correctly protects 
+\begin_inset Formula $\omega'$
 \end_inset
 
  while allowing 
