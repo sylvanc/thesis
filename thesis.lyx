@@ -321,7 +321,7 @@ filename "implementation.lyx"
 \begin_layout Standard
 \begin_inset CommandInset bibtex
 LatexCommand bibtex
-bibfiles "/Users/sylvan/Dropbox/pony/writing/formal-pony"
+bibfiles "thesis"
 options "bibtotoc,plain"
 
 \end_inset
