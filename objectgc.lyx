@@ -801,6 +801,12 @@ reference "fig:Auxiliary-definitions-for-object-gc"
 \end_layout
 
 \begin_layout Definition
+\begin_inset CommandInset label
+LatexCommand label
+name "def:Sending-a-reference-1"
+
+\end_inset
+
 Sending a reference
 \end_layout
 
@@ -899,6 +905,12 @@ reference "Receiving-a-reference"
 \end_layout
 
 \begin_layout Definition
+\begin_inset CommandInset label
+LatexCommand label
+name "def:Receiving-a-reference-1"
+
+\end_inset
+
 Receiving a reference
 \end_layout
 

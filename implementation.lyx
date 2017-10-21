@@ -115,19 +115,37 @@ reference "fig:Runtime-architecture"
 \end_inset
 
  shows the structure of those components.
- At the bottom is the memory allocator.
+ At the bottom is the pool allocator, which handles memory allocation and
+ deallocation.
  On top of this is built the Single-Producer Multiple-Consumer (SPMC) queue,
- the Multiple-Producer Single-Consumer (MPSC) queue, and the heap.
+ the Multiple-Producer Single-Consumer (MPSC) queue, and the page map.
  SPMC and MPSC queues are used to build the scheduler, an MPSC queue is
- used to build the asynchronous I/O handler, and another MPSC queue and
- the heap are used to build the actors themselves.
+ used to build the asynchronous I/O handler, and the page map is used to
+ build per-actor heaps.
+ Another MPSC queue and the heap are used to build the actors themselves,
+ which depend on both the scheduler and the asynchronous I/O handler.
  Tracing garbage collection (GC), sharing GC, and actor GC are built on
  top of actors, heaps, the page map, and the pool allocator.
 \end_layout
 
 \begin_layout Standard
-Sharing GC uses tracing GC during message send and receive, and actor GC
- relies on sharing GC in order to track from some actor 
+Sharing GC, as described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Object-Collection"
+
+\end_inset
+
+, uses tracing GC during message send and receive.
+ Actor GC, as described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Actor-Collection"
+
+\end_inset
+
+, relies on sharing GC in order to track implicit references from some actor
+ 
 \begin_inset Formula $\alpha_{1}$
 \end_inset
 
@@ -147,8 +165,15 @@ Sharing GC uses tracing GC during message send and receive, and actor GC
 \begin_inset Formula $\alpha_{2}$
 \end_inset
 
+, as shown in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Reachability"
+
+\end_inset
+
 .
- In addition, tracing GC calls into sharing GC when objects owned by other
+ In addition, tracing GC invokes sharing GC when objects owned by other
  actors are encountered during the trace.
 \end_layout
 
@@ -188,10 +213,6 @@ Runtime architecture
 
 \end_layout
 
-\begin_layout Plain Layout
-
-\end_layout
-
 \end_inset
 
 
@@ -201,6 +222,29 @@ Runtime architecture
 Every component's design is influenced by the type system.
  This influence is particularly felt in the garbage collection components,
  but the impact is felt at every level, including the memory allocator.
+\end_layout
+
+\begin_layout Section
+Naming Conventions
+\end_layout
+
+\begin_layout Standard
+The Pony runtime is implemented in C, and maintains a C API and ABI in order
+ to be usable from programming languages other than Pony.
+ To avoid conflicts with symbols exported from other libraries, functions
+ and types intended to be used at the language level are prefixed with 
+\family typewriter
+pony_
+\family default
+, while functions intended to be used only internally by the runtime itself
+ are prefixed with 
+\family typewriter
+ponyint_
+\family default
+.
+ Types that are only used internally have no prefix, since they do not appear
+ in the symbol table or any publicly accessible header, and so do not cause
+ conflicts.
 \end_layout
 
 \begin_layout Section
@@ -260,9 +304,9 @@ key "aigner2015fast"
  wasting excessive memory, coalescing freed memory to allow larger allocations
  to reuse memory from multiple smaller freed memory blocks, and coordinating
  allocation across threads.
- Similar problems are faced with automatic memory management allocators,
- with the additional complication that the garbage collector must interact
- with the allocator, and that a compacting garbage collector may move objects
+ Similar problems emerge with automatic memory management allocators, with
+ the additional complication that the garbage collector must interact with
+ the allocator, and that a compacting garbage collector may move objects
  in memory.
 \end_layout
 
@@ -447,10 +491,26 @@ When memory is freed to a thread-local free list, the provenance of the
 \emph on
 arena
 \emph default
- based allocators that must return free memory to the allocating arena.
+ based allocators, such as 
+\family typewriter
+jemalloc
+\family default
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "evans2011scalable"
+
+\end_inset
+
+, that must return free memory to the allocating arena.
  For the Pony runtime, this behaviour is critical, as it allows both runtime
- data structures and heap chunks be efficiently freed regardless of which
+ data structures and heap chunks to be efficiently freed regardless of which
  thread an actor executes on.
+ On the other hand, this approach makes coalescing free memory, either to
+ reuse as a different size class or to return to the operating system, more
+ difficult.
+ The pool allocator relies on a stable state for a program rather than coalescin
+g, which is problematic for some applications.
 \end_layout
 
 \begin_layout Subsection
@@ -1607,6 +1667,17 @@ small_full
  To do so, an important invariant is maintained:
 \end_layout
 
+\begin_layout Definition
+\begin_inset CommandInset label
+LatexCommand label
+name "def:Chunk-validity"
+
+\end_inset
+
+Chunk validity
+\end_layout
+
+\begin_deeper
 \begin_layout Itemize
 All chunks allocated by this heap with free space are in the 
 \family typewriter
@@ -1623,6 +1694,7 @@ small_full
  list for their size class.
 \end_layout
 
+\end_deeper
 \begin_layout Standard
 As a result, when an allocation for some size class is requested, it will
  come from the first element of the 
@@ -1814,10 +1886,10 @@ If allocation results in all memory in the chunk being exhausted (i.e.
  memory to the linked list of chunks with no available memory.
  This is a cheap operation: it involves popping the head of a singly-linked
  list and pushing it to the head of another singly-linked list.
- This maintains the invariant in section 
+ This maintains the chunk validity invariant in definition 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "subsec:Small-Allocation"
+reference "def:Chunk-validity"
 
 \end_inset
 
@@ -2106,8 +2178,10 @@ Role of the Type System
 \end_layout
 
 \begin_layout Standard
-Explicitly annotating types as actors allows the runtime to distinguish
- possibly concurrent allocations (i.e.
+The type system distinguishes between active objects, in the form of actors,
+ and passive objects.
+ This allows the runtime to distinguish possibly concurrent allocations
+ (i.e.
  those occurring in different actors) from allocations guaranteed to be
  sequential (i.e.
  those occurring in the same actor).
@@ -2167,8 +2241,8 @@ bool ponyint_messageq_push(messageq_t* q, pony_msg_t* m) {
 
 \begin_layout Plain Layout
 
-  pony_msg_t* prev = atomic_exchange_explicit(&q->head, m,     memory_order_rela
-xed);
+  pony_msg_t* prev = atomic_exchange_explicit(&q->head, m, memory_order_relaxed)
+;
 \end_layout
 
 \begin_layout Plain Layout
@@ -2358,6 +2432,28 @@ reference "subsec:Queue-Node-Memory"
 \end_layout
 
 \begin_layout Standard
+Although there has been extensive research on queues, usefully sumarized
+ in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "herlihy2011art"
+
+\end_inset
+
+, the MPSC queue in the Pony runtime has more in common with a CLH queue
+ lock 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "magnusson1994queue"
+
+\end_inset
+
+.
+ While it is asynchronous and non-blocking, it uses a similar mechanism
+ for maintaining a queue.
+\end_layout
+
+\begin_layout Standard
 In addition to being a safe MPSC queue, an actor's queue must provide two
  additional features: it must be unbounded, and it must atomically detect
  when a message is pushed on to an empty queue.
@@ -2393,7 +2489,7 @@ Unbounded message queues are required to prevent both deadlock and incorrectly
 \begin_inset Formula $\alpha_{1}$
 \end_inset
 
- can either block until 
+ could either block until 
 \begin_inset Formula $\alpha_{2}$
 \end_inset
 
@@ -2401,16 +2497,17 @@ Unbounded message queues are required to prevent both deadlock and incorrectly
  mechanism is simply a combination of these two approaches).
 \end_layout
 
-\begin_layout Standard
+\begin_layout Itemize
 If 
 \begin_inset Formula $\alpha_{1}$
 \end_inset
 
- can block while attempting to push a message on to 
+ adopts the strategy of blocking while attempting to push a message on to
+ 
 \begin_inset Formula $\alpha_{2}$
 \end_inset
 
-'s queue, then the system can deadlock.
+'s queue, then the system could deadlock.
  This occurs when 
 \begin_inset Formula $\alpha_{1}$
 \end_inset
@@ -2424,7 +2521,7 @@ If
 \end_inset
 
 .
- More complex message sending patterns can also lead to a deadlock.
+ More complex message sending patterns could also lead to a deadlock.
  The key observation is that 
 \begin_inset Formula $\alpha_{1}$
 \end_inset
@@ -2440,17 +2537,17 @@ If
  to be interleaved, resulting in inconsistent state.
 \end_layout
 
-\begin_layout Standard
+\begin_layout Itemize
 If 
 \begin_inset Formula $\alpha_{1}$
 \end_inset
 
- can fail to send a message when 
+ adopts the strategy of failing to send a message when 
 \begin_inset Formula $\alpha_{2}$
 \end_inset
 
-'s queue is full, all asynchronous behaviour calls must be able to propagate
- an error, and that error would have to be checked in the program.
+'s queue is full, all asynchronous behaviour calls would have to be able
+ to propagate an error, and that error would have to be checked in the program.
  The error would relate to resource exhaustion (a full queue) but unlike
  other forms of resource exhaustion (e.g.
  running out of memory, reaching file handle limits, etc.), the condition
@@ -2459,7 +2556,7 @@ If
 \begin_inset Formula $\alpha_{2}$
 \end_inset
 
- will eventually pop a message from its queue, and the program would need
+ would eventually pop a message from its queue, and the program would need
  to restart or retry actions in response.
  Effectively, this would transform any behaviour that sent one or more messages
  into a state machine depending on message sending progress.
@@ -2470,13 +2567,13 @@ If
 \end_layout
 
 \begin_layout Standard
-Unbounded message queues transforms a temporary resource exhaustion problem
+Unbounded message queues transform a temporary resource exhaustion problem
  into a less common permanent resource exhaustion problem, i.e.
  an unrecoverable out of memory error when a queue grows so large that it
  exhausts all available memory.
  This results in a simpler error handling mechanism (the program terminates),
- but more importantly in an error condition that represents an actual unrecovera
-ble program error, rather than a transient and recoverable condition.
+ but, more importantly, in an error condition that represents an actual
+ unrecoverable program error, rather than a transient and recoverable condition.
 \end_layout
 
 \begin_layout Subsection
@@ -2963,8 +3060,15 @@ reference "chap:Object-Collection"
 \begin_layout Standard
 An application message is handled by executing a behaviour on an actor.
  That behaviour is executed to completion by the scheduler thread.
- Since the type system enforces isolation and immutability, this results
- in every actor behaviour being logically atomic.
+ Since the type system enforces isolation and immutability, as detailed
+ in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
+, this results in every actor behaviour being logically atomic.
  That is, each behaviour on an actor can reach only the actor's state and
  the arguments to the behaviour, and the behaviour cannot witness any mutation
  other than mutations it performs itself.
@@ -2997,8 +3101,8 @@ reference "fig:Popping-from-a"
 \end_layout
 
 \begin_layout Standard
-Actors are not asked to flush their queue entirely when they are scheduled
- as this would lead to starvation.
+Actors are not asked to handle every message in their queue entirely when
+ they are scheduled as this would lead to starvation.
  For example, an actor could send itself one or more messages in a behaviour,
  resulting in the actor never yielding execution, or a producer-consumer
  pattern could result in a consumer receiving messages as or more quickly
@@ -3048,7 +3152,8 @@ reference "subsec:Empty-Queue-Detection"
 .
  Because the actor may be rescheduled on any scheduler thread as soon as
  its queue is marked as empty, the actor must set the blocked flag and send
- the message to the cycle detector first.
+ the message to the cycle detector before it marks its own message queue
+ as empty.
  As a result, the state reported to the cycle detector may already be out
  of date by the time it is sent.
  The implications of this are discussed in section 
@@ -3211,10 +3316,10 @@ When the stack of objects and their trace functions is empty, every reachable
  An empty chunk, i.e.
  one with all valid bits set indicating the memory is free, is returned
  to the pool allocator along with the memory area it manages.
- This maintains the invariant in section 
+ This maintains the chunk validity invariant in definition 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "subsec:Small-Allocation"
+reference "def:Chunk-validity"
 
 \end_inset
 
@@ -3376,17 +3481,17 @@ class C2
 
 \begin_layout Plain Layout
 
-  let f1: P // No trace
+  let f1: P val // No trace
 \end_layout
 
 \begin_layout Plain Layout
 
-  let f2: C2 // Static trace function
+  let f2: C2 ref // Static trace function
 \end_layout
 
 \begin_layout Plain Layout
 
-  let f3: I // Dynamic trace function
+  let f3: I ref // Dynamic trace function
 \end_layout
 
 \begin_layout Plain Layout
@@ -3401,17 +3506,22 @@ class C2
 
 \begin_layout Plain Layout
 
-  let f6: (P, C2, I) // De-structured
+  let f6: (P val, C2 ref, I ref) // Destructured
 \end_layout
 
 \begin_layout Plain Layout
 
-  let f7: (C1 | I tag) // Shallow mark or actor
+  let f7: (C2 ref | I tag) // Shallow mark or actor
 \end_layout
 
 \begin_layout Plain Layout
 
   let f8: ((C1 ref, C2 tag) | (C2 tag, C1 ref))
+\end_layout
+
+\begin_layout Plain Layout
+
+    // Dynamically destructured
 \end_layout
 
 \end_inset
@@ -3429,7 +3539,7 @@ name "fig:Trace-functions-and"
 
 \end_inset
 
-Trace functions and fields
+Classes, fields, and associated tracing
 \end_layout
 
 \end_inset
@@ -3457,7 +3567,35 @@ reference "fig:Trace-functions-and"
 \end_inset
 
 .
- For primitive types, no action is taken, as in 
+ Note that this example covers more of the Pony type system than is described
+ in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
+, and covers 
+\family typewriter
+primitive
+\family default
+ types (singleton types with no state, also usable as first-class parameterised
+ modules), 
+\family typewriter
+interface
+\family default
+ types (structural types, also usable as type classes), tuples, and unions.
+ The full Pony type system also includes 
+\family typewriter
+traits 
+\family default
+(nominal types), generic types and functions, as well as intersection types.
+ Their behaviour during tracing is a natural extension of the behaviour
+ presented here.
+\end_layout
+
+\begin_layout Standard
+For primitive types, no action is taken, as in 
 \begin_inset Formula $\mathtt{C1.f1}$
 \end_inset
 
@@ -3496,6 +3634,7 @@ reference "sec:Actor-GC"
 \end_inset
 
 , instead of being marked.
+ Otherwise, the trace function of the object is called dynamically.
 \end_layout
 
 \begin_layout Standard
@@ -3593,7 +3732,7 @@ Handling this case requires the code generator to use the type system to
 \end_inset
 
 , because 
-\begin_inset Formula $\mathtt{C1}$
+\begin_inset Formula $\mathtt{C2}$
 \end_inset
 
  is a subtype of 
@@ -3605,10 +3744,10 @@ Handling this case requires the code generator to use the type system to
 \end_inset
 
  as a 
-\begin_inset Formula $\mathtt{C1\,ref}$
+\begin_inset Formula $\mathtt{C2\,ref}$
 \end_inset
 
-, or indeed as an readable capability.
+, or indeed as any readable capability.
 \end_layout
 
 \begin_layout Standard
@@ -3792,7 +3931,7 @@ reference "subsec:Tracing-GC"
 \begin_inset Formula $\alpha_{2}$
 \end_inset
 
- .
+.
  The message-based protocol described in chapter 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -3801,6 +3940,16 @@ reference "chap:Object-Collection"
 \end_inset
 
  is used to protect such objects from premature collection.
+ This description goes beyond the formal model in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Object-Collection"
+
+\end_inset
+
+ and describes both the overall implementation and specific optimisations,
+ such as generational marks, that are necessary to achieve the desired performan
+ce.
 \end_layout
 
 \begin_layout Standard
@@ -4073,7 +4222,7 @@ reference "fig:Actor-GC-information"
 .
  Note that this is a map of actors to a map of objects, i.e.
  
-\begin_inset Formula $[\mathit{Actor}\mapsto(\mathit{RC},\mathit{Mark,}\mathit{Object}\mapsto(\mathit{RC},\mathit{Mark},\mathit{Immutable})]$
+\begin_inset Formula $[\mathit{Actor}\mapsto(\mathit{RC},\mathit{Mark,}[\mathit{Object}\mapsto(\mathit{RC},\mathit{Mark},\mathit{Immutable})])]$
 \end_inset
 
 , allowing foreign object GC information to be kept segregated by owner.
@@ -4149,7 +4298,28 @@ reference "subsec:Tracing-GC"
 \end_layout
 
 \begin_layout Standard
-In the second and third phases, the tracing algorithm from section 
+In the second and third phases, which correspond to definitions 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "def:Sending-a-reference-1"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "def:Receiving-a-reference-1"
+
+\end_inset
+
+ from chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Object-Collection"
+
+\end_inset
+
+, the tracing algorithm from section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "subsec:Tracing-GC"
@@ -4556,6 +4726,77 @@ reference "fig:opsem-for-object-GC"
 .
 \end_layout
 
+\begin_layout Standard
+Note that an 
+\emph on
+acquire message
+\emph default
+ consists of a set of 
+\family typewriter
+object_t
+\family default
+, as defined in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Object-GC-information"
+
+\end_inset
+
+.
+ This is equivalent to the
+\emph on
+ 
+\begin_inset Formula $\mathit{ExMap}$
+\end_inset
+
+ 
+\emph default
+defined in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Runtime-entities-for-actor-GC"
+
+\end_inset
+
+.
+ The 
+\family typewriter
+mark
+\family default
+ field is ignored, but the 
+\family typewriter
+immutable
+\family default
+ field is used in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Sending-and-Receiving-2"
+
+\end_inset
+
+.
+ When the 
+\family typewriter
+immutable
+\family default
+ field is 
+\family typewriter
+false
+\family default
+, an 
+\emph on
+acquire message
+\emph default
+ behaves exactly as detailed in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Object-Collection"
+
+\end_inset
+
+.
+\end_layout
+
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
@@ -4641,7 +4882,8 @@ As a result, sending and receiving an immutable object in a message requires
 \end_inset
 
 .
- To achieve this, the object garbage collection in figure 
+ To achieve this, the per-object garbage collection information in figure
+ 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "fig:Object-GC-information"
@@ -4653,7 +4895,11 @@ reference "fig:Object-GC-information"
 immutable
 \family default
 , which indicates the object is immutable and that the owner knows this.
- When that flag is set, the owner traces the fields of the object.
+ When that flag is 
+\family typewriter
+true
+\family default
+, the owner traces the fields of the object.
 \end_layout
 
 \begin_layout Standard
@@ -4748,7 +4994,11 @@ When
 \family typewriter
 immutable
 \family default
- flag set, as described in section 
+ flag set to 
+\family typewriter
+true
+\family default
+, as described in section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "subsec:Acquire-and-Release"
@@ -4781,7 +5031,11 @@ reference "subsec:Acquire-and-Release"
 \family typewriter
 immutable
 \family default
- flag set.
+ flag set to 
+\family typewriter
+true
+\family default
+.
 \end_layout
 
 \begin_layout Standard
@@ -4898,11 +5152,19 @@ When
 \end_layout
 
 \begin_layout Standard
-Effectively, freezing some isolated 
+Effectively, 
+\emph on
+freezing
+\emph default
+ some isolated 
 \begin_inset Formula $\omega$
 \end_inset
 
- requires a single 
+, such that 
+\begin_inset Formula $\omega$
+\end_inset
+
+ becomes deeply immutable, requires a single 
 \begin_inset Formula $O(n)$
 \end_inset
 
@@ -5021,9 +5283,16 @@ The local map is used by an actor to mark memory on its heap that it cannot
 \end_inset
 
  greater than zero is marked.
- If the object is also marked as immutable, it is placed on the trace stack
- with its trace function, so that its fields are traced as well, as described
- in section 
+ If the object is also marked as 
+\family typewriter
+immutable
+\family default
+ in the describing 
+\family typewriter
+object_t
+\family default
+, it is placed on the trace stack with its trace function, so that its fields
+ are traced as well, as described in section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "subsec:Sending-and-Receiving-2"
@@ -5065,7 +5334,7 @@ Tracing the Foreign Map
 
 \begin_layout Standard
 After an actor's reachable objects and local map are traced, the weighted
- reference count held for any objects in the actors foreign map that have
+ reference count held for any objects in the actor's foreign map that have
  not been marked can be released.
  The object garbage collection information for an unreachable foreign object
  is removed from the foreign map and sent to the owning actor as a 
@@ -5309,8 +5578,15 @@ reference "subsec:Blocking-and-Unblocking"
 \begin_inset Formula $\mathtt{rc}$
 \end_inset
 
- is not zero.
- This is described in section 
+ is not zero, as described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Actor-Collection"
+
+\end_inset
+
+.
+ The implementation is described in section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "subsec:The-Cycle-Detector"
@@ -5372,7 +5648,7 @@ In addition to the local and foreign maps, each actor keeps an additional
  figure 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "subsec:Topology-Deltas"
+reference "fig:Topology-delta-information"
 
 \end_inset
 
@@ -5667,7 +5943,7 @@ name "fig:A-view-of"
 
 \end_inset
 
-A view of an actor's topology
+The cycle detector's representation of a view of an actor's topology
 \end_layout
 
 \end_inset
@@ -5698,7 +5974,7 @@ typedef struct detector_t {
 
 \begin_layout Plain Layout
 
-  pony_actor_pad_t pad;
+  pony_actor_pad_t pad; 
 \end_layout
 
 \begin_layout Plain Layout
@@ -5773,7 +6049,41 @@ typedef struct detector_t {
 
 \begin_layout Plain Layout
 
-} detector_t; 
+} detector_t;
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+struct perceived_t {
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t token;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t ack;
+\end_layout
+
+\begin_layout Plain Layout
+
+  size_t last_conf;
+\end_layout
+
+\begin_layout Plain Layout
+
+  viewmap_t map;
+\end_layout
+
+\begin_layout Plain Layout
+
+}; 
 \end_layout
 
 \end_inset
@@ -5805,6 +6115,107 @@ Cycle detector state
 \end_layout
 
 \begin_layout Standard
+The cycle detector's representation of a view of an actor's topology is
+ shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:A-view-of"
+
+\end_inset
+
+.
+ Here, the 
+\family typewriter
+rc
+\family default
+ is the actor's last reported view of its own local reference count.
+ The 
+\family typewriter
+view_rc
+\family default
+ is used internally to manually manage the view structure memory.
+ The 
+\family typewriter
+blocked
+\family default
+ flag indicates the actor's last report of whether or not it believed it
+ had an empty message queue.
+ The 
+\family typewriter
+deferred 
+\family default
+flag is set if the actor is in the 
+\family typewriter
+deferred
+\family default
+ map, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Block-Messages"
+
+\end_inset
+
+.
+ The 
+\family typewriter
+color
+\family default
+ is used in a tri-colour tracing scheme for finding isolated graphs of actors,
+ as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Finding-Isolated-Graphs"
+
+\end_inset
+
+.
+ The 
+\family typewriter
+map
+\family default
+ is a map of 
+\family typewriter
+viewref_t
+\family default
+, tracking the actor's last reported references to other actors, and the
+ 
+\family typewriter
+rc 
+\family default
+held for each.
+ The 
+\family typewriter
+delta
+\family default
+ pointer keeps the last topology delta reported by the actor.
+ This is applied to the 
+\family typewriter
+map
+\family default
+ in a deferred manner, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Block-Messages"
+
+\end_inset
+
+.
+ Finally, the 
+\family typewriter
+perceived
+\family default
+ pointer is a reference to the perceived cycle the actor is a member of,
+ if any, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Finding-Isolated-Graphs"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
 The cycle detector's view of the actor topology is tracked in the 
 \begin_inset Formula $\mathtt{views}$
 \end_inset
@@ -5833,29 +6244,7 @@ reference "subsec:Finding-Isolated-Graphs"
 
 \end_inset
 
-, and some useful debugging statistics.
-\end_layout
-
-\begin_layout Standard
-A topology view is shown in figure 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:A-view-of"
-
-\end_inset
-
-.
- Here, the 
-\begin_inset Formula $\mathtt{rc}$
-\end_inset
-
- is the actor's last reported view of its own local reference count.
- The 
-\begin_inset Formula $\mathtt{view\_rc}$
-\end_inset
-
- is used internally to manually manage the view structure memory.
- The use of the remaining fields will be explained in the following sections.
+, a map of tokens to perceived cycles, and some useful debugging statistics.
 \end_layout
 
 \begin_layout Subsection
@@ -5865,7 +6254,7 @@ name "subsec:Block-Messages"
 
 \end_inset
 
-Block Messages
+Block Messages 
 \end_layout
 
 \begin_layout Standard
@@ -5948,8 +6337,37 @@ reference "subsec:Finding-Isolated-Graphs"
 
 \end_inset
 
-) that the actor is a member of are expired.
- If the actor's perceived reference count is zero, it is removed from the
+) that the actor is a member of are cancelled.
+ Note that perceived cycles are cancelled due to block messages as well
+ as due to unblock messages (as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Unblock-Messages"
+
+\end_inset
+
+).
+ This allows actors that update their view of their own 
+\family typewriter
+rc
+\family default
+ while blocked, due to receiving acquire and release messages as described
+ in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Acquire-and-Release"
+
+\end_inset
+
+, to send a new block message to the cycle detector to update the cycle
+ detector's view of the actor's topology.
+ An actor with a new view of its topology is not collectable on the basis
+ of its old view of its topology, and so any perceived cycle detected based
+ on the old topology must be cancelled.
+\end_layout
+
+\begin_layout Standard
+If the actor's perceived reference count is zero, it is removed from the
  
 \begin_inset Formula $\mathtt{deferred}$
 \end_inset
@@ -5960,10 +6378,7 @@ reference "subsec:Finding-Isolated-Graphs"
 \end_inset
 
  map.
-\end_layout
-
-\begin_layout Standard
-The 
+ The 
 \begin_inset Formula $\mathtt{deferred}$
 \end_inset
 
@@ -6120,7 +6535,7 @@ For example, suppose
 \begin_inset Formula $\mathtt{view\_t}$
 \end_inset
 
- structure, the cycle detector avoid keeping inverse reference lists for
+ structure, the cycle detector avoids keeping inverse reference lists for
  actors or searching for all actors with out-of-date references to an actor
  that is being collected.
 \end_layout
@@ -6177,13 +6592,38 @@ Finding Isolated Graphs of Blocked Actors
 \end_layout
 
 \begin_layout Standard
-Detecting isolated graphs is done using a three-colour algorithm that combines
+Detecting isolated graphs is done using a tri-colour algorithm that combines
  finding graphs with determining if the cycle's view of the graph topology
  indicates that the graph is isolated.
+ The algorithm divides actors into three sets:
+\end_layout
+
+\begin_layout Itemize
+The white set are actors that are candidates for collection.
+ The cycle detector's view of the actor topology indicates that these actors
+ have no incoming edges from unblocked actors.
+\end_layout
+
+\begin_layout Itemize
+The black set are actors that cannot be collected.
+ The cycle detector's view of the actor topology indicates that these actors
+ have incoming edges from unblocked actors.
+\end_layout
+
+\begin_layout Itemize
+The grey set are actors that have not yet been scanned for outgoing edges.
 \end_layout
 
 \begin_layout Standard
-All 
+The algorithm preserves the strong tri-colour invariant 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "pirinen1998barrier"
+
+\end_inset
+
+: there is no edge from a black node to a white node.
+ To achieve this, all 
 \begin_inset Formula $\mathtt{view\_t}$
 \end_inset
 
@@ -6316,6 +6756,19 @@ Upon completion, all actors reachable from the initially selected
 perceived cycle
 \emph default
  and are candidates for collection.
+ The perceived cycle is stored as a 
+\family typewriter
+perceived_t
+\family default
+, as shown in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Cycle-detector-state"
+
+\end_inset
+
+, and is added to the map of tokens to perceived cycles kept by the cycle
+ detector.
 \end_layout
 
 \begin_layout Standard
@@ -6365,8 +6818,21 @@ Acknowledgement Messages
 \begin_layout Standard
 Actors respond to confirmation messages by echoing an acknowledgement message
  with the perceived cycle token back to the cycle detector.
- When the cycle detector receives an acknowledgement message, the acknowledgment
- count for the perceived cycle is incremented.
+ When the cycle detector receives an acknowledgement message, the token
+ echoed back is used to look up the 
+\family typewriter
+perceived_t
+\family default
+ that represents the perceived cycle in the 
+\family typewriter
+perceived
+\family default
+ map.
+ The acknowledgment count, 
+\family typewriter
+ack
+\family default
+, for the perceived cycle is incremented.
  In addition, if any actors in the perceived cycle have not yet been sent
  a confirmation message, an additional confirmation message is sent.
 \end_layout
@@ -6445,7 +6911,8 @@ reference "subsec:Empty-Queue-Detection"
 \begin_inset Formula $\alpha$
 \end_inset
 
- to be finishing execution in some thread 
+ to send a block message but not yet have marked its queue as empty in some
+ thread 
 \begin_inset Formula $t_{1}$
 \end_inset
 
@@ -6465,6 +6932,14 @@ reference "subsec:Empty-Queue-Detection"
 \end_inset
 
  for execution after it has been destroyed.
+\end_layout
+
+\begin_layout Standard
+This race condition can occur even though 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ marks its queue as empty immediately after sending the block message.
 \end_layout
 
 \begin_layout Section
@@ -6552,8 +7027,8 @@ It is not only new objects that could outlive the finaliser if sent in a
  non-memory resources held by the instance itself, rather than interacting
  with other parts of the objects graph (which can be independently finalised
  if necessary).
- As a result, this restriction has not been problematic in the standard
- library or in end-user code.
+ As a result, this restriction has not so far proven to be problematic in
+ the standard library or in end-user code.
 \end_layout
 
 \begin_layout Section
@@ -7304,8 +7779,8 @@ If ACK messages from all scheduler threads are received,
 \end_layout
 
 \begin_layout Standard
-At this point, the runtime can terminate without needing to collect all
- remaining actors.
+At this point, the runtime can terminate without collecting the remaining
+ actors.
  The quiescence protocol improves program termination performance by short-circu
 iting the actor garbage collection algorithm with a scheduler thread collection
  algorithm, which operates on fewer participants.
