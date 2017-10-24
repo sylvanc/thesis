@@ -2432,6 +2432,12 @@ reference "subsec:Queue-Node-Memory"
 \end_layout
 
 \begin_layout Standard
+In addition to being a safe MPSC queue, an actor's queue must provide two
+ additional features: it must be unbounded, and it must atomically detect
+ when a message is pushed on to an empty queue.
+\end_layout
+
+\begin_layout Standard
 Although there has been extensive research on queues, usefully sumarized
  in 
 \begin_inset CommandInset citation
@@ -2451,12 +2457,23 @@ key "magnusson1994queue"
 .
  While it is asynchronous and non-blocking, it uses a similar mechanism
  for maintaining a queue.
-\end_layout
+ Unlike the classic Michael and Scott queue 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "michael1996simple"
 
-\begin_layout Standard
-In addition to being a safe MPSC queue, an actor's queue must provide two
- additional features: it must be unbounded, and it must atomically detect
- when a message is pushed on to an empty queue.
+\end_inset
+
+, the Pony queue does not require atomic compare-and-swap operations, and
+ so does not suffer from performance scalability problems due to CAS failures
+ on the x86/x64 architecture 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "morrison2013fast"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Subsection
@@ -7633,6 +7650,45 @@ reference "subsec:Unbounded-Message-Queues"
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Standard
+The SPMC queue uses a compare-and-swap loop to pop, and so it could suffer
+ from CAS-failure related scalability problems on the x86/x64 architecture
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "michael1996simple"
+
+\end_inset
+
+.
+ These problems could be reduced while maintaining an unbounded queue by
+ using a linearizable concurrent ring queue (LCRQ), also in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "michael1996simple"
+
+\end_inset
+
+.
+ However, an LCRQ requires additional overhead in the form of an atomic
+ fetch-and-add in addition to the CAS on pop, and requiring an atomic fetch-and-
+add and CAS on push, as well as requiring individual concurrent ring queues
+ (CRQs) to be used as nodes in a Michael and Scott list.
+ This overhead reduces CAS failures by reducing CAS contention.
+ The Pony SPMC queues reduce CAS contention by requiring scheduler threads
+ to pop from SPMC queues in a round robin fashion, as described in section
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Work-Stealing"
+
+\end_inset
+
+.
+ This is an interesting research area, and it may be possible to use a combinati
+on of these techniques to further reduce contention.
 \end_layout
 
 \begin_layout Subsection
