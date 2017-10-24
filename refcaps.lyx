@@ -465,6 +465,8 @@ textwidth][c]{
 \begin_inset Text
 
 \begin_layout Plain Layout
+
+\size tiny
 Deny global read/write aliases
 \end_layout
 
@@ -474,6 +476,8 @@ Deny global read/write aliases
 \begin_inset Text
 
 \begin_layout Plain Layout
+
+\size tiny
 Deny global write aliases
 \end_layout
 
@@ -483,6 +487,8 @@ Deny global write aliases
 \begin_inset Text
 
 \begin_layout Plain Layout
+
+\size tiny
 Allow all global aliases
 \end_layout
 
@@ -494,6 +500,8 @@ Allow all global aliases
 \begin_inset Text
 
 \begin_layout Plain Layout
+
+\size tiny
 Deny local read/write aliases
 \end_layout
 
@@ -504,6 +512,7 @@ Deny local read/write aliases
 
 \begin_layout Plain Layout
 
+\size tiny
 \emph on
 \begin_inset ERT
 status open
@@ -550,6 +559,8 @@ Isolated (
 \begin_inset Text
 
 \begin_layout Plain Layout
+
+\size tiny
 Deny local write aliases
 \end_layout
 
@@ -560,6 +571,7 @@ Deny local write aliases
 
 \begin_layout Plain Layout
 
+\size tiny
 \emph on
 \begin_inset ERT
 status open
@@ -589,6 +601,7 @@ Transition (
 
 \begin_layout Plain Layout
 
+\size tiny
 \emph on
 \begin_inset ERT
 status open
@@ -626,6 +639,8 @@ Value (
 \begin_inset Text
 
 \begin_layout Plain Layout
+
+\size tiny
 Allow all local aliases
 \end_layout
 
@@ -636,6 +651,7 @@ Allow all local aliases
 
 \begin_layout Plain Layout
 
+\size tiny
 \emph on
 \begin_inset ERT
 status open
@@ -665,6 +681,7 @@ Reference (
 
 \begin_layout Plain Layout
 
+\size tiny
 \emph on
 \begin_inset ERT
 status open
@@ -694,6 +711,7 @@ Box (
 
 \begin_layout Plain Layout
 
+\size tiny
 \emph on
 \begin_inset ERT
 status open
@@ -732,6 +750,7 @@ Tag (
 
 \begin_layout Plain Layout
 
+\size tiny
 \emph on
 \begin_inset ERT
 status open
@@ -757,6 +776,7 @@ cellcolor{writeable}
 
 \begin_layout Plain Layout
 
+\size tiny
 \emph on
 \begin_inset ERT
 status open
@@ -782,6 +802,7 @@ cellcolor{readable}
 
 \begin_layout Plain Layout
 
+\size tiny
 \emph on
 \begin_inset ERT
 status open

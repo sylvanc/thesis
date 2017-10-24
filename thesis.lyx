@@ -43,7 +43,7 @@ theorems-chap-bytype
 \paperfontsize default
 \spacing onehalf
 \use_hyperref false
-\papersize default
+\papersize a4paper
 \use_geometry false
 \use_package amsmath 1
 \use_package amssymb 1
@@ -86,13 +86,98 @@ theorems-chap-bytype
 
 \begin_body
 
-\begin_layout Title
+\begin_layout Standard
+\align center
+Imperial College London
+\begin_inset Newline newline
+\end_inset
+
+Department of Computing
+\end_layout
+
+\begin_layout Standard
+\begin_inset VSpace vfill
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\align center
+
+\series bold
+\size huge
 Pony: Co-designing a Type System and a Runtime
 \end_layout
 
-\begin_layout Author
+\begin_layout Standard
+\begin_inset VSpace defskip
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\align center
 Sylvan W.
  Clebsch
+\end_layout
+
+\begin_layout Standard
+\align center
+October 2017
+\end_layout
+
+\begin_layout Standard
+\begin_inset VSpace vfill
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\align center
+Submitted in part fulfilment of the requirements for the degree of Doctor
+ of Philosophy in Computing of Imperial College London and the Diploma of
+ Imperial College London
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Declaration
+\end_layout
+
+\begin_layout Standard
+This thesis and the work presented within are my own, except where acknowledged
+ otherwise.
+\end_layout
+
+\begin_layout Standard
+\align right
+Sylvan Clebsch
+\end_layout
+
+\begin_layout Standard
+\begin_inset VSpace vfill
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The copyright of this thesis rests with the author and is made available
+ under a Creative Commons Attribution Non-Commercial No Derivatives licence.
+ Researchers are free to copy, distribute or transmit the thesis on the
+ condition that they attribute it, that they do not use it for commercial
+ purposes and that they do not alter, transform or build upon it.
+ For any reuse or redistribution, researchers must make clear to others
+ the licence terms of this work.
 \end_layout
 
 \begin_layout Section*
