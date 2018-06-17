@@ -298,7 +298,7 @@ The second approach is to transform the actor graph into an object graph
  and use a tracing garbage collector to collect actors 
 \begin_inset CommandInset citation
 LatexCommand cite
-key "kafura,vardhan,n-colour"
+key "kafura1990garbage,vardhan2002using,wang2010actor"
 
 \end_inset
 
@@ -3964,7 +3964,7 @@ ACK
 However, the actor-model requires guaranteed message delivery 
 \begin_inset CommandInset citation
 LatexCommand cite
-key "agha-thesis"
+key "agha1986actors"
 
 \end_inset
 
