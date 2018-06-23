@@ -104,7 +104,7 @@ The syntax and operational semantics of Pony is presented here as a small-step
 
 \begin_layout Standard
 The syntax and formalisation of inheritance, union types, tuples, and intersecti
-on types appears in Steed
+on types appears in Steed 
 \begin_inset CommandInset citation
 LatexCommand cite
 key "steed2016"
@@ -113,7 +113,7 @@ key "steed2016"
 
 .
  The syntax and formalisation of generics, value-dependent types, and compile-ti
-me expressions appears in Cheeseman
+me expressions appears in Cheeseman 
 \begin_inset CommandInset citation
 LatexCommand cite
 key "cheeseman2016"
@@ -121,7 +121,7 @@ key "cheeseman2016"
 \end_inset
 
 .
- The operational semantics presented here differs from previous work
+ The operational semantics presented here differs from previous work 
 \begin_inset CommandInset citation
 LatexCommand cite
 key "clebsch2015deny"

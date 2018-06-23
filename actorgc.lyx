@@ -180,7 +180,7 @@ This approach is inspired by previous work on distributed garbage collection
  mechanism to collect cyclic garbage 
 \begin_inset CommandInset citation
 LatexCommand cite
-key "dehne1994distributed,bacon2001concurrent,moreau2001construction,moreau2005birrell"
+key "bacon2001concurrent,moreau2001construction,moreau2005birrell"
 
 \end_inset
 
@@ -477,7 +477,7 @@ foreign reference counts
 blocked
 \emph default
 .
- Secondly, new message types are added to allow reference counts to be changes
+ Secondly, new message types are added to allow reference counts to be changed
  in an asynchronous way.
  Finally, a 
 \emph on
@@ -1733,7 +1733,7 @@ reference "Expanding-example-"
 
 ), and queue (Q) of actors, with round corners indicating unblocked and
  square corners indicating blocked.
- The arrows indicate references, eg.
+ The arrows indicate references, e.g.
  
 \begin_inset Formula $\iota_{1}$
 \end_inset
@@ -2548,7 +2548,7 @@ Additionally, each actor maintains another invariant: if an actor
 \begin_inset Formula $\alpha$
 \end_inset
 
- have a local reference count of 1 or more, and 
+ has a local reference count of 1 or more, and 
 \begin_inset Formula $\alpha'$
 \end_inset
 

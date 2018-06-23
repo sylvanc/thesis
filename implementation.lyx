@@ -299,7 +299,7 @@ key "aigner2015fast"
 \end_inset
 
 .
- This category of memory allocator face several related problems: finding
+ This category of memory allocator faces several related problems: finding
  free memory large enough to fulfil the requested allocation size without
  wasting excessive memory, coalescing freed memory to allow larger allocations
  to reuse memory from multiple smaller freed memory blocks, and coordinating
@@ -3613,7 +3613,7 @@ traits
 
 \begin_layout Standard
 For primitive types, no action is taken, as in 
-\begin_inset Formula $\mathtt{C1.f1}$
+\begin_inset Formula $\mathtt{C2.f1}$
 \end_inset
 
 .
@@ -3622,7 +3622,7 @@ For primitive types, no action is taken, as in
 \end_inset
 
  reference capability, such as 
-\begin_inset Formula $\mathtt{C1.f4}$
+\begin_inset Formula $\mathtt{C2.f4}$
 \end_inset
 
 , the object is shallowly marked, and is not placed on the trace stack,
@@ -3637,7 +3637,7 @@ reference "subsec:Deep-vs.-Shallow"
  If the type could be an actor, either because it is an interface or trait
  type or because a concrete actor type is present in an algebraic data type,
  such as 
-\begin_inset Formula $\mathtt{C1.f5}$
+\begin_inset Formula $\mathtt{C2.f5}$
 \end_inset
 
 , then the object's header is examined at runtime to determine if it is
@@ -3668,7 +3668,7 @@ class
 \end_inset
 
  reference capability, such as 
-\begin_inset Formula $\mathtt{C1.f2}$
+\begin_inset Formula $\mathtt{C2.f2}$
 \end_inset
 
 , the object is marked and placed on the trace stack with its statically
@@ -3680,7 +3680,7 @@ class
 \end_inset
 
  reference capability, such as 
-\begin_inset Formula $\mathtt{C1.f3}$
+\begin_inset Formula $\mathtt{C2.f3}$
 \end_inset
 
 , the object is marked and placed on the trace stack with a dynamically
@@ -3689,7 +3689,7 @@ class
 
 \begin_layout Standard
 A field that is statically known to be a tuple, such as 
-\begin_inset Formula $\mathtt{C1.f6}$
+\begin_inset Formula $\mathtt{C2.f6}$
 \end_inset
 
 , is de-structured and each field is traced independently.

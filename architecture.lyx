@@ -171,7 +171,7 @@ On the other hand, there are subtle implications of these three requirements.
  when attempting to send itself a message.
  Interestingly, while real world constraints limit the size of a message
  buffer, the model implicitly requires that buffer space is logically unbounded:
- any upper bounds devolves to the possibility that an actor will be blocked
+ any upper bound devolves to the possibility that an actor will be blocked
  if it tries to send a message to itself, because its message buffer is
  full and it cannot clear it.
  That is, the actor can neither enqueue the message and continue execution,
@@ -1015,7 +1015,7 @@ It is interesting to note that logically atomic behaviours, and thus deny
 \begin_inset Formula $m$
 \end_inset
 
-, and therefor treating the modified memory location as a new message 
+, and therefore treating the modified memory location as a new message 
 \begin_inset Formula $m'$
 \end_inset
 
@@ -1330,7 +1330,7 @@ Exception handling is a complex topic, both for reasons of type safety,
  particularly in the presence of checked exceptions, and for performance.
  The approach adopted by Pony is somewhat different from existing exception
  handling mechanisms, in that exceptions that unwind the stack can be raised,
- but these exception do not carry information.
+ but these exceptions do not carry information.
  That is, there is no type or value associated with an exception.
  Effectively, a function that can raise an exception represents a partial
  function, one for which not every value in the domain produces a value

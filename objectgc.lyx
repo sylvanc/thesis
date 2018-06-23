@@ -104,7 +104,7 @@ reference "chap:Reference-Capabilities"
 , Pony, like many actor-model languages, has non-actor entities, in the
  form of passive (synchronous) objects, and such objects can be passed between
  actors in messages.
- Garbage collecting such objects in an actor-model language face similar
+ Garbage collecting such objects in an actor-model language faces similar
  problems to garbage collecting actors themselves.
  The inability to examine the global state of the program without pausing
  the program results in existing approaches to object garbage collection

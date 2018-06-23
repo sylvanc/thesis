@@ -3557,7 +3557,7 @@ reference "tab:Viewpoint-adaptation"
 \begin_inset Formula $\mathtt{tag}$
 \end_inset
 
- - thus we do not violate the deny properties of the origin or the field
+ — thus we do not violate the deny properties of the origin or the field
  itself.
 \end_layout
 
@@ -3794,7 +3794,7 @@ Field read and write requires that the actor should see itself as a
 
 .
  Therefore no other actor except the current one will be allowed to observe
- an actor’s fields - a nice consequence of the type system.
+ an actor’s fields — a nice consequence of the type system.
 \end_layout
 
 \begin_layout Standard
@@ -3924,8 +3924,8 @@ T-Ctor
 \end_layout
 
 \begin_layout Standard
-Some operations introduce stable aliases (eg.
- assignment), while others introduce only unstable ones (eg.
+Some operations introduce stable aliases (e.g.
+ assignment), while others introduce only unstable ones (e.g.
  field read).
  The distinction is expressed in the type system through the difference
  between the type judgments 
@@ -4186,7 +4186,7 @@ reference "tab:Compatible-capabilities-2"
 
 \end_inset
 
-, eg.
+, e.g.
  
 \begin_inset Formula $\mathtt{ref\sim_{\ell}ref}$
 \end_inset

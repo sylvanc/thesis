@@ -100,10 +100,10 @@ scaling-out
 \emph default
 processors for overall system performance, has been problematic for software
  developers.
- Algorithms and patterns that were efficient on single-core or small core
- count machines may become inefficient when asked to scale-out further,
- much as patterns that are efficient on a single node may be infeasible
- in a distributed context.
+ Algorithms and patterns that were efficient on single-core or small core-count
+ machines may become inefficient when asked to scale-out further, much as
+ patterns that are efficient on a single node may be infeasible in a distributed
+ context.
  The comparison with distributed computing is particularly apt in that cores
  on a single node share hardware resources, such as memory, via message
  passing.
