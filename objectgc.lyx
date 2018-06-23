@@ -1568,8 +1568,10 @@ reference "chap:Reference-Capabilities"
 ORCA
 \emph default
  remains sound in the distributed setting.
- It is important to note that distributed object collection has not yet
- been implemented in the runtime.
+ As with distributed actor collection, it is important to note that distributed
+ object collection has not yet been implemented in the runtime.
+ As such, this section represents a sketch of a possible implementation,
+ rather than a description of completed work.
 \end_layout
 
 \begin_layout Subsection

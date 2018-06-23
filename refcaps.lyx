@@ -2871,6 +2871,20 @@ name "tab:Viewpoint-adaptation"
 \end_inset
 
 Viewpoint adaptation.
+ Given an object reference of capability 
+\begin_inset Formula $\kappa$
+\end_inset
+
+ with a field of capability 
+\begin_inset Formula $\kappa'$
+\end_inset
+
+, reading the field via that reference produces a reference of capability
+ 
+\begin_inset Formula $\kappa\triangleright\kappa'$
+\end_inset
+
+.
 \end_layout
 
 \end_inset
@@ -3487,6 +3501,19 @@ name "tab:Safe-to-write,"
 \end_inset
 
 Safe to write.
+ Given an object reference of capability 
+\begin_inset Formula $\kappa$
+\end_inset
+
+, the relation 
+\begin_inset Formula $\kappa\triangleleft\kappa'$
+\end_inset
+
+ expresses which reference capabilities 
+\begin_inset Formula $\kappa'$
+\end_inset
+
+ are safe to store into a field of an object via that reference.
 \end_layout
 
 \end_inset

@@ -859,6 +859,18 @@ UNB
 This allows the cycle detector to maintain a view of the topology of all
  blocked actors that is eventually consistent with each actor's view of
  its topology, which is in turn eventually consistent with the true topology.
+ However, a naive implementation can result in actors emptying their message
+ queue during every scheduling turn.
+ This would result in a block message being sent at the end of the scheduling
+ turn and, similarly, an unblock message being sent at the beginning of
+ the next scheduling turn, which in turn results in the cycle detector spending
+ excessive time handling block and unblock messages.
+ The solution is for an actor to delay sending a block message until the
+ runtime is confident that the actor will not be rescheduled soon.
+ There are several strategies for such a heuristic, including delaying by
+ a number of scheduling turns, using processor cycle count timestamps to
+ track previous rescheduling delays, or using a timer on a central service,
+ such as the cycle detector itself, to poll for blocked actors.
 \end_layout
 
 \begin_layout Standard
@@ -4052,6 +4064,8 @@ MAC
  and formal development of the protocol change for future work.
  It is important to note that distributed actor collection has not yet been
  implemented in the runtime.
+ As such, this section represents a sketch of a possible implementation,
+ rather than a description of completed work.
 \end_layout
 
 \begin_layout Subsection
