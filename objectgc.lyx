@@ -1568,6 +1568,8 @@ reference "chap:Reference-Capabilities"
 ORCA
 \emph default
  remains sound in the distributed setting.
+ It is important to note that distributed object collection has not yet
+ been implemented in the runtime.
 \end_layout
 
 \begin_layout Subsection

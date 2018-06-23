@@ -180,7 +180,7 @@ This approach is inspired by previous work on distributed garbage collection
  mechanism to collect cyclic garbage 
 \begin_inset CommandInset citation
 LatexCommand cite
-key "bacon2001concurrent,moreau2001construction,moreau2005birrell"
+key "lisk86,bacon2001concurrent,moreau2001construction,moreau2005birrell"
 
 \end_inset
 
@@ -382,6 +382,16 @@ key "moreau2001construction,moreau2005birrell"
 \begin_inset CommandInset citation
 LatexCommand cite
 key "bacon2001concurrent,jones1993cyclic,dehne1994distributed,lins2003lazy,de2007new"
+
+\end_inset
+
+.
+ Others use dynamic process groups to partially trace the distributed object
+ graph, trading completeness for promptness, and requiring mutators to pause
+ only during the local portion of such a partial trace 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "rodr98,rodr98a"
 
 \end_inset
 
@@ -4040,6 +4050,8 @@ MAC
  to function without causal ordering of messages.
  This change will be described briefly and informally, leaving a a complete
  and formal development of the protocol change for future work.
+ It is important to note that distributed actor collection has not yet been
+ implemented in the runtime.
 \end_layout
 
 \begin_layout Subsection

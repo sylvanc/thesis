@@ -84,9 +84,8 @@ Introduction
 With the end of the free-lunch era of ever increasing single-core performance,
  parallel computing has become a mainstream requirement.
  The multi-core era requires high-performance programs to be highly parallel:
- Moore's law is still being expressed, but the increase in transistor count
- is resulting in an increasing number of cores rather than faster individual
- cores.
+ Moore's law is still holding, but the increase in transistor count is resulting
+ in an increasing number of cores rather than faster individual cores.
 \end_layout
 
 \begin_layout Standard
@@ -199,8 +198,15 @@ key "agha1986actors"
 
 .
  We examine the tools for reasoning and correctness provided by Pony, specifical
-ly the novel data-race free type system, logically atomic behaviours, capabiliti
-es-security, and causal messaging.
+ly the use of the novel data-race free type system described in chapter
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
+, logically atomic behaviours, capabilities-security, and causal messaging.
  We also present some of the decisions made in the interest of performance,
  such as modelling behaviours as methods, exceptions as partial functions,
  the use of a single compilation unit, and maintaining C ABI compatibility.
