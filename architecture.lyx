@@ -107,7 +107,15 @@ Single Model for Concurrent and Distributed Execution
 
 \begin_layout Standard
 One of the driving principles behind the design of Pony has been the desire
- for a single model for both concurrent and distributed execution.
+ for a single model for both concurrent and distributed execution, as described
+ in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Syntax-and-Operational"
+
+\end_inset
+
+.
  As a result, the communication mechanism between units of execution cannot
  rely on shared mutable state, since such shared memory is not available
  in a distributed setting.
@@ -122,14 +130,25 @@ One of the driving principles behind the design of Pony has been the desire
 \end_layout
 
 \begin_layout Standard
-Pony uses asynchronous message passing for communicating between units of
- execution.
- This decision, combined with a desire to provide dynamic topology and object
- capabilities, lead to the decision to use actors as the unit of execution.
+This is a different approach than languages such as C/C++, C#, Java, Javascript,
+ Python, and other languages that treat both concurrency and distribution
+ as library-level rather than language-level features.
+ Such languages are in some sense sequential-first.
+ Pony instead takes a concurrent-first approach that is more in the style
+ of Erlang, in which concurrency and distribution are language-level features
+ that inform the design of the sequential portion of the language.
+ As such, problems endemic to sequential-first languages when concurrency
+ is introduced, such as non-composable concurrent libraries, garbage collectors
+ that must cope with shared mutable state, deadlocking, and data-races,
+ are avoided by design.
 \end_layout
 
 \begin_layout Standard
-The actor model has been implemented in many ways, but at its core it has
+Like Erlang, Pony uses asynchronous message passing for communicating between
+ units of execution.
+ This decision, combined with a desire to provide dynamic topology and object
+ capabilities, lead to the decision to use actors as the unit of execution.
+ The actor model has been implemented in many ways, but at its core it has
  three fundamental requirements 
 \begin_inset CommandInset citation
 LatexCommand cite
@@ -299,7 +318,34 @@ Pony makes additional guarantees that extend the fundamental requirements
 \end_layout
 
 \begin_layout Enumerate
-Data-race freedom, including mutable state isolation, is guaranteed statically.
+Both mutable and immutable state are supported, both within an actor and
+ in messages between actors, as described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+Data-race freedom, including mutable state isolation, is guaranteed statically,
+ as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Static-Data-Race-Freedom"
+
+\end_inset
+
+ and chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Enumerate
@@ -307,6 +353,20 @@ Message handling is
 \emph on
 logically atomic
 \emph default
+, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Logically-Atomic-Behaviours"
+
+\end_inset
+
+ and chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
 .
 \end_layout
 
@@ -315,6 +375,20 @@ The language is
 \emph on
 capabilities secure
 \emph default
+, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Capabilities-Security"
+
+\end_inset
+
+ and chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
 .
 \end_layout
 
@@ -328,12 +402,63 @@ causal
 \emph on
 causal
 \emph default
+, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Causal-Messaging"
+
+\end_inset
+
+ and chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Syntax-and-Operational"
+
+\end_inset
+
 .
 \end_layout
 
 \begin_layout Enumerate
 Both actors and objects are garbage collected without requiring coordination
- outside of the underlying message passing system.
+ outside of the underlying message passing system, as described in section
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Message-based-Garbage-Collection"
+
+\end_inset
+
+ and chapters 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Actor-Collection"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Object-Collection"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+Within a node, messages are 
+\emph on
+zero-copy
+\emph default
+, as described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Object-Collection"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -359,6 +484,12 @@ on tools, such as Dafny and F*, to allow Pony to function as its own proof
 \end_layout
 
 \begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Static-Data-Race-Freedom"
+
+\end_inset
+
 Static Data-Race Freedom
 \end_layout
 
@@ -557,6 +688,12 @@ aliased and unaliased
 \end_layout
 
 \begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Logically-Atomic-Behaviours"
+
+\end_inset
+
 Logically Atomic Behaviours
 \end_layout
 
@@ -793,6 +930,12 @@ Using promises, which are implemented in Pony as part of the standard library
 \end_layout
 
 \begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Capabilities-Security"
+
+\end_inset
+
 Capabilities Security
 \end_layout
 
@@ -927,6 +1070,12 @@ The object capability model in Pony is designed to take advantage of type
 \end_layout
 
 \begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Causal-Messaging"
+
+\end_inset
+
 Causal Messaging
 \end_layout
 
@@ -1173,6 +1322,12 @@ before
 \end_layout
 
 \begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Message-based-Garbage-Collection"
+
+\end_inset
+
 Message-based Garbage Collection
 \end_layout
 
