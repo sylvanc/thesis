@@ -6811,6 +6811,29 @@ The property central to any soundness argument is the preservation of the
  in each step.
 \end_layout
 
+\begin_layout Standard
+While this section is, by necessity, detailed and somewhat verbose, the
+ argument presented is standard and unsurprising.
+ Its approach is based on that taken in existing work on the Java type system,
+ particularly in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "drossopoulou1999java"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "igarashi2001featherweight"
+
+\end_inset
+
+.
+ I personally found both works invaluable as aids to both understanding
+ and formulating type soundness arguments.
+\end_layout
+
 \begin_layout Lemma
 Uniqueness of contexts.
 \end_layout
