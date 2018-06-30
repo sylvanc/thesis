@@ -973,6 +973,19 @@ Short Examples
 \end_layout
 
 \begin_layout Standard
+The following examples are compact and artificial.
+ A more complete example, using a sample program from the compiler distribution,
+ is in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Code-Example"
+
+\end_inset
+
+, along with a line by line explanation.
+\end_layout
+
+\begin_layout Standard
 A 
 \begin_inset Formula $\mathtt{ref}$
 \end_inset

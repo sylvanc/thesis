@@ -76,7 +76,7 @@ theorems-chap-bytype
 \papercolumns 1
 \papersides 1
 \paperpagestyle default
-\listings_params "basicstyle={\ttfamily},commentstyle={\itshape\color{lightgray}},keywords={use, actor, class, primitive, struct, trait, interface, var, let, new, be, fun, iso, trn, ref, val, box, tag, recover, consume, null, if, then, else, while, do, for, in, repeat, until, end, try, and, or, xor, typedef, static, const, return},numbers=none,keywordstyle={\bfseries\color{black}},breaklines=true"
+\listings_params "basicstyle={\ttfamily},commentstyle={\itshape\color{lightgray}},keywords={use, actor, class, primitive, struct, trait, interface, var, let, new, be, fun, iso, trn, ref, val, box, tag, recover, consume, null, if, then, else, while, do, for, in, repeat, until, end, try, and, or, xor, typedef, static, const, return},numbers=left,keywordstyle={\bfseries\color{black}},breaklines=true"
 \tracking_changes false
 \output_changes false
 \html_math_output 0

@@ -1696,6 +1696,1031 @@ te the type at runtime.
 \end_layout
 
 \begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Code-Example"
+
+\end_inset
+
+Code Example
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+use "time"
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+class TimerPrint is TimerNotify
+\end_layout
+
+\begin_layout Plain Layout
+
+  let _env: Env
+\end_layout
+
+\begin_layout Plain Layout
+
+  var _count: U64 = 0
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+  new iso create(env: Env) =>
+\end_layout
+
+\begin_layout Plain Layout
+
+    _env = env
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+  fun ref apply(timer: Timer, count: U64): Bool =>
+\end_layout
+
+\begin_layout Plain Layout
+
+    _count = _count + count
+\end_layout
+
+\begin_layout Plain Layout
+
+    _env.out.print("timer: " + _count.string())
+\end_layout
+
+\begin_layout Plain Layout
+
+    _count < 10
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+  fun ref cancel(timer: Timer box) =>
+\end_layout
+
+\begin_layout Plain Layout
+
+    _env.out.print("timer cancelled")
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+actor Main
+\end_layout
+
+\begin_layout Plain Layout
+
+  new create(env: Env) =>
+\end_layout
+
+\begin_layout Plain Layout
+
+    let timers = Timers
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+    let t1 = Timer(TimerPrint(env), 500000000, 500000000) // 500 ms
+\end_layout
+
+\begin_layout Plain Layout
+
+    let t1' = t1
+\end_layout
+
+\begin_layout Plain Layout
+
+    timers(consume t1)
+\end_layout
+
+\begin_layout Plain Layout
+
+    timers.cancel(t1')
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+    let t2 = Timer(TimerPrint(env), 500000000, 500000000) // 500 ms
+\end_layout
+
+\begin_layout Plain Layout
+
+    timers(consume t2)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:A-code-example"
+
+\end_inset
+
+A program illustrating the use of asynchronous timers.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Verbatim
+
+$ ./timers.exe
+\end_layout
+
+\begin_layout Verbatim
+
+timer cancelled
+\end_layout
+
+\begin_layout Verbatim
+
+timer: 1
+\end_layout
+
+\begin_layout Verbatim
+
+timer: 2
+\end_layout
+
+\begin_layout Verbatim
+
+timer: 3
+\end_layout
+
+\begin_layout Verbatim
+
+timer: 4
+\end_layout
+
+\begin_layout Verbatim
+
+timer: 5
+\end_layout
+
+\begin_layout Verbatim
+
+timer: 6
+\end_layout
+
+\begin_layout Verbatim
+
+timer: 7
+\end_layout
+
+\begin_layout Verbatim
+
+timer: 8
+\end_layout
+
+\begin_layout Verbatim
+
+timer: 9
+\end_layout
+
+\begin_layout Verbatim
+
+timer: 10
+\end_layout
+
+\begin_layout Verbatim
+
+timer cancelled
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:The-output-of"
+
+\end_inset
+
+The output of the program in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:A-code-example"
+
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:A-code-example"
+
+\end_inset
+
+ contains a complete example program that is included with the compiler.
+ It is an illustration of how to use asynchronous timers.
+ The program first creates an actor that handles timers.
+ Then, it sets a timer and immediately cancels it.
+ Then, it sets a timer without cancelling it.
+ The program produces the output in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:The-output-of"
+
+\end_inset
+
+.
+ This brief example illustrates a number of core concepts in Pony.
+\end_layout
+
+\begin_layout Standard
+One line 1, the 
+\family typewriter
+time
+\family default
+ package is imported into the current module's namespace.
+ It is also possible to import a package using an enclosing identifier to
+ avoid namespace collisions.
+ On line 3, a new type 
+\family typewriter
+TimerPrint
+\family default
+ is defined, and it specifies that it implements the 
+\family typewriter
+TimerNotify
+\family default
+ trait.
+ On line 4, 
+\family typewriter
+TimerPrint
+\family default
+ is given a single-assignment private field 
+\family typewriter
+_env
+\family default
+ of type 
+\family typewriter
+Env
+\family default
+, which is an immutable environment.
+ On line 5, a multiple-assignment field 
+\family typewriter
+_count
+\family default
+ of type 
+\family typewriter
+U64
+\family default
+, an unsigned 64-bit integer, is declared, and is initialised to 
+\family typewriter
+0 
+\family default
+in all constructors.
+\end_layout
+
+\begin_layout Standard
+On line 6, 
+\family typewriter
+TimerPrint
+\family default
+ is given a constructor named 
+\family typewriter
+create
+\family default
+, which is the default constructor used if no named constructor is specified
+ when instantiating a type, that takes a single argument 
+\family typewriter
+env
+\family default
+ of type 
+\family typewriter
+Env
+\family default
+.
+ This constructor has the 
+\family typewriter
+iso
+\family default
+ reference capability, , as described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
+.
+ This means the constructed object is mutable, but isolated, i.e.
+ externally unique.
+ In order for this to hold, all arguments to the constructor must themselves
+ be either 
+\family typewriter
+iso
+\family default
+ or 
+\family typewriter
+val
+\family default
+, i.e.
+ globally immutable (also described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
+).
+ In this case, 
+\family typewriter
+Env
+\family default
+ is defined has having a default reference capability of 
+\family typewriter
+val
+\family default
+, so this constructor is valid.
+\end_layout
+
+\begin_layout Standard
+On line 7, the single-assignment field 
+\family typewriter
+_env
+\family default
+ is initialised.
+ At this point, 
+\family typewriter
+_env
+\family default
+ cannot be assigned again, and this is enforced statically.
+ Pony constructors are required to initialise all fields of the instantiated
+ type, and 
+\family typewriter
+this
+\family default
+ in a constructor has the reference capability 
+\family typewriter
+tag
+\family default
+, as described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
+, until it is fully initialised.
+ Note that 
+\family typewriter
+_count
+\family default
+ is not explicitly initialised in the body of 
+\family typewriter
+create
+\family default
+, as it is initialised where it is defined.
+\end_layout
+
+\begin_layout Standard
+On line 10, 
+\family typewriter
+TimerPrint
+\family default
+ is given an 
+\family typewriter
+apply
+\family default
+ method, which is the default method if an object is invoked without a method
+ being specified.
+ This is called from the 
+\family typewriter
+time 
+\family default
+package when the associated timer fires.
+ It takes two arguments: the 
+\family typewriter
+Timer
+\family default
+ that is firing, and the number of times the 
+\family typewriter
+Timer
+\family default
+ has fired since the notifier was last informed.
+ The default reference capability for 
+\family typewriter
+Timer
+\family default
+ is defined in the 
+\family typewriter
+time
+\family default
+ package as 
+\family typewriter
+ref
+\family default
+, i.e.
+ mutable but not isolated, as described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
+.
+ This allows the 
+\family typewriter
+TimerPrint
+\family default
+ notifier to mutate the 
+\family typewriter
+Timer
+\family default
+ when a notification occurs, perhaps by changing its expiry time.
+ In this case, the body of 
+\family typewriter
+apply
+\family default
+ advances the notifier's 
+\family typewriter
+_count
+\family default
+, prints to the console by sending a message to 
+\family typewriter
+_env.out
+\family default
+ (an actor with access to 
+\family typewriter
+stdout
+\family default
+), and then returns 
+\family typewriter
+true
+\family default
+ if the total 
+\family typewriter
+_count
+\family default
+ is less than ten, or 
+\family typewriter
+false
+\family default
+ otherwise.
+ In the 
+\family typewriter
+time
+\family default
+ package, a timer is cancelled if the notifier for the timer returns 
+\family typewriter
+false
+\family default
+.
+ On line 15, 
+\family typewriter
+TimerPrint
+\family default
+ is given a 
+\family typewriter
+cancel
+\family default
+ method, which is called from the 
+\family typewriter
+time
+\family default
+ package when the associated timer is cancelled.
+ It takes a single argument of type 
+\family typewriter
+Timer box
+\family default
+, i.e.
+ a locally immutable 
+\family typewriter
+Timer
+\family default
+, as described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
+.
+ A 
+\family typewriter
+box
+\family default
+ reference allows 
+\family typewriter
+TimerPrint.cancel
+\family default
+ to read from the 
+\family typewriter
+Timer
+\family default
+, but neither mutate it nor pass it in a message.
+ In this case, the 
+\family typewriter
+cancel
+\family default
+ method simply prints a notification to the console.
+\end_layout
+
+\begin_layout Standard
+On line 18, the program's 
+\family typewriter
+Main
+\family default
+ actor is defined.
+ A Pony program begins with its 
+\family typewriter
+Main
+\family default
+ actor being constructed using the 
+\family typewriter
+create
+\family default
+ constructor, which is defined here on line 19.
+ The 
+\family typewriter
+Main.create
+\family default
+ constructor always takes a single argument, which is an immutable environment
+ 
+\family typewriter
+Env
+\family default
+ that gives the program access to its command line arguments, environment
+ variables, and the console via actors associated with 
+\family typewriter
+stdout
+\family default
+, 
+\family typewriter
+stderr
+\family default
+, and 
+\family typewriter
+stdin
+\family default
+.
+ This program begins by creating a 
+\family typewriter
+Timers
+\family default
+ actor on line 20, which is a hierarchical timing wheel actor defined in
+ the 
+\family typewriter
+time
+\family default
+ package.
+ The local variable 
+\family typewriter
+timer
+\family default
+ is of type 
+\family typewriter
+Timer tag
+\family default
+, as an actor is viewed as an opaque type from other actors, as described
+ in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+On line 22, a 
+\family typewriter
+Timer
+\family default
+ is created, using the default 
+\family typewriter
+Timer.create
+\family default
+ constructor.
+ Its first argument is a 
+\family typewriter
+TimerNotify
+\family default
+, created with 
+\family typewriter
+TimerNotify.create
+\family default
+ and passed 
+\family typewriter
+env
+\family default
+ as an argument.
+ It is safe to share the reference to 
+\family typewriter
+env
+\family default
+ as it is a 
+\family typewriter
+val
+\family default
+ reference, i.e.
+ globally immutable, and as such its use cannot result in a data-race.
+ The resulting notifier is of type 
+\family typewriter
+TimerNotify iso
+\family default
+, that is, it is isolated.
+ The other two arguments to the 
+\family typewriter
+Timer
+\family default
+ constructor are integers, which type inference will discover are of type
+ 
+\family typewriter
+U64
+\family default
+.
+ All basic machine-word types, i.e.
+ booleans, integers, and floating point number, are treated as 
+\family typewriter
+val
+\family default
+, so here the 
+\family typewriter
+Timer
+\family default
+ constructor takes only 
+\family typewriter
+iso
+\family default
+ and 
+\family typewriter
+val
+\family default
+ arguments.
+ As a result, the type of 
+\family typewriter
+t1
+\family default
+ when it is assigned on line 22, is 
+\family typewriter
+Timer iso
+\family default
+, that is, an isolated 
+\family typewriter
+Timer
+\family default
+, with a 500 millisecond initial firing time that repeatedly fires every
+ 500 milliseconds after that.
+\end_layout
+
+\begin_layout Standard
+On line 23, an alias of 
+\family typewriter
+t1
+\family default
+, here called 
+\family typewriter
+t1'
+\family default
+, is created.
+ However, as described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
+, an alias of an 
+\family typewriter
+iso
+\family default
+ reference is a 
+\family typewriter
+tag
+\family default
+ reference.
+ In other words, to maintain isolation, an alias to an isolated reference
+ must be opaque, i.e.
+ allow neither reading from nor writing to the reference object.
+\end_layout
+
+\begin_layout Standard
+On line 24, 
+\family typewriter
+t1
+\family default
+ is 
+\family typewriter
+consume
+\family default
+'d from the current lexical scope, making it unavailable in that scope.
+ This results in an 
+\emph on
+unaliased
+\emph default
+ type, that is, a type for which one alias has been removed, again as described
+ in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Reference-Capabilities"
+
+\end_inset
+
+.
+ This allows the object formerly referenced by 
+\family typewriter
+t1
+\family default
+ to be safely sent in a message to the 
+\family typewriter
+Timers
+\family default
+ actor that was created on line 20.
+ Line 24 implicitly calls 
+\family typewriter
+Timers.apply
+\family default
+, which in this case is a 
+\emph on
+behaviour
+\emph default
+, that is, an asynchronous method call, as described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Syntax-and-Operational"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Then, on line 25, the 
+\family typewriter
+timer
+\family default
+ actor is sent another message, this time 
+\family typewriter
+Timers.cancel
+\family default
+.
+ This time, the argument is 
+\family typewriter
+t1'
+\family default
+, which is a 
+\family typewriter
+tag
+\family default
+ alias to the same 
+\family typewriter
+Timer
+\family default
+ that was set on line 24.
+ By keeping a 
+\family typewriter
+tag
+\family default
+ alias to the 
+\family typewriter
+Timer
+\family default
+, the 
+\family typewriter
+Main
+\family default
+ actor can refer to it by its identity when cancelling it.
+ In other words, the 
+\family typewriter
+tag
+\family default
+ reference to the 
+\family typewriter
+Timer
+\family default
+ is a capability that allows cancelling the possessor to cancel it, with
+ no risk of name collision.
+ Because messages are causally ordered, the 
+\family typewriter
+Timers
+\family default
+ actor will receive the creation of the 
+\family typewriter
+Timer
+\family default
+ before the cancellation, so the cancellation cannot be lost.
+\end_layout
+
+\begin_layout Standard
+On line 27, the 
+\family typewriter
+Main
+\family default
+ actor creates another 
+\family typewriter
+Timer
+\family default
+, in the same manner as previously, and on line 28, that timer is sent to
+ the 
+\family typewriter
+Timers
+\family default
+ actor.
+ At this point, the 
+\family typewriter
+Main
+\family default
+ actor's constructor completes, but, unlike the 
+\family typewriter
+main
+\family default
+ function in a C or C++ program, the program does not terminate.
+ This is because the 
+\family typewriter
+Timers
+\family default
+ actor still has pending work, and so the program has not yet reached quiescence
+, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Completeness"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Concurrently with the execution of 
+\family typewriter
+Main
+\family default
+'s constructor, the 
+\family typewriter
+Timers
+\family default
+ actor will begin handling its own messages, as shown in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Syntax-and-Operational"
+
+\end_inset
+
+.
+ Specifically, it will set the first 
+\family typewriter
+Timer
+\family default
+, including making a system call to set up an operating system timer, then
+ cancel the first 
+\family typewriter
+Timer
+\family default
+, and then set the second 
+\family typewriter
+Timer
+\family default
+.
+ Interleaved with these messages will be messages from the asynchronous
+ I/O layer in the runtime, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Asynchronous-I/O"
+
+\end_inset
+
+, indicating that the operating system timer has fired.
+ When those occur, the 
+\family typewriter
+Timers
+\family default
+ actor examines its hierarchical timing wheel, as implemented in the 
+\family typewriter
+time
+\family default
+ package, and fires the 
+\family typewriter
+Timer
+\family default
+ objects it holds, as appropriate.
+\end_layout
+
+\begin_layout Standard
+In this case, the 
+\family typewriter
+TimerPrint
+\family default
+ notifier for the first 
+\family typewriter
+Timer
+\family default
+ is called with 
+\family typewriter
+cancel
+\family default
+ first, before any timers have fired.
+ Then, the second 
+\family typewriter
+Timer
+\family default
+ fires ten times, after which it returns 
+\family typewriter
+false
+\family default
+, and the 
+\family typewriter
+Timers
+\family default
+ actor cancels it.
+ At this point, the 
+\family typewriter
+Timers
+\family default
+ actor has no pending 
+\family typewriter
+Timer
+\family default
+ objects, and so cancels its operating system timer.
+ This results in the 
+\family typewriter
+Timers
+\family default
+ actor having no pending work, and no possibility to have pending work in
+ the future, and so the program has reached quiescence, and terminates.
+\end_layout
+
+\begin_layout Section
 Philosophy
 \end_layout
 

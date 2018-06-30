@@ -121,6 +121,65 @@ In this context, a programming language that draws from approaches that
 \end_layout
 
 \begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+actor Main
+\end_layout
+
+\begin_layout Plain Layout
+
+  new create(env: Env) =>
+\end_layout
+
+\begin_layout Plain Layout
+
+    env.out.print("Hello, world.") 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset Quotes eld
+\end_inset
+
+Hello, world.
+\begin_inset Quotes erd
+\end_inset
+
+ implemented in Pony.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 Pony uses a powerful and novel static type system to guarantee properties
  of a program in order to eliminate many runtime checks.
  This includes eliminating all forms of locking, as well as enabling a novel
