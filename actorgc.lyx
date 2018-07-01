@@ -933,6 +933,12 @@ This is done for convenience in examples, but the operational semantics
 \end_layout
 
 \begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Dead-Actors"
+
+\end_inset
+
 Dead Actors
 \end_layout
 

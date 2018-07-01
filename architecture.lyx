@@ -2003,7 +2003,10 @@ reference "fig:The-output-of"
 \end_inset
 
 .
- This brief example illustrates a number of core concepts in Pony.
+ This brief example illustrates a number of core concepts in Pony, including
+ asynchronous message passing, causality, the use of reference capabilities,
+ passing isolated mutable state, sharing globally immutable state, actor
+ and object garbage collection, and program quiescence.
 \end_layout
 
 \begin_layout Standard
@@ -2035,7 +2038,21 @@ _env
 \family typewriter
 Env
 \family default
-, which is an immutable environment.
+, which is an immutable environment that gives the program access to its
+ command line arguments, environment variables, and the console via actors
+ associated with 
+\family typewriter
+stdout
+\family default
+, 
+\family typewriter
+stderr
+\family default
+, and 
+\family typewriter
+stdin
+\family default
+.
  On line 5, a multiple-assignment field 
 \family typewriter
 _count
@@ -2061,7 +2078,12 @@ TimerPrint
 create
 \family default
 , which is the default constructor used if no named constructor is specified
- when instantiating a type, that takes a single argument 
+ when instantiating a type.
+ Here, 
+\family typewriter
+TimerPrint.create
+\family default
+ takes a single argument 
 \family typewriter
 env
 \family default
@@ -2074,7 +2096,7 @@ Env
 \family typewriter
 iso
 \family default
- reference capability, , as described in chapter 
+ reference capability, as described in chapter 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "chap:Reference-Capabilities"
@@ -2209,7 +2231,7 @@ Timer
  when a notification occurs, perhaps by changing its expiry time.
  In this case, the body of 
 \family typewriter
-apply
+TimerPrint.apply
 \family default
  advances the notifier's 
 \family typewriter
@@ -2245,7 +2267,27 @@ time
 false
 \family default
 .
- On line 15, 
+\end_layout
+
+\begin_layout Standard
+Note that the message sent to 
+\family typewriter
+_env.out
+\family default
+ on line 12 contains a globally immutable 
+\family typewriter
+String
+\family default
+.
+ It would be safe for the notifier to keep a referenec to the 
+\family typewriter
+String
+\family default
+ being sent, but in this case it does not.
+\end_layout
+
+\begin_layout Standard
+On line 15, 
 \family typewriter
 TimerPrint
 \family default
@@ -2292,7 +2334,16 @@ Timer
 \family typewriter
 cancel
 \family default
- method simply prints a notification to the console.
+ method simply prints a notification to the console, by again sending a
+ message to 
+\family typewriter
+_env.out
+\family default
+ containing a globally immutable 
+\family typewriter
+String
+\family default
+.
 \end_layout
 
 \begin_layout Standard
@@ -2318,19 +2369,6 @@ Main.create
  
 \family typewriter
 Env
-\family default
- that gives the program access to its command line arguments, environment
- variables, and the console via actors associated with 
-\family typewriter
-stdout
-\family default
-, 
-\family typewriter
-stderr
-\family default
-, and 
-\family typewriter
-stdin
 \family default
 .
  This program begins by creating a 
@@ -2470,8 +2508,8 @@ iso
 tag
 \family default
  reference.
- In other words, to maintain isolation, an alias to an isolated reference
- must be opaque, i.e.
+ To maintain isolation, an alias to an isolated reference must be opaque,
+ i.e.
  allow neither reading from nor writing to the reference object.
 \end_layout
 
@@ -2523,6 +2561,19 @@ reference "chap:Syntax-and-Operational"
 \end_inset
 
 .
+ This in turn uses the garabage collection protocol described in chapter
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Object-Collection"
+
+\end_inset
+
+ to ensure that the 
+\family typewriter
+Timer
+\family default
+ can eventually be collected without requiring a stop-the-world step.
 \end_layout
 
 \begin_layout Standard
@@ -2535,7 +2586,7 @@ timer
 Timers.cancel
 \family default
 .
- This time, the argument is 
+ The argument is 
 \family typewriter
 t1'
 \family default
@@ -2561,7 +2612,7 @@ Timer
 Main
 \family default
  actor can refer to it by its identity when cancelling it.
- In other words, the 
+ The 
 \family typewriter
 tag
 \family default
@@ -2615,6 +2666,43 @@ Timers
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sec:Completeness"
+
+\end_inset
+
+.
+ However, the actor garbage collection protocol described in chapter 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "chap:Actor-Collection"
+
+\end_inset
+
+ may at this point collect the 
+\family typewriter
+Main
+\family default
+ actor, as it is not executing and has no pending work, i.e.
+ it is 
+\emph on
+blocked
+\emph default
+ as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Cycle-Detection"
+
+\end_inset
+
+, and cannot receive work in the future, as no other actor has a reference
+ to it, i.e.
+ it is 
+\emph on
+dead
+\emph default
+ as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Dead-Actors"
 
 \end_inset
 
@@ -2673,7 +2761,7 @@ time
 \family typewriter
 Timer
 \family default
- objects it holds, as appropriate.
+ objects it holds as appropriate.
 \end_layout
 
 \begin_layout Standard
@@ -2698,7 +2786,7 @@ Timer
 \family typewriter
 false
 \family default
-, and the 
+ and the 
 \family typewriter
 Timers
 \family default
@@ -2712,12 +2800,48 @@ Timers
 Timer
 \family default
  objects, and so cancels its operating system timer.
- This results in the 
+\end_layout
+
+\begin_layout Standard
+This results in the 
 \family typewriter
 Timers
 \family default
- actor having no pending work, and no possibility to have pending work in
- the future, and so the program has reached quiescence, and terminates.
+ actor becoming 
+\emph on
+blocked
+\emph default
+, as it is not executing and has no pending work.
+ Since the only actor that may have a reference to it, the 
+\family typewriter
+Main
+\family default
+ actor, is also
+\emph on
+ blocked
+\emph default
+, and the asynchronous I/O layer will not generate new work for it, the
+ 
+\family typewriter
+Timers
+\family default
+ actor is also 
+\emph on
+dead
+\emph default
+, and eligible for garbage collection.
+ At this point, all actors are 
+\emph on
+dead
+\emph default
+ and the program has reached quiescence, as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Quiescence"
+
+\end_inset
+
+, and terminates.
 \end_layout
 
 \begin_layout Section
