@@ -1550,6 +1550,12 @@ Including exceptions in the language at all was also a performance decision.
 \end_layout
 
 \begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Single-Compilation-Unit"
+
+\end_inset
+
 Single Compilation Unit
 \end_layout
 
@@ -1589,6 +1595,13 @@ l optimisation, but also to perform reachability analysis, which is used
 \emph on
 selector colouring
 \emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "vitek1996compact"
+
+\end_inset
+
  for virtual dispatch, and to reify structural types for runtime pattern-matchin
 g on type.
 \end_layout

@@ -190,17 +190,436 @@ remain
 
 \begin_layout Standard
 As in all distributed computation projects, a strong approach to node failure
- must be adopted, whether in the form of Erlang-like supervision, or EROS-like
- orthogonal persistence.
- Similarly difficult is the development of heuristics for distributed work-steal
-ing that are useful for many classes of workload.
+ must be adopted, whether in the form of Erlang-like monitors and supervision,
+ or EROS-like orthogonal persistence, or a combination of both.
+ Particularly interesting is the possibility of using non-volatile memory
+ to achieve object persistence.
+ This raises significant issues, such as how to reconstitute objects from
+ non-volatile memory in the presence of partially completed operations or
+ corrupted data.
 \end_layout
 
 \begin_layout Standard
-Other open questions include the nature of reflection in a capabilities-secure
- environment, the integration of live programming in the form of a REPL
- and hot code loading, and tools for software engineering actor-model distribute
-d systems, including distributed debugging and message tracing.
+Similarly difficult is the development of heuristics for distributed work-steali
+ng that are useful for many classes of workload.
+ For example, in the distributed setting, an actor with a ten gigabyte working
+ would be an unlikely candidate for migration to another node due to the
+ communication cost that would be incurred.
+ However, migrating such an actor might alleviate memory pressure on a node
+ and improve performance once the communication cost had been paid.
+\end_layout
+
+\begin_layout Standard
+An interesting open question is the nature of reflection in a capabilities-secur
+e environment.
+ Mirror-based reflection 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "bracha2004mirrors"
+
+\end_inset
+
+ gives a solid foundation, but does not address capabilities-security.
+ Reflection in AmbientTalk 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "mostinckx2009mirror"
+
+\end_inset
+
+ supports capabilities-security in a dynamically typed language, and reflection
+ in Wyvern 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "wang2016capability"
+
+\end_inset
+
+ applies similar principles to achieve capability-secure reflection in a
+ statically typed language.
+ In the context of Pony, additional issues remain to be addressed, such
+ as introspection over mirrors of objects that contain isolated state.
+\end_layout
+
+\begin_layout Standard
+Adding live programming in the form of a REPL would involve revisiting the
+ compiler's approach to virtual dispatch and pattern matching on structural
+ types, as discussed in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Single-Compilation-Unit"
+
+\end_inset
+
+.
+ A possible approach is to use perfect hashing 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ducournau2011perfect"
+
+\end_inset
+
+ for both dispatch and subtype tests.
+\end_layout
+
+\begin_layout Standard
+Any technique that enabled a Pony REPL could also be extended to enable
+ hot code loading, wherein not only can types be added to a running system,
+ but the definition of a type can be replaced at runtime.
+ This is used in Erlang to allow some programs to be updated while running,
+ under some conditions.
+ There is significant work to be done here in the form of validating whether
+ the replacement definition is acceptable in a statically typed setting,
+ and providing a transformation function from the previous definition to
+ the new definition that can be applied to a running concurrent system.
+\end_layout
+
+\begin_layout Standard
+At the type system level, continued formalisation is needed, particularly
+ in the area of pattern matching over generic types.
+ New type system features may also be possible, such as an annotation ensuring
+ that an identifier will not be consumed, possibly combined with explicit
+ region annotation, which would allow more instances of isolated references
+ being temporarily usable as non-isolated mutable references while maintaining
+ isolation.
+\end_layout
+
+\begin_layout Standard
+At the runtime level, some features have been implemented in the runtime
+ that require formalisation, such as generalised actor-model backpressure.
+ Other features have been formalised, but require implementation, such as
+ compile-time expression evaluation and simple value-dependent types.
+\end_layout
+
+\begin_layout Standard
+As with all programming languages, tooling support is as important as language
+ and runtime features.
+ Pony can currently be debugged using 
+\family typewriter
+gdb
+\family default
+ and 
+\family typewriter
+lldb
+\family default
+, but improved 
+\family typewriter
+DWARF
+\family default
+ debugging information support and a Pony expression parser would improve
+ the experience.
+ Additionally, there are debugging features that are specific to actor-model
+ programming, such as stepping through asynchronous message passing rather
+ than by instruction, that would be worth investigating 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "lopez16towards"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Benchmarking
+\end_layout
+
+\begin_layout Standard
+Benchmarking a new programming language is a daunting task.
+ When making changes to an existing language, whether at the language feature
+ level or in the runtime, the impact of those changes can be benchmarked
+ against the unmodified language using any existing corpus of programs.
+ However, a new programming language suffers from two problems: initially,
+ there is no existing corpus of programs to test, and, more importantly,
+ even once such a corpus exists, it is rarely possible to directly compare
+ the performance of such programs against the performance of programs written
+ in another language.
+ Similarly, implementing alternate versions of programs written in existing
+ languages in the new language may not only be infeasible due to time and
+ effort concerns, but often results in fundamentally rethinking how a program
+ is written, due to differing language semantics.
+ The end result, even when this is attempted, is rarely comparable to the
+ original program.
+\end_layout
+
+\begin_layout Standard
+That said, an early version of Pony was benchmarked against other actor-model
+ languages using the CAF benchmark suite 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "cafbenchmarks2015"
+
+\end_inset
+
+, which provides sample microbenchmarking workloads that attempt to model
+ aspects of real-world program behaviour.
+ Results are the average of 100 runs, normalised against Erlang performance
+ on a single core such that performance improvement linear to core count
+ would be shown as a straight line sloping up.
+ We chose to normalise against Erlang because it is a mature system with
+ consistent performance across core counts, with little jitter.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename graphics/actor-create.png
+	width 50col%
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:CAF-actor-creation"
+
+\end_inset
+
+CAF actor creation benchmark
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename graphics/mailbox.png
+	width 50col%
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:CAF-actor-mailbox"
+
+\end_inset
+
+CAF actor mailbox benchmark
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename graphics/mixed.png
+	width 50col%
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:CAF-actor-mixed"
+
+\end_inset
+
+CAF actor mixed workload benchmark
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename graphics/gups_opt_2.png
+	width 50col%
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:HPCC-RandomAccessbenchmark"
+
+\end_inset
+
+HPCC RandomAccessbenchmark 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:CAF-actor-creation"
+
+\end_inset
+
+, we show actor creation performance when creating an interconnected tree
+ of actors that cannot be collected until the program completes, which is
+ the worst case for Pony.
+ Here, we are garbage collecting actors themselves as well as objects, but
+ still outperforms existing systems other than CAF, which is neither garbage
+ collected nor data-race free.
+ In figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:CAF-actor-mailbox"
+
+\end_inset
+
+, we show performance of a highly contended mailbox, where additional cores
+ tend to degrade performance.
+ In figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:CAF-actor-mixed"
+
+\end_inset
+
+, we show performance of a mixed case, where a heavy message load is combined
+ with brute force factorisation of large integers.
+\end_layout
+
+\begin_layout Standard
+In figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:HPCC-RandomAccessbenchmark"
+
+\end_inset
+
+, we show a benchmark that is not tailored for actors: we take the HPCC
+ RandomAccess benchmark from high-performance computing 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "hpcc"
+
+\end_inset
+
+, which tests random access memory subsystem performance, and demonstrate
+ that our implementation is significantly faster than the highly optimised
+ MPI implementation.
+ We show only power-of-two core counts because the MPI implementation is
+ optimised for this case.
+\end_layout
+
+\begin_layout Standard
+While all benchmarking is to some degree snake oil, we chose these benchmarks
+ because a) they were designed by others, b) they are hopefully representative
+ of some common actor-model programming idioms, and c) they have optimised
+ implementations in existing languages and frameworks provided by programmers
+ expert with those tools.
+\end_layout
+
+\begin_layout Standard
+One possible approach to future benchmarking is to use the Computer Language
+ Benchmark Game 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "clbg"
+
+\end_inset
+
+ as a corpus of cross-language programs.
+ While the available CLBG benchmarks may not be representative of real-world
+ performance, they have the advantage of existing.
+ By applying rigorous statistical methods 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "kalibera2013rigorous"
+
+\end_inset
+
+ and correcting for warmup vs.
+ steady state performance 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "barrett2017virtual"
+
+\end_inset
+
+ it may be possible to extract a useful cross-language comparison.
+\end_layout
+
+\begin_layout Standard
+Another approach is to carefully select benchmarks that use only language
+ features common amongst the set of tested languages 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "marr2016cross"
+
+\end_inset
+
+, allowing effectively identical cross-language microbenchmarks.
+ While this approach does not test overall language performance, it provides
+ insight into the implementation efficiency of specific language features,
+ which is not possible using the CLBG approach.
 \end_layout
 
 \begin_layout Section
