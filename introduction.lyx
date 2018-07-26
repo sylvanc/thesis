@@ -190,6 +190,92 @@ Pony uses a powerful and novel static type system to guarantee properties
 \end_layout
 
 \begin_layout Section
+Motivation
+\end_layout
+
+\begin_layout Standard
+Pony is a product of my own frustration with the tools available to me.
+ I have spent much of my professional career writing, or managing programmers
+ that were writing, concurrent code in systems programming languages, primarily
+ multi-threaded C/C++.
+ Over and over again, we ran into memory errors.
+ There were of course the usual problems with dangling pointers and memory
+ leaks that garbage collectors are designed to solve, but the problems that
+ consumed the most time and effort in debugging, or required more fundamental
+ architecture changes, were problems with data-races and causality.
+ Programmers would think about program architecture in terms of ownership
+ and sharing between concurrent units of execution, but, without tooling
+ support, enforcing this discipline was extremely difficult.
+\end_layout
+
+\begin_layout Standard
+The motivation for using multi-threaded C/C++ was peformance, and so moving
+ to a programming language or library that traded performance for safety
+ was problematic.
+ In the early 2000s, I developed a flight simulator engine written in C/C++
+ that used Lua as an extension language, integrating the Lua garbage collector
+ with C++ reference counting.
+ I built an asynchronous message queuing system for doing physics simulation
+ that allowed the physics code to be written in Lua while the solid-body
+ integration and graphics code was written in C++.
+ This was useful, and allowed more productive development of physics code
+ in a safe, garbage collected environment, but it still had problems.
+ Message passing required copying data, the Lua code itself was not concurrent,
+ and messages were not causally consistent.
+ For example, a design flaw in the physics code for calculating the power
+ output of an internal combustion engine resulted in the manifold pressure
+ being calculated based on how the 
+\emph on
+future
+\emph default
+ exhaust velocity drove the turbocharger, which resulted in the total energy
+ in the system increasing and the simulation blowing up.
+ Once the flaw in the way messages were propagated was discovered, this
+ was trivial to fix, but discovering that this was due to a causality violation
+ took months of programmer time.
+\end_layout
+
+\begin_layout Standard
+Similarly difficult problems occured with data-races in a different context.
+ In the early 2010s, I ran European electronic trading infrastructure for
+ a major investment bank.
+ My team developed infrastructure code for low-latency (a few microseconds)
+ high-throughput (hundreds of thousands of messages per second) applications.
+ To support this, I wrote a library for writing actors in C/C++.
+ It supported zero-copy causal messaging, had a work-stealing scheduler,
+ and was used to develop and deploy some high-performance applications.
+ However, programmers would sometimes send a pointer from one actor to another,
+ convinced that they had accounted for ownership or had correctly controlled
+ for immutability, and it would turn out that they had not and a data-race
+ existed.
+ Without enforcement for data-race freedom, these bugs were extremely difficult
+ to track down.
+ Sometimes programmers would add non-message-passing based synchronisation,
+ such as locks or lock-free data structures, to control data-races where
+ ownership or sharing discipline had failed.
+ This usually resulted in subtle deadlock conditions, which often appeared
+ only occasionally and only under high load on production systems, but even
+ when such bugs were not encountered (which is not to say they were not
+ present) there was a performance cost.
+\end_layout
+
+\begin_layout Standard
+There are existing languages and tools that would solve some of these problems.
+ Clearly, there are many interesting garbage collectors that can provide
+ a memory-safe, if not data-race free, programming environment.
+ But most come at a cost in the form of a stop-the-world phase or significant
+ mutator performance costs.
+ Erlang provides an actor-model, data-race free programming environment,
+ but it is neither causally consistent, due to allowing pattern matching
+ on message queues, nor is the sequential code performance competitive with
+ C/C++.
+ There are existing data-race free type systems, including type systems
+ that provide isolation and immutability, but they are not leveraged by
+ a strongly integrated approach to concurrency and garbage collection to
+ improve performance.
+\end_layout
+
+\begin_layout Section
 Co-design
 \end_layout
 
