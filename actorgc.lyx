@@ -363,7 +363,7 @@ key "bacon2001concurrent"
  and distributed reference counting 
 \begin_inset CommandInset citation
 LatexCommand cite
-key "moreau2001construction,moreau2005birrell,jones1993cyclic,dehne1994distributed,lins2003lazy,de2007new"
+key "moreau2001construction,moreau2005birrell,jones1993cyclic,lins2003lazy,de2007new"
 
 \end_inset
 
@@ -381,7 +381,7 @@ key "moreau2001construction,moreau2005birrell"
  to actor collection 
 \begin_inset CommandInset citation
 LatexCommand cite
-key "bacon2001concurrent,jones1993cyclic,dehne1994distributed,lins2003lazy,de2007new"
+key "bacon2001concurrent,jones1993cyclic,lins2003lazy,de2007new"
 
 \end_inset
 
